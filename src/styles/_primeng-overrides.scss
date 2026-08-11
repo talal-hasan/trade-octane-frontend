@@ -1,0 +1,41 @@
+// Trade Octane — PrimeNG overrides
+// Color/typography theming lives in src/app/core/config/prime-preset.ts (definePreset).
+// This file only covers what the preset can't express: density-mode sizing and
+// motion duration alignment with our tokens.
+
+@use 'tokens' as t;
+@use 'utilities' as u;
+
+// Density modes (CLAUDE.md §5) — table rows and form fields resize via
+// [data-density="compact"] on <html>. PrimeNG doesn't have a density concept,
+// so it's driven here from the same --to-row-height / --to-field-height tokens
+// the rest of the app uses.
+.p-datatable .p-datatable-tbody > tr > td,
+.p-datatable .p-datatable-thead > tr > th {
+  height: var(--to-row-height);
+  @include u.motion(background-color, border-color);
+}
+
+.p-inputtext,
+.p-select,
+.p-multiselect,
+.p-datepicker-input,
+.p-inputnumber-input,
+.p-button {
+  height: var(--to-field-height);
+  @include u.motion(background-color, border-color, box-shadow);
+}
+
+.p-dialog {
+  border-radius: t.$to-radius-modal;
+}
+
+.p-card,
+.p-panel {
+  border-radius: t.$to-radius-card;
+}
+
+.p-tag,
+.p-badge {
+  border-radius: t.$to-radius-pill;
+}

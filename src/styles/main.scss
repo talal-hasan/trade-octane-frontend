@@ -1,0 +1,12 @@
+// Trade Octane — Global stylesheet entry point. Imports all partials. No rules here.
+
+@use 'reset';
+@use 'tokens';
+@use 'typography';
+@use 'primeng-overrides';
+
+// Inter — self-hosted, weights 400 (regular) and 500 (medium) only.
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+
+@import 'primeicons/primeicons.css';

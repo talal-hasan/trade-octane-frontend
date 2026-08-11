@@ -1,0 +1,37 @@
+// Trade Octane — Shared mixins
+
+@use 'tokens' as t;
+
+// 150ms ease-out transitions on opacity/transform/background-color/border-color only.
+// Respects prefers-reduced-motion.
+@mixin motion($properties...) {
+  transition-property: $properties;
+  transition-duration: t.$to-motion-duration;
+  transition-timing-function: t.$to-motion-easing;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0ms;
+  }
+}
+
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Breakpoints — desktop-first per CLAUDE.md §14 [PENDING: responsive scope].
+$to-breakpoint-tablet: 1024px;
+$to-breakpoint-desktop: 1280px;
+
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == tablet {
+    @media (max-width: $to-breakpoint-tablet) {
+      @content;
+    }
+  } @else if $breakpoint == desktop {
+    @media (min-width: $to-breakpoint-desktop) {
+      @content;
+    }
+  }
+}

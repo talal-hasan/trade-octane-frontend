@@ -1,0 +1,49 @@
+// Trade Octane — Typography
+// Font: Inter, self-hosted via @fontsource/inter (weights 400 + 500 only). See main.scss for face imports.
+
+@use 'tokens' as t;
+
+body {
+  font-family: var(--to-font-family);
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-regular);
+  line-height: var(--to-line-height-body);
+  color: var(--to-text-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--to-font-weight-medium);
+  line-height: var(--to-line-height-heading);
+  margin: 0;
+}
+
+.to-text-2xs {
+  font-size: t.$to-font-size-2xs;
+}
+.to-text-xs {
+  font-size: t.$to-font-size-xs;
+}
+.to-text-sm {
+  font-size: t.$to-font-size-sm;
+}
+.to-text-md {
+  font-size: t.$to-font-size-md;
+}
+.to-text-lg {
+  font-size: t.$to-font-size-lg;
+}
+.to-text-xl {
+  font-size: t.$to-font-size-xl;
+}
+
+// Tabular numerals everywhere financial data appears — currency columns, quantity
+// inputs, percentage displays, budget headroom bars.
+.to-numeric {
+  font-variant-numeric: tabular-nums;
+  line-height: var(--to-line-height-data);
+}

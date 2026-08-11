@@ -1,0 +1,120 @@
+// Trade Octane — Design Tokens
+// CSS custom properties + SCSS variables. Components reference tokens only — never hardcoded values.
+// See CLAUDE.md §5 for source of truth.
+
+:root {
+  // ─── Light mode ────────────────────────────────────────
+  --to-bg-0: #f6f7f9; // page wash — very slightly cool grey
+  --to-bg-1: #ffffff; // cards, panels, modals
+  --to-bg-2: #f0f2f5; // table row fill, input backgrounds
+  --to-border: #e2e5ea; // hairline separators
+  --to-border-strong: #c8cdd6; // hover borders, dividers
+
+  --to-text-primary: #141922; // headings, data values
+  --to-text-secondary: #4a5568; // body, descriptions
+  --to-text-muted: #8a96a8; // placeholders, timestamps, helper text
+
+  // Accent — slate blue, professional without being generic corporate
+  --to-accent: #3b6fd4;
+  --to-accent-hover: #2f5ab8;
+  --to-accent-subtle: #edf1fb;
+  --to-accent-text: #1e3f8a;
+
+  // Semantic
+  --to-success: #1e7a4a;
+  --to-success-subtle: #e8f5ee;
+  --to-warning: #8a6000;
+  --to-warning-subtle: #fef8e0;
+  --to-danger: #b83232;
+  --to-danger-subtle: #fceaea;
+  --to-info: #2563a8;
+  --to-info-subtle: #e8f0fc;
+
+  // ─── Spacing — 4px base unit ────────────────────────────
+  --to-space-1: 4px;
+  --to-space-2: 8px;
+  --to-space-3: 12px;
+  --to-space-4: 16px;
+  --to-space-6: 24px;
+  --to-space-8: 32px;
+  --to-space-12: 48px;
+
+  // ─── Border radius ──────────────────────────────────────
+  --to-radius-control: 6px; // inputs, buttons, badges
+  --to-radius-card: 8px; // cards, panels, dropdowns
+  --to-radius-modal: 12px; // modals, large surface containers
+  --to-radius-pill: 9999px; // pills / tags only
+
+  // ─── Typography ─────────────────────────────────────────
+  --to-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --to-font-size-2xs: 0.6875rem; // 11px
+  --to-font-size-xs: 0.75rem; // 12px
+  --to-font-size-sm: 0.8125rem; // 13px
+  --to-font-size-md: 0.9375rem; // 15px
+  --to-font-size-lg: 1.125rem; // 18px
+  --to-font-size-xl: 1.5rem; // 24px
+
+  --to-font-weight-regular: 400;
+  --to-font-weight-medium: 500;
+
+  --to-line-height-body: 1.5;
+  --to-line-height-heading: 1.3;
+  --to-line-height-data: 1;
+
+  // ─── Motion ──────────────────────────────────────────────
+  --to-motion-duration: 150ms;
+  --to-motion-easing: ease-out;
+
+  // ─── Density — [data-density="compact"] overrides below ──
+  --to-row-height: 48px;
+  --to-field-height: 40px;
+}
+
+// ─── Dark mode ─────────────────────────────────────────────
+:root[data-theme='dark'] {
+  --to-bg-0: #0f1117;
+  --to-bg-1: #181c25;
+  --to-bg-2: #1f2433;
+  --to-border: #2a3042;
+  --to-border-strong: #374155;
+
+  --to-text-primary: #e8ecf4;
+  --to-text-secondary: #9aa3b8;
+  --to-text-muted: #5a6478;
+
+  --to-accent: #5b8dee;
+  --to-accent-hover: #7aa3f5;
+  --to-accent-subtle: #1a2540;
+  --to-accent-text: #a8c4ff;
+}
+
+// ─── Density — compact mode ─────────────────────────────────
+:root[data-density='compact'] {
+  --to-row-height: 36px;
+  --to-field-height: 32px;
+}
+
+// ─── SCSS variables (build-time use, e.g. media queries, PrimeNG preset) ──
+$to-space-1: 4px;
+$to-space-2: 8px;
+$to-space-3: 12px;
+$to-space-4: 16px;
+$to-space-6: 24px;
+$to-space-8: 32px;
+$to-space-12: 48px;
+
+$to-radius-control: 6px;
+$to-radius-card: 8px;
+$to-radius-modal: 12px;
+$to-radius-pill: 9999px;
+
+$to-font-size-2xs: 0.6875rem;
+$to-font-size-xs: 0.75rem;
+$to-font-size-sm: 0.8125rem;
+$to-font-size-md: 0.9375rem;
+$to-font-size-lg: 1.125rem;
+$to-font-size-xl: 1.5rem;
+
+$to-motion-duration: 150ms;
+$to-motion-easing: ease-out;
