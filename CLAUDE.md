@@ -142,28 +142,48 @@ Modern enterprise. Reference: Linear, Vercel dashboard, Stripe dashboard. High c
 
 ### Color Tokens
 ```scss
-// Base — light mode defaults
---to-bg-0: #f8f8f7;          // page background
---to-bg-1: #ffffff;          // card / panel surface
---to-bg-2: #f3f3f2;          // subtle fill (table rows, inputs)
---to-border: #e5e5e3;        // hairline borders
---to-border-strong: #d1d1ce; // hover borders, dividers
---to-text-primary: #1a1a18;  // headings, labels
---to-text-secondary: #595957;// body, descriptions
---to-text-muted: #8f8f8c;    // placeholders, timestamps
+// ─── Light mode ────────────────────────────────────────
+--to-bg-0:          #f6f7f9;   // page wash — very slightly cool grey
+--to-bg-1:          #ffffff;   // cards, panels, modals
+--to-bg-2:          #f0f2f5;   // table row fill, input backgrounds
+--to-border:        #e2e5ea;   // hairline separators
+--to-border-strong: #c8cdd6;   // hover borders, dividers
 
-// Accent (Friesland blue — [PENDING: confirm hex with client])
---to-accent: #1a5fa8;
---to-accent-subtle: #e8f1fb;
---to-accent-text: #0c3d6e;
+--to-text-primary:   #141922;  // headings, data values
+--to-text-secondary: #4a5568;  // body, descriptions
+--to-text-muted:     #8a96a8;  // placeholders, timestamps, helper text
+
+// Accent — slate blue, professional without being generic corporate
+--to-accent:         #3b6fd4;
+--to-accent-hover:   #2f5ab8;
+--to-accent-subtle:  #edf1fb;
+--to-accent-text:    #1e3f8a;
 
 // Semantic
---to-success: #1a7a4a;
---to-success-subtle: #e6f5ec;
---to-warning: #956800;
---to-warning-subtle: #fef7e0;
---to-danger: #c0392b;
---to-danger-subtle: #fde8e6;
+--to-success:        #1e7a4a;
+--to-success-subtle: #e8f5ee;
+--to-warning:        #8a6000;
+--to-warning-subtle: #fef8e0;
+--to-danger:         #b83232;
+--to-danger-subtle:  #fceaea;
+--to-info:           #2563a8;
+--to-info-subtle:    #e8f0fc;
+
+// ─── Dark mode — [data-theme="dark"] ───────────────────
+--to-bg-0:          #0f1117;
+--to-bg-1:          #181c25;
+--to-bg-2:          #1f2433;
+--to-border:        #2a3042;
+--to-border-strong: #374155;
+
+--to-text-primary:   #e8ecf4;
+--to-text-secondary: #9aa3b8;
+--to-text-muted:     #5a6478;
+
+--to-accent:         #5b8dee;
+--to-accent-hover:   #7aa3f5;
+--to-accent-subtle:  #1a2540;
+--to-accent-text:    #a8c4ff;
 
 // Dark mode overrides under [data-theme="dark"] in _tokens.scss
 ```
