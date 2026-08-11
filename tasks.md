@@ -44,10 +44,11 @@
 
 ## Phase 1 — POC Priority Screens
 > [PENDING: final list from Adil. Confirmed starters below.]
+> Built on `feature/phase-1-poc-screens` (branched off phase-0 elevation). Each screen its own commit.
 
-- [ ] Login screen with mock role switcher
-- [ ] Dashboard / approvals inbox
-- [ ] Budget list view
+- [x] Login screen with mock role switcher — done in the elevation pass (branded split-panel + SSO button, role switcher dev panel gated on useMocks). Committed as part of `feat(ui): elevate…`, not a separate phase-1 commit.
+- [x] Dashboard / approvals inbox — queue-mode split pane; tabs All/Budgets/Schemes/Claims with counts; detail pane with headroom bar (budgets), pipeline (claims), approval chain + inline approve/reject; canApprove gated per item; 7 mock items. `ApprovalsService`/`MockApprovalsService`.
+- [x] Budget list view — analysis-mode table; Year/Region/Brand/Status filter bar with chips; status pills; Actions column; client-side sort/paginate; 18 mock records. `BudgetService`/`MockBudgetService`.
 - [ ] Budget initiation form
 - [ ] Budget approval detail
 - [ ] Scheme list — BRD
@@ -55,7 +56,7 @@
 - [ ] Scheme form — BRD
 - [ ] Scheme form — Trade Offer
 - [ ] Scheme bulk uploader
-- [ ] Claims list
+- [x] Claims list — analysis-mode table; Type tags (Normal/Delay/Damage); Stage column renders the VBase→Trade Spend→Pujar pipeline (compact); status pills; 11 mock claims. `ClaimsService`/`MockClaimsService`.
 - [ ] Claims detail + approval
 - [ ] Distribution — distributor list
 - [ ] Distribution — distributor detail form
@@ -92,3 +93,13 @@
 - 2026-08-11: 21st.dev Magic MCP's `generate` tool hit `generation_limit_reached` on the first call and was abandoned for the whole Visual Elevation Pass — Talal opted to hand-build every component instead rather than top up credits. Worth knowing before proposing it again: it's a paid-per-call, human-in-the-loop tool (opens a browser URL per component for variant picking) that only outputs React/Tailwind, so even with credits it wouldn't produce Angular/SCSS directly — CLAUDE.md §15's caution about not using it for anything PermissionService/mock-data-coupled was already right to be cautious about scope, but it turns out the bigger blocker is operational (credits + human review loop), not just scope.
 - 2026-08-11: `login.component.ts` mock sign-in now logs in as `authService.availableRoles[0]` on click rather than presenting a role list on the login screen itself — CLAUDE.md §3 specifies login as a single branded button with no picker; role switching is the dev-only floating panel's job (§6), not login's. If `availableRoles` order ever changes, the default post-login role changes with it.
 - 2026-08-11: Extended `shared/icon-registry.ts` with one icon (`filter` → Tabler `IconFilter`) to give the filter bar a semantically correct leading icon — previously the registry had no icon that meant "filter" (only `search`, which would have been the wrong affordance).
+
+### Phase 1 (2026-08-12)
+- 2026-08-12: **Branch topology** — committed the visual-elevation work as one `feat(ui): elevate…` commit on `feature/phase-0-foundation`, then branched `feature/phase-1-poc-screens` off it (Talal chose this over folding elevation into phase-1). Login (POC screen #1) was already satisfied by the elevation pass, so it has no separate phase-1 commit.
+- 2026-08-12: **Mock-first DI pattern established** — each feature service is an abstract class doubling as the DI token (`ApprovalsService`, `BudgetService`, `ClaimsService`), with a `MockXxxService extends` it, bound in `app.config.ts` via `{ provide, useClass }` (CLAUDE.md §3 single swap point). Mock services return `Observable` (via `of(...).pipe(delay())`) so the real HttpClient-backed swap needs zero component changes. Mocks reuse `import type` for cross-component types (e.g. `ApprovalStep`) to avoid dragging components into the eager app.config graph.
+- 2026-08-12: **to-data-table gained custom cell templates** via new `CellTemplateDirective` (`toCellTemplate="<colKey>"`, exposes `$implicit`=row + `column`). Needed because both list screens require non-text cells the generic table couldn't render — budget's status pills + Actions, claims' pipeline-stage — without forking bespoke tables (would violate §9 "build once"). Default @switch rendering is the fallback when no template is supplied.
+- 2026-08-12: **Mounted `<p-toast position="top-right">` in the shell.** There was a `NotificationService` (used by `error.interceptor`) but no toast host anywhere, so notifications rendered nowhere. Now approve/reject feedback and interceptor errors actually surface.
+- 2026-08-12: **eslint** — added `@typescript-eslint/no-unused-vars` with `argsIgnorePattern`/`varsIgnorePattern`/`caughtErrorsIgnorePattern: '^_'` so the `_`-prefixed intentionally-unused convention works (e.g. a mock method satisfying an interface signature it doesn't use).
+- 2026-08-12: **Budgets bumped** in `angular.json` — `initial` 500kB→700kB and `anyComponentStyle` 6kB→8kB (warning). The initial-bundle growth is bundled POC mock data eagerly imported by `app.config.ts` providers; it's swapped out for real HTTP services in prod, so the prod bundle will shrink, not grow. Revisit these budgets once mocks are gone.
+- 2026-08-12: Claims list got an Actions column not in the spec's column list, for consistency with the budget list (and to give a detail affordance). Budget/Claims "View" action is a placeholder toast until the detail screens (POC #5 / #12) land.
+- 2026-08-12: **Browser smoke test was BLOCKED this session** — the Claude-in-Chrome extension could not inject/screenshot ANY page (the trivial, unchanged `/login` failed identically on both the dev server and a production static serve), so it's an extension/CDP issue in this Chrome session, not app code. Runtime bootstrap + routing + `PermissionGuard` were still confirmed working (the SPA auto-redirected `/` → `/login` when unauthenticated). Build, lint, and prod build are all green. Left a static prod serve on `http://localhost:4301` for manual visual verification. **Phase 1 screens still need a human visual pass.**
