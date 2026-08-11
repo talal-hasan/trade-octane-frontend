@@ -1,0 +1,40 @@
+@use '../../../../styles/tokens' as t;
+
+.to-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--to-bg-0);
+}
+
+.to-login__panel {
+  width: 380px;
+  padding: t.$to-space-8;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-login__title {
+  font-size: t.$to-font-size-xl;
+  color: var(--to-text-primary);
+  margin-bottom: t.$to-space-2;
+}
+
+.to-login__subtitle {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+  margin-bottom: t.$to-space-6;
+}
+
+.to-login__roles {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+}
+
+.to-login__role-btn {
+  width: 100%;
+  justify-content: flex-start;
+}

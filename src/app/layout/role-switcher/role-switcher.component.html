@@ -1,0 +1,38 @@
+@if (useMocks) {
+  <div class="to-role-switcher">
+    @if (expanded()) {
+      <div class="to-role-switcher__panel">
+        <div class="to-role-switcher__header">
+          <span class="to-role-switcher__title">Switch role (mock)</span>
+          <span class="to-role-switcher__env-tag">MOCK DATA</span>
+        </div>
+        <ul class="to-role-switcher__list">
+          @for (role of authService.availableRoles; track role) {
+            <li>
+              <button
+                type="button"
+                class="to-role-switcher__item"
+                [class.to-role-switcher__item--active]="authService.activeRole() === role"
+                (click)="switchTo(role)"
+              >
+                {{ roleLabels[role] }}
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+    <button
+      type="button"
+      class="to-role-switcher__fab"
+      pButton
+      [rounded]="true"
+      (click)="toggle()"
+    >
+      <tabler-icon [icon]="icons['user']" [size]="18" />
+      <span class="to-role-switcher__fab-label">
+        {{ authService.activeRole() ? roleLabels[authService.activeRole()!] : 'No role' }}
+      </span>
+    </button>
+  </div>
+}

@@ -1,0 +1,127 @@
+@use '../../../styles/tokens' as t;
+@use '../../../styles/utilities' as u;
+
+.to-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.to-shell__topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 48px;
+  flex-shrink: 0;
+  padding: 0 t.$to-space-4;
+  background: var(--to-bg-1);
+  border-bottom: 1px solid var(--to-border);
+}
+
+.to-shell__topbar-left {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+}
+
+.to-shell__logo {
+  font-size: t.$to-font-size-md;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-shell__topbar-center {
+  display: flex;
+  justify-content: center;
+}
+
+.to-shell__search-trigger {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  width: 320px;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(border-color, background-color);
+
+  span {
+    flex: 1;
+    text-align: left;
+  }
+
+  kbd {
+    font-size: t.$to-font-size-2xs;
+    border: 1px solid var(--to-border-strong);
+    border-radius: t.$to-radius-control;
+    padding: 1px t.$to-space-2;
+  }
+
+  &:hover {
+    border-color: var(--to-border-strong);
+  }
+}
+
+.to-shell__topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: t.$to-space-3;
+}
+
+.to-shell__env-badge {
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-warning);
+  background: var(--to-warning-subtle);
+  border-radius: t.$to-radius-pill;
+  padding: 2px t.$to-space-2;
+}
+
+.to-shell__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+}
+
+.to-shell__avatar {
+  cursor: pointer;
+}
+
+.to-shell__notifications-empty {
+  padding: t.$to-space-4;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-sm;
+  width: 220px;
+  text-align: center;
+}
+
+.to-shell__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.to-shell__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--to-bg-0);
+}

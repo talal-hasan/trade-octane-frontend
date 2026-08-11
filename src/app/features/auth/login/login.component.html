@@ -1,0 +1,20 @@
+<div class="to-login">
+  <div class="to-login__panel">
+    <h1 class="to-login__title">Trade Octane</h1>
+    <p class="to-login__subtitle">Foundation-phase mock login — pick a role to continue.</p>
+
+    <div class="to-login__roles">
+      @for (role of roles; track role) {
+        <button
+          type="button"
+          pButton
+          class="to-login__role-btn"
+          [outlined]="true"
+          (click)="loginAs(role)"
+        >
+          {{ roleLabels[role] }}
+        </button>
+      }
+    </div>
+  </div>
+</div>

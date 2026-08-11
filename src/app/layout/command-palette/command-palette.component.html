@@ -1,0 +1,35 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visible.set($event)"
+  [modal]="true"
+  [showHeader]="false"
+  [style]="{ width: '560px', top: '-20vh' }"
+  styleClass="to-command-palette"
+>
+  <div class="to-command-palette__search">
+    <tabler-icon [icon]="icons['search']" [size]="18" />
+    <input
+      #searchInput
+      type="text"
+      class="to-command-palette__input"
+      placeholder="Search screens…"
+      [value]="query()"
+      (input)="onQueryInput($event)"
+      (keydown.escape)="close()"
+    />
+    <kbd class="to-command-palette__kbd">Esc</kbd>
+  </div>
+
+  <ul class="to-command-palette__results">
+    @for (item of results(); track item.route) {
+      <li>
+        <button type="button" class="to-command-palette__result" (click)="select(item)">
+          <tabler-icon [icon]="icons[item.icon]" [size]="16" />
+          <span>{{ item.label }}</span>
+        </button>
+      </li>
+    } @empty {
+      <li class="to-command-palette__empty">No screens match "{{ query() }}"</li>
+    }
+  </ul>
+</p-dialog>

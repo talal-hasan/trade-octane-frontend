@@ -1,0 +1,69 @@
+@use '../../../styles/tokens' as t;
+@use '../../../styles/utilities' as u;
+
+:host {
+  display: contents;
+}
+
+.to-command-palette__search {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+  color: var(--to-text-muted);
+}
+
+.to-command-palette__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: t.$to-font-size-md;
+  color: var(--to-text-primary);
+
+  &::placeholder {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-command-palette__kbd {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  padding: 2px t.$to-space-2;
+}
+
+.to-command-palette__results {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: t.$to-space-2;
+}
+
+.to-command-palette__result {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  width: 100%;
+  text-align: left;
+  padding: t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: none;
+  border: none;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: var(--to-bg-2);
+  }
+}
+
+.to-command-palette__empty {
+  padding: t.$to-space-4;
+  text-align: center;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-sm;
+}

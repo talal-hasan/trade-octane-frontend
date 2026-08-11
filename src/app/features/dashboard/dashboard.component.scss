@@ -1,0 +1,16 @@
+@use '../../../styles/tokens' as t;
+
+.to-dashboard {
+  padding: t.$to-space-6;
+}
+
+.to-dashboard__title {
+  font-size: t.$to-font-size-lg;
+  color: var(--to-text-primary);
+  margin-bottom: t.$to-space-2;
+}
+
+.to-dashboard__subtitle {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+}

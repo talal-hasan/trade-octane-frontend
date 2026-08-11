@@ -1,0 +1,93 @@
+@use '../../../styles/tokens' as t;
+@use '../../../styles/utilities' as u;
+
+.to-role-switcher {
+  position: fixed;
+  right: t.$to-space-6;
+  bottom: t.$to-space-6;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: t.$to-space-2;
+}
+
+.to-role-switcher__fab {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  background: var(--to-text-primary);
+  color: var(--to-bg-1);
+  border: none;
+  padding: t.$to-space-2 t.$to-space-4;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
+  @include u.motion(background-color, transform);
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.to-role-switcher__panel {
+  width: 240px;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+  overflow: hidden;
+}
+
+.to-role-switcher__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+}
+
+.to-role-switcher__title {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-role-switcher__env-tag {
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-warning);
+  background: var(--to-warning-subtle);
+  border-radius: t.$to-radius-pill;
+  padding: 2px t.$to-space-2;
+}
+
+.to-role-switcher__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.to-role-switcher__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: t.$to-space-3 t.$to-space-4;
+  background: none;
+  border: none;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: var(--to-bg-2);
+  }
+
+  &--active {
+    color: var(--to-accent);
+    font-weight: var(--to-font-weight-medium);
+    background: var(--to-accent-subtle);
+  }
+}

@@ -1,0 +1,64 @@
+<div class="to-shell">
+  <header class="to-shell__topbar">
+    <div class="to-shell__topbar-left">
+      <button type="button" class="to-shell__icon-btn" (click)="sidebarService.toggle()" aria-label="Toggle sidebar">
+        <tabler-icon [icon]="icons['menu']" [size]="20" />
+      </button>
+      <span class="to-shell__logo">Trade Octane</span>
+    </div>
+
+    <div class="to-shell__topbar-center">
+      <button type="button" class="to-shell__search-trigger" (click)="openCommandPalette()">
+        <tabler-icon [icon]="icons['search']" [size]="16" />
+        <span>Search screens…</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+    </div>
+
+    <div class="to-shell__topbar-right">
+      @if (useMocks) {
+        <span class="to-shell__env-badge">MOCK DATA</span>
+      }
+
+      <button
+        type="button"
+        class="to-shell__icon-btn"
+        (click)="toggleNotifications($event)"
+        aria-label="Notifications"
+      >
+        <tabler-icon [icon]="icons['bell']" [size]="18" />
+      </button>
+      <p-popover #notificationsPanel>
+        <div class="to-shell__notifications-empty">No new notifications.</div>
+      </p-popover>
+
+      <button
+        type="button"
+        class="to-shell__icon-btn"
+        (click)="toggleTheme()"
+        aria-label="Toggle dark mode"
+      >
+        <tabler-icon [icon]="theme() === 'dark' ? icons['sun'] : icons['moon']" [size]="18" />
+      </button>
+
+      <p-avatar
+        [label]="userInitials()"
+        shape="circle"
+        class="to-shell__avatar"
+        (click)="userMenu.toggle($event)"
+      />
+      <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+    </div>
+  </header>
+
+  <div class="to-shell__body">
+    <to-sidebar />
+    <main class="to-shell__content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <to-command-palette />
+  <to-role-switcher />
+  <p-scrolltop />
+</div>

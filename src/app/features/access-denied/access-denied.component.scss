@@ -1,0 +1,20 @@
+@use '../../../styles/tokens' as t;
+
+.to-access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: t.$to-space-3;
+  padding: t.$to-space-8;
+}
+
+.to-access-denied__title {
+  font-size: t.$to-font-size-lg;
+  color: var(--to-text-primary);
+}
+
+.to-access-denied__subtitle {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+  max-width: 480px;
+}

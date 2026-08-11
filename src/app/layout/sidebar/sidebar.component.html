@@ -1,0 +1,32 @@
+<nav class="to-sidebar" [class.to-sidebar--collapsed]="collapsed()">
+  <div class="to-sidebar__sections">
+    @for (section of sections(); track section.label ?? $index) {
+      <div class="to-sidebar__section">
+        @if (section.label && !collapsed()) {
+          <div class="to-sidebar__section-label">{{ section.label }}</div>
+        }
+        @for (item of section.items; track item.route) {
+          <a
+            class="to-sidebar__item"
+            [routerLink]="item.route"
+            routerLinkActive="to-sidebar__item--active"
+            [pTooltip]="collapsed() ? item.label : undefined"
+            tooltipPosition="right"
+          >
+            <tabler-icon [icon]="icons[item.icon]" [size]="18" class="to-sidebar__item-icon" />
+            @if (!collapsed()) {
+              <span class="to-sidebar__item-label">{{ item.label }}</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </div>
+
+  <button type="button" class="to-sidebar__collapse" (click)="toggle()">
+    <tabler-icon [icon]="collapsed() ? icons['chevrons-right'] : icons['chevrons-left']" [size]="16" />
+    @if (!collapsed()) {
+      <span>Collapse</span>
+    }
+  </button>
+</nav>
