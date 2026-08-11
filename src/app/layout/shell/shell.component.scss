@@ -16,12 +16,43 @@
   padding: 0 t.$to-space-4;
   background: var(--to-bg-1);
   border-bottom: 1px solid var(--to-border);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+  position: relative;
+  z-index: 20;
 }
 
 .to-shell__topbar-left {
   display: flex;
   align-items: center;
   gap: t.$to-space-3;
+}
+
+.to-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  text-decoration: none;
+  outline: none;
+  border-radius: t.$to-radius-control;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+}
+
+.to-shell__brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-accent);
+  color: #fff;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 
 .to-shell__logo {
@@ -47,7 +78,7 @@
   color: var(--to-text-muted);
   font-size: t.$to-font-size-sm;
   cursor: pointer;
-  @include u.motion(border-color, background-color);
+  @include u.motion(border-color, background-color, box-shadow);
 
   span {
     flex: 1;
@@ -56,14 +87,30 @@
 
   kbd {
     font-size: t.$to-font-size-2xs;
+    font-family: inherit;
+    color: var(--to-text-muted);
+    background: var(--to-bg-1);
     border: 1px solid var(--to-border-strong);
     border-radius: t.$to-radius-control;
     padding: 1px t.$to-space-2;
+    line-height: 1.6;
   }
 
   &:hover {
     border-color: var(--to-border-strong);
+    background: var(--to-bg-1);
   }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--to-accent);
+    box-shadow: 0 0 0 3px var(--to-accent-subtle);
+  }
+}
+
+.to-shell__search-icon {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
 }
 
 .to-shell__topbar-right {
@@ -74,12 +121,24 @@
 }
 
 .to-shell__env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
   font-size: t.$to-font-size-2xs;
   font-weight: var(--to-font-weight-medium);
+  letter-spacing: 0.03em;
   color: var(--to-warning);
   background: var(--to-warning-subtle);
   border-radius: t.$to-radius-pill;
-  padding: 2px t.$to-space-2;
+  padding: 3px t.$to-space-2;
+}
+
+.to-shell__env-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-warning);
+  flex-shrink: 0;
 }
 
 .to-shell__icon-btn {
@@ -93,11 +152,40 @@
   border-radius: t.$to-radius-control;
   color: var(--to-text-secondary);
   cursor: pointer;
-  @include u.motion(background-color, color);
+  @include u.motion(background-color, color, transform);
 
   &:hover {
     background: var(--to-bg-2);
     color: var(--to-text-primary);
+  }
+
+  &:active {
+    transform: scale(0.93);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+}
+
+.to-shell__avatar-btn {
+  display: flex;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-pill;
+  cursor: pointer;
+  @include u.motion(box-shadow);
+
+  &:hover .p-avatar {
+    box-shadow: 0 0 0 2px var(--to-border-strong);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+    border-radius: t.$to-radius-pill;
   }
 }
 
@@ -106,11 +194,29 @@
 }
 
 .to-shell__notifications-empty {
-  padding: t.$to-space-4;
-  color: var(--to-text-muted);
-  font-size: t.$to-font-size-sm;
-  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-6 t.$to-space-4;
+  width: 240px;
   text-align: center;
+}
+
+.to-shell__notifications-empty-icon {
+  color: var(--to-text-muted);
+  margin-bottom: t.$to-space-2;
+}
+
+.to-shell__notifications-empty-title {
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-shell__notifications-empty-desc {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
 }
 
 .to-shell__body {

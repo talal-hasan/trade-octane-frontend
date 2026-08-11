@@ -1,7 +1,26 @@
 <div class="to-dashboard">
-  <h1 class="to-dashboard__title">Welcome, {{ authService.currentUser().name }}</h1>
-  <p class="to-dashboard__subtitle">
-    Dashboard / approvals inbox — Phase 1. The shell, RBAC, and navigation you're seeing
-    are Phase 0 foundation.
-  </p>
+  <div class="to-dashboard__header">
+    <p class="to-dashboard__eyebrow">{{ greeting() }}</p>
+    <h1 class="to-dashboard__title">{{ authService.currentUser().name }}</h1>
+    <p class="to-dashboard__subtitle">
+      The shell, RBAC and navigation you're seeing are Phase 0 foundation. The approvals
+      inbox below arrives in Phase 1.
+    </p>
+  </div>
+
+  <div class="to-dashboard__section-label">Coming in Phase 1</div>
+  <div class="to-dashboard__grid">
+    @for (widget of upcomingWidgets; track widget.title) {
+      <div class="to-dashboard__card">
+        <div class="to-dashboard__card-icon">
+          <tabler-icon [icon]="icons[widget.icon]" [size]="18" />
+        </div>
+        <div class="to-dashboard__card-body">
+          <span class="to-dashboard__card-title">{{ widget.title }}</span>
+          <span class="to-dashboard__card-desc">{{ widget.description }}</span>
+        </div>
+        <span class="to-dashboard__card-badge">Phase 1</span>
+      </div>
+    }
+  </div>
 </div>

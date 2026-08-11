@@ -14,6 +14,20 @@
   color: var(--to-text-muted);
 }
 
+.to-command-palette__search-icon {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
+}
+
+.to-command-palette__hint {
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .to-command-palette__input {
   flex: 1;
   border: none;
@@ -38,7 +52,7 @@
 .to-command-palette__results {
   max-height: 360px;
   overflow-y: auto;
-  padding: t.$to-space-2;
+  padding: 0 t.$to-space-2 t.$to-space-2;
 }
 
 .to-command-palette__result {
@@ -47,7 +61,7 @@
   gap: t.$to-space-3;
   width: 100%;
   text-align: left;
-  padding: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
   border-radius: t.$to-radius-control;
   background: none;
   border: none;
@@ -56,14 +70,54 @@
   cursor: pointer;
   @include u.motion(background-color);
 
-  &:hover {
-    background: var(--to-bg-2);
+  &--active {
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+
+    .to-command-palette__result-icon {
+      color: var(--to-accent);
+    }
+
+    .to-command-palette__result-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 }
 
+.to-command-palette__result-icon {
+  display: flex;
+  align-items: center;
+  color: var(--to-text-muted);
+  flex-shrink: 0;
+  @include u.motion(color);
+}
+
+.to-command-palette__result-label {
+  flex: 1;
+  @include u.truncate;
+}
+
+.to-command-palette__result-arrow {
+  flex-shrink: 0;
+  color: var(--to-accent);
+  opacity: 0;
+  transform: translateX(-2px);
+  @include u.motion(opacity, transform);
+}
+
 .to-command-palette__empty {
-  padding: t.$to-space-4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-8 t.$to-space-4;
   text-align: center;
   color: var(--to-text-muted);
   font-size: t.$to-font-size-sm;
+}
+
+.to-command-palette__empty-icon {
+  color: var(--to-text-muted);
+  opacity: 0.6;
 }

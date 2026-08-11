@@ -34,10 +34,12 @@
 }
 
 // Same warning hue as "pending" so it stays within the semantic palette, but the icon
-// (see component) is what makes it visually distinct and unmissable.
+// (see component) plus a hairline ring is what makes it visually distinct and unmissable
+// even at a glance in a dense table (CLAUDE.md §8: "never silent").
 .to-status--needs-attention {
   color: var(--to-warning);
   background: var(--to-warning-subtle);
+  box-shadow: inset 0 0 0 1px rgb(138 96 0 / 25%);
 }
 
 .to-status-pill__icon {

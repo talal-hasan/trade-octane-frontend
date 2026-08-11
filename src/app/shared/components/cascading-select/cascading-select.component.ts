@@ -1,6 +1,9 @@
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TablerIconComponent } from '@tabler/icons-angular';
 import { SelectModule } from 'primeng/select';
+
+import { ICON_REGISTRY } from '../../icon-registry';
 
 export interface CascadeLevel {
   key: string;
@@ -17,7 +20,7 @@ export interface CascadeLevel {
 @Component({
   selector: 'to-cascading-select',
   standalone: true,
-  imports: [SelectModule, FormsModule],
+  imports: [SelectModule, FormsModule, TablerIconComponent],
   templateUrl: './cascading-select.component.html',
   styleUrl: './cascading-select.component.scss',
 })
@@ -26,8 +29,15 @@ export class CascadingSelectComponent {
   readonly values = input<Record<string, string | null>>({});
   readonly valueChange = output<{ key: string; value: string | null }>();
 
+  protected readonly chevronIcon = ICON_REGISTRY['chevron-right'];
+  protected readonly checkIcon = ICON_REGISTRY['check'];
+
   protected valueFor(key: string): string | null {
     return this.values()[key] ?? null;
+  }
+
+  protected isFilled(key: string): boolean {
+    return this.valueFor(key) != null;
   }
 
   // A level is disabled until every level before it has a non-null value — enforces the

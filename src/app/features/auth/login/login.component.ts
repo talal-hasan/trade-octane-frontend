@@ -2,13 +2,9 @@ import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 
+import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
-import { ROLE_LABELS, Role } from '../../../core/models/role.model';
 
-// Foundation-phase stub. CLAUDE.md §3 specifies the real login screen as a
-// branded split-panel with "Sign in with Friesland Campina" — that's Phase 1
-// item #1. This stub exists only so PermissionGuard has somewhere to redirect
-// to and the shell is reachable during Phase 0 verification.
 @Component({
   selector: 'to-login',
   standalone: true,
@@ -20,11 +16,15 @@ export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  protected readonly roleLabels = ROLE_LABELS;
-  protected readonly roles = this.authService.availableRoles;
+  protected readonly useMocks = environment.useMocks;
 
-  loginAs(role: Role): void {
-    this.authService.loginAs(role);
+  signIn(): void {
+    // Mock auth: signs in as the first available role. Real OIDC flow (Keycloak
+    // or Entra ID, CLAUDE.md §3) replaces this call without touching the template.
+    const [defaultRole] = this.authService.availableRoles;
+    if (defaultRole) {
+      this.authService.loginAs(defaultRole);
+    }
     this.router.navigateByUrl('/dashboard');
   }
 }

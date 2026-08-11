@@ -52,6 +52,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: t.$to-space-4;
+  padding-bottom: t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
 }
 
 .to-page-header__titles {

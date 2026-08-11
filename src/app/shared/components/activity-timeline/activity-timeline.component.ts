@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 
 import { RelativeDatePipe } from '../../pipes/relative-date.pipe';
+import { EmptyStateComponent } from '../empty-state/empty-state.component';
 
 export interface ActivityEntry {
   actor: string;
@@ -14,7 +15,7 @@ export interface ActivityEntry {
 @Component({
   selector: 'to-activity-timeline',
   standalone: true,
-  imports: [RelativeDatePipe],
+  imports: [RelativeDatePipe, EmptyStateComponent],
   templateUrl: './activity-timeline.component.html',
   styleUrl: './activity-timeline.component.scss',
 })

@@ -32,6 +32,10 @@
   background: var(--to-success);
 }
 
+.to-approval-chain__step--rejected:not(:last-child)::before {
+  background: var(--to-danger);
+}
+
 .to-approval-chain__dot {
   position: relative;
   z-index: 1;
@@ -71,6 +75,14 @@
   flex: 1 1 auto;
   min-width: 0;
   padding-top: 2px;
+  border-radius: t.$to-radius-card;
+  @include u.motion(background-color);
+}
+
+.to-approval-chain__step--current .to-approval-chain__body {
+  background: var(--to-accent-subtle);
+  padding: t.$to-space-3 t.$to-space-4;
+  margin: -#{t.$to-space-2} 0 0 -#{t.$to-space-1};
 }
 
 .to-approval-chain__header {
@@ -112,13 +124,29 @@
 }
 
 .to-approval-chain__status-label {
-  font-size: t.$to-font-size-xs;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
   color: var(--to-text-muted);
+  background: var(--to-bg-2);
+}
+
+.to-approval-chain__step--approved .to-approval-chain__status-label {
+  color: var(--to-success);
+  background: var(--to-success-subtle);
+}
+
+.to-approval-chain__step--rejected .to-approval-chain__status-label {
+  color: var(--to-danger);
+  background: var(--to-danger-subtle);
 }
 
 .to-approval-chain__step--current .to-approval-chain__status-label {
   color: var(--to-accent-text);
-  font-weight: var(--to-font-weight-medium);
+  background: var(--to-accent-subtle);
 }
 
 .to-approval-chain__time {

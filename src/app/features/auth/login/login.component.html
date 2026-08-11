@@ -1,20 +1,38 @@
 <div class="to-login">
-  <div class="to-login__panel">
-    <h1 class="to-login__title">Trade Octane</h1>
-    <p class="to-login__subtitle">Foundation-phase mock login — pick a role to continue.</p>
+  <div class="to-login__brand">
+    <div class="to-login__brand-content">
+      <div class="to-login__brand-mark">TO</div>
+      <h1 class="to-login__brand-title">Trade Octane</h1>
+      <p class="to-login__brand-tagline">Trade marketing, unified — budgets, schemes, claims and distribution in one place.</p>
 
-    <div class="to-login__roles">
-      @for (role of roles; track role) {
-        <button
-          type="button"
-          pButton
-          class="to-login__role-btn"
-          [outlined]="true"
-          (click)="loginAs(role)"
-        >
-          {{ roleLabels[role] }}
-        </button>
+      <ul class="to-login__brand-points">
+        <li>Live budget headroom, cascaded by region, brand and SKU</li>
+        <li>Dynamic approval chains across every workflow</li>
+        <li>One inbox for pending decisions, not five inboxes</li>
+      </ul>
+    </div>
+    <div class="to-login__brand-grid" aria-hidden="true"></div>
+  </div>
+
+  <div class="to-login__panel">
+    <div class="to-login__card">
+      <div class="to-login__card-mark">TO</div>
+      <h2 class="to-login__title">Welcome back</h2>
+      <p class="to-login__subtitle">Sign in to continue to Trade Octane.</p>
+
+      <button type="button" pButton class="to-login__signin-btn" (click)="signIn()">
+        <span class="to-login__signin-icon">FC</span>
+        Sign in with Friesland Campina
+      </button>
+
+      @if (useMocks) {
+        <div class="to-login__mock-note">
+          <span class="to-login__mock-dot"></span>
+          Mock authentication — role can be switched from the dev panel after sign-in.
+        </div>
       }
     </div>
+
+    <p class="to-login__footer">© 2026 Friesland Campina — Trade Octane internal platform</p>
   </div>
 </div>

@@ -5,9 +5,19 @@
 />
 
 <div class="to-style-guide">
+  <nav class="to-style-guide__nav" aria-label="Component sections">
+    <span class="to-style-guide__nav-label">Components</span>
+    <ul class="to-style-guide__nav-list">
+      @for (section of navSections; track section.id) {
+        <li><a [href]="'#' + section.id">{{ section.label }}</a></li>
+      }
+    </ul>
+  </nav>
+
+  <div class="to-style-guide__content">
   <!-- Approval Chain -->
-  <section class="to-style-guide__section">
-    <h2>Approval Chain</h2>
+  <section class="to-style-guide__section" id="approval-chain">
+    <h2><span class="to-style-guide__index">01</span>Approval Chain</h2>
     <p class="to-style-guide__desc">
       Used across Budget, Scheme, Promotion and Claims. Inline approve/reject only on the
       current step, when <code>canApprove</code> is true.
@@ -31,8 +41,8 @@
   </section>
 
   <!-- Cascading Select -->
-  <section class="to-style-guide__section">
-    <h2>Cascading Select</h2>
+  <section class="to-style-guide__section" id="cascading-select">
+    <h2><span class="to-style-guide__index">02</span>Cascading Select</h2>
     <p class="to-style-guide__desc">
       Year → Region → Brand pattern. Each level filters the next; downstream levels clear
       automatically when an upstream level changes.
@@ -48,8 +58,8 @@
   </section>
 
   <!-- Bulk Uploader -->
-  <section class="to-style-guide__section">
-    <h2>Bulk Uploader</h2>
+  <section class="to-style-guide__section" id="bulk-uploader">
+    <h2><span class="to-style-guide__index">03</span>Bulk Uploader</h2>
     <p class="to-style-guide__desc">
       Drop a .csv with <code>discount</code> and <code>liters</code> columns to see client-side
       row validation. .xlsx/.xls are accepted but parsing lands in Phase 1.
@@ -60,8 +70,8 @@
   </section>
 
   <!-- Data Table -->
-  <section class="to-style-guide__section">
-    <h2>Data Table</h2>
+  <section class="to-style-guide__section" id="data-table">
+    <h2><span class="to-style-guide__index">04</span>Data Table</h2>
     <p class="to-style-guide__desc">
       Server-side pagination/sort intent, column show/hide, bulk select, export, sticky first
       column. Pure display layer — the parent owns the query.
@@ -81,8 +91,8 @@
   </section>
 
   <!-- Status Pill -->
-  <section class="to-style-guide__section">
-    <h2>Status Pill</h2>
+  <section class="to-style-guide__section" id="status-pill">
+    <h2><span class="to-style-guide__index">05</span>Status Pill</h2>
     <p class="to-style-guide__desc">Subtle background pattern only — never a saturated fill.</p>
     <div class="to-style-guide__demo to-style-guide__row">
       @for (status of statuses; track status) {
@@ -92,8 +102,8 @@
   </section>
 
   <!-- Page Header -->
-  <section class="to-style-guide__section">
-    <h2>Page Header</h2>
+  <section class="to-style-guide__section" id="page-header">
+    <h2><span class="to-style-guide__index">06</span>Page Header</h2>
     <p class="to-style-guide__desc">
       Title + breadcrumb + action slot. This page's own header above is an instance of it.
     </p>
@@ -109,8 +119,8 @@
   </section>
 
   <!-- Filter Bar -->
-  <section class="to-style-guide__section">
-    <h2>Filter Bar</h2>
+  <section class="to-style-guide__section" id="filter-bar">
+    <h2><span class="to-style-guide__index">07</span>Filter Bar</h2>
     <p class="to-style-guide__desc">Chip-based active filters with clear-all and saved presets.</p>
     <div class="to-style-guide__demo">
       <to-filter-bar
@@ -129,8 +139,8 @@
   </section>
 
   <!-- Headroom Bar -->
-  <section class="to-style-guide__section">
-    <h2>Headroom Bar</h2>
+  <section class="to-style-guide__section" id="headroom-bar">
+    <h2><span class="to-style-guide__index">08</span>Headroom Bar</h2>
     <p class="to-style-guide__desc">Budget remaining visualisation — flips to danger on overrun.</p>
     <div class="to-style-guide__demo to-style-guide__stack">
       <to-headroom-bar [total]="headroomTotal" [consumed]="headroomConsumed" [pending]="headroomPending" />
@@ -139,8 +149,8 @@
   </section>
 
   <!-- Pipeline Stage -->
-  <section class="to-style-guide__section">
-    <h2>Pipeline Stage</h2>
+  <section class="to-style-guide__section" id="pipeline-stage">
+    <h2><span class="to-style-guide__index">09</span>Pipeline Stage</h2>
     <p class="to-style-guide__desc">VBase → Trade Spend → Pujar — configurable stage list.</p>
     <div class="to-style-guide__demo to-style-guide__stack">
       <to-pipeline-stage [stages]="claimsStages" [currentStageIndex]="1" variant="horizontal" />
@@ -149,8 +159,8 @@
   </section>
 
   <!-- Confirm Dialog -->
-  <section class="to-style-guide__section">
-    <h2>Confirm Dialog</h2>
+  <section class="to-style-guide__section" id="confirm-dialog">
+    <h2><span class="to-style-guide__index">10</span>Confirm Dialog</h2>
     <p class="to-style-guide__desc">PrimeNG Dialog wrapper, always used for destructive actions.</p>
     <div class="to-style-guide__demo">
       <button type="button" pButton severity="danger" (click)="confirmVisible.set(true)">
@@ -173,8 +183,8 @@
   </section>
 
   <!-- Empty State -->
-  <section class="to-style-guide__section">
-    <h2>Empty State</h2>
+  <section class="to-style-guide__section" id="empty-state">
+    <h2><span class="to-style-guide__index">11</span>Empty State</h2>
     <p class="to-style-guide__desc">Icon + heading + description + optional projected action.</p>
     <div class="to-style-guide__demo">
       <to-empty-state icon="inbox" heading="No claims yet" description="Claims you submit will show up here.">
@@ -184,8 +194,8 @@
   </section>
 
   <!-- Skeleton Loader -->
-  <section class="to-style-guide__section">
-    <h2>Skeleton Loader</h2>
+  <section class="to-style-guide__section" id="skeleton-loader">
+    <h2><span class="to-style-guide__index">12</span>Skeleton Loader</h2>
     <p class="to-style-guide__desc">Matches the layout of the content it's loading.</p>
     <div class="to-style-guide__demo to-style-guide__row">
       <to-skeleton variant="circle" width="40px" />
@@ -197,8 +207,8 @@
   </section>
 
   <!-- Activity Timeline -->
-  <section class="to-style-guide__section">
-    <h2>Activity Timeline</h2>
+  <section class="to-style-guide__section" id="activity-timeline">
+    <h2><span class="to-style-guide__index">13</span>Activity Timeline</h2>
     <p class="to-style-guide__desc">Audit trail — used on approval detail screens for remarks history.</p>
     <div class="to-style-guide__demo">
       <to-activity-timeline [entries]="activityEntries" />
@@ -206,8 +216,8 @@
   </section>
 
   <!-- Number Display -->
-  <section class="to-style-guide__section">
-    <h2>Number Display</h2>
+  <section class="to-style-guide__section" id="number-display">
+    <h2><span class="to-style-guide__index">14</span>Number Display</h2>
     <p class="to-style-guide__desc">Tabular-nums, PKR formatting, sign colouring for +/- values.</p>
     <div class="to-style-guide__demo to-style-guide__row">
       <to-number [value]="1250000" format="pkr" />
@@ -217,4 +227,5 @@
       <to-number [value]="null" format="pkr" />
     </div>
   </section>
+  </div>
 </div>

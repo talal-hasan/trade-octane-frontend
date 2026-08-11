@@ -1,6 +1,7 @@
 <div class="to-filter-bar">
   <div class="to-filter-bar__controls">
     <div class="to-filter-bar__filters">
+      <tabler-icon [icon]="icons['filter']" [size]="14" class="to-filter-bar__icon" />
       <ng-content select="[filters]" />
     </div>
 
@@ -21,7 +22,10 @@
     <div class="to-filter-bar__chips">
       @for (chip of chips(); track chip.key) {
         <span class="to-filter-bar__chip">
-          <span class="to-filter-bar__chip-label">{{ chip.label }}: {{ chip.value }}</span>
+          <span class="to-filter-bar__chip-label"
+            ><strong>{{ chip.label }}</strong
+            >: {{ chip.value }}</span
+          >
           <button
             type="button"
             class="to-filter-bar__chip-remove"

@@ -8,7 +8,9 @@
         (dragleave)="onDragLeave($event)"
         (drop)="onDrop($event)"
       >
-        <tabler-icon [icon]="uploadIcon" [size]="32" class="to-bulk-uploader__dropzone-icon" />
+        <div class="to-bulk-uploader__dropzone-icon-wrap">
+          <tabler-icon [icon]="uploadIcon" [size]="24" class="to-bulk-uploader__dropzone-icon" />
+        </div>
         <p class="to-bulk-uploader__dropzone-title">Drag and drop a file here</p>
         <label class="to-bulk-uploader__browse-button">
           Browse files
@@ -111,13 +113,17 @@
 
     @case ('done') {
       <div class="to-bulk-uploader__done">
-        <tabler-icon
-          [icon]="failureCount() > 0 ? alertIcon : successIcon"
-          [size]="32"
-          class="to-bulk-uploader__done-icon"
-          [class.to-bulk-uploader__done-icon--danger]="failureCount() > 0"
-          [class.to-bulk-uploader__done-icon--success]="failureCount() === 0"
-        />
+        <div
+          class="to-bulk-uploader__done-icon-wrap"
+          [class.to-bulk-uploader__done-icon-wrap--danger]="failureCount() > 0"
+          [class.to-bulk-uploader__done-icon-wrap--success]="failureCount() === 0"
+        >
+          <tabler-icon
+            [icon]="failureCount() > 0 ? alertIcon : successIcon"
+            [size]="24"
+            class="to-bulk-uploader__done-icon"
+          />
+        </div>
         <p class="to-bulk-uploader__done-summary">
           {{ successCount() }} of {{ finalResults().length }} rows submitted successfully
           @if (failureCount() > 0) {

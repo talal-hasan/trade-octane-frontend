@@ -3,18 +3,41 @@
 .to-access-denied {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: t.$to-space-3;
+  min-height: calc(100vh - 48px);
   padding: t.$to-space-8;
+  text-align: center;
+}
+
+.to-access-denied__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: t.$to-radius-modal;
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+  margin-bottom: t.$to-space-2;
 }
 
 .to-access-denied__title {
   font-size: t.$to-font-size-lg;
+  font-weight: var(--to-font-weight-medium);
   color: var(--to-text-primary);
+  margin: 0;
 }
 
 .to-access-denied__subtitle {
   font-size: t.$to-font-size-sm;
+  line-height: var(--to-line-height-body);
   color: var(--to-text-secondary);
-  max-width: 480px;
+  max-width: 380px;
+  margin: 0;
+}
+
+.to-access-denied__action {
+  margin-top: t.$to-space-4;
 }

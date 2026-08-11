@@ -1,7 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { TablerIconComponent } from '@tabler/icons-angular';
 import type { MenuItem } from 'primeng/api';
 import { ContextMenuModule } from 'primeng/contextmenu';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -10,8 +9,9 @@ import { TableModule } from 'primeng/table';
 import type { TablePageEvent } from 'primeng/table';
 
 import { FormatService } from '../../../core/services/format.service';
-import { ICON_REGISTRY } from '../../icon-registry';
 import { PkrCurrencyPipe } from '../../pipes/pkr-currency.pipe';
+import { EmptyStateComponent } from '../empty-state/empty-state.component';
+import { SkeletonComponent } from '../skeleton/skeleton.component';
 
 export type DataTableColumnType = 'text' | 'number' | 'currency' | 'date' | 'status';
 
@@ -51,8 +51,9 @@ const NUMERIC_COLUMN_TYPES: ReadonlySet<DataTableColumnType> = new Set(['number'
     ContextMenuModule,
     SplitButtonModule,
     ReactiveFormsModule,
-    TablerIconComponent,
     PkrCurrencyPipe,
+    EmptyStateComponent,
+    SkeletonComponent,
   ],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
@@ -102,8 +103,6 @@ export class DataTableComponent {
     const hidden = new Set(this.hiddenColumnKeysList());
     return this.columns().filter((column) => !hidden.has(column.key));
   });
-
-  protected readonly emptyIcon = ICON_REGISTRY['inbox'];
 
   // Main split-button action exports the most commonly requested format; the dropdown
   // covers the rest — matches the Stripe/Linear pattern of "primary action + overflow".

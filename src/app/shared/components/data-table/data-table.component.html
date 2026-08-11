@@ -124,35 +124,31 @@
       </tr>
     </ng-template>
 
-    <!-- [PENDING: swap for to-skeleton once confirmed present — inlined pulsing blocks for now] -->
     <ng-template #loadingbody>
       @for (i of skeletonRowIndexes(); track i) {
         <tr class="to-data-table__skeleton-row">
           @if (selectable()) {
             <td class="to-data-table__checkbox-cell">
-              <span class="to-data-table__skeleton-block" style="width: 16px;"></span>
+              <to-skeleton variant="rect" width="16px" height="16px" />
             </td>
           }
           @for (col of visibleColumns(); track col.key) {
             <td>
-              <span class="to-data-table__skeleton-block"></span>
+              <to-skeleton variant="text" [width]="isNumericColumn(col) ? '60%' : '80%'" />
             </td>
           }
         </tr>
       }
     </ng-template>
 
-    <!-- [PENDING: swap for to-empty-state once confirmed present — inlined icon+text for now] -->
     <ng-template #emptymessage>
       <tr>
         <td [attr.colspan]="visibleColumns().length + (selectable() ? 1 : 0)">
-          <div class="to-data-table__empty">
-            <tabler-icon [icon]="emptyIcon" [size]="28" class="to-data-table__empty-icon" />
-            <p class="to-data-table__empty-heading">No records found</p>
-            <p class="to-data-table__empty-description">
-              Try adjusting your filters, or check back later.
-            </p>
-          </div>
+          <to-empty-state
+            icon="inbox"
+            heading="No records found"
+            description="Try adjusting your filters, or check back later."
+          />
         </td>
       </tr>
     </ng-template>

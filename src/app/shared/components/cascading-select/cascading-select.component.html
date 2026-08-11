@@ -1,9 +1,12 @@
 <div class="to-cascading-select">
-  @for (level of levels(); track level.key; let i = $index) {
+  @for (level of levels(); track level.key; let i = $index; let last = $last) {
     <div class="to-cascading-select__level">
-      <label class="to-cascading-select__label" [for]="'to-cascade-' + level.key">{{
-        level.label
-      }}</label>
+      <label class="to-cascading-select__label" [for]="'to-cascade-' + level.key">
+        {{ level.label }}
+        @if (isFilled(level.key)) {
+          <tabler-icon [icon]="checkIcon" [size]="12" class="to-cascading-select__label-check" />
+        }
+      </label>
       <p-select
         [inputId]="'to-cascade-' + level.key"
         class="to-cascading-select__control"
@@ -16,5 +19,8 @@
         (ngModelChange)="onLevelChange(i, $event)"
       />
     </div>
+    @if (!last) {
+      <tabler-icon [icon]="chevronIcon" [size]="14" class="to-cascading-select__connector" />
+    }
   }
 </div>

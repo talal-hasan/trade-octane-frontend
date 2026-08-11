@@ -14,6 +14,7 @@
   height: t.$to-space-3;
   border-radius: t.$to-radius-pill;
   background: var(--to-bg-2);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 6%);
   overflow: hidden;
 }
 
@@ -93,8 +94,12 @@
 .to-headroom-bar__error {
   display: flex;
   align-items: center;
-  gap: t.$to-space-1;
+  gap: t.$to-space-2;
   margin: 0;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-danger-subtle);
+  border-radius: t.$to-radius-control;
   color: var(--to-danger);
   font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
 }

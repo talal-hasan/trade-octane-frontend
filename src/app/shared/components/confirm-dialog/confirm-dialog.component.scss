@@ -12,6 +12,18 @@
   padding: t.$to-space-6 t.$to-space-6 t.$to-space-2;
 }
 
+.to-confirm-dialog__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: t.$to-radius-card;
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+  margin-bottom: t.$to-space-4;
+}
+
 .to-confirm-dialog__title {
   margin: 0 0 t.$to-space-2;
   font-size: t.$to-font-size-lg;

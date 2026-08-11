@@ -1,16 +1,108 @@
 @use '../../../styles/tokens' as t;
+@use '../../../styles/utilities' as u;
 
 .to-dashboard {
-  padding: t.$to-space-6;
+  padding: t.$to-space-8 t.$to-space-6;
+  max-width: 960px;
+}
+
+.to-dashboard__header {
+  margin-bottom: t.$to-space-8;
+}
+
+.to-dashboard__eyebrow {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-muted);
+  margin: 0 0 t.$to-space-1;
 }
 
 .to-dashboard__title {
-  font-size: t.$to-font-size-lg;
+  font-size: t.$to-font-size-xl;
+  line-height: var(--to-line-height-heading);
+  font-weight: var(--to-font-weight-medium);
   color: var(--to-text-primary);
-  margin-bottom: t.$to-space-2;
+  margin: 0 0 t.$to-space-2;
 }
 
 .to-dashboard__subtitle {
   font-size: t.$to-font-size-sm;
+  line-height: var(--to-line-height-body);
   color: var(--to-text-secondary);
+  max-width: 560px;
+  margin: 0;
+}
+
+.to-dashboard__section-label {
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: t.$to-space-3;
+}
+
+.to-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: t.$to-space-4;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.to-dashboard__card {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-3;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px dashed var(--to-border-strong);
+  border-radius: t.$to-radius-card;
+  @include u.motion(border-color);
+
+  &:hover {
+    border-color: var(--to-accent);
+  }
+}
+
+.to-dashboard__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  color: var(--to-text-secondary);
+}
+
+.to-dashboard__card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.to-dashboard__card-title {
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-dashboard__card-desc {
+  font-size: t.$to-font-size-xs;
+  line-height: var(--to-line-height-body);
+  color: var(--to-text-muted);
+}
+
+.to-dashboard__card-badge {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-info);
+  background: var(--to-info-subtle);
+  border-radius: t.$to-radius-pill;
+  padding: 2px t.$to-space-2;
 }

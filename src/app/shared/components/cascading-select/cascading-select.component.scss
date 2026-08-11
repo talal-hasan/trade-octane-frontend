@@ -28,10 +28,28 @@
 }
 
 .to-cascading-select__label {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
   font-size: t.$to-font-size-xs;
   color: var(--to-text-secondary);
 }
 
+.to-cascading-select__label-check {
+  color: var(--to-success);
+}
+
 .to-cascading-select__control {
   width: 100%;
+}
+
+.to-cascading-select__connector {
+  align-self: center;
+  color: var(--to-text-muted);
+  margin-bottom: t.$to-space-2;
+  flex-shrink: 0;
+
+  @include u.respond-to(tablet) {
+    display: none;
+  }
 }

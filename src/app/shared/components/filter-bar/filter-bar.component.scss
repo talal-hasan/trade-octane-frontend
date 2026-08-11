@@ -30,6 +30,11 @@
   flex-wrap: wrap;
 }
 
+.to-filter-bar__icon {
+  color: var(--to-text-muted);
+  flex-shrink: 0;
+}
+
 .to-filter-bar__presets {
   min-width: 180px;
   flex-shrink: 0;
@@ -59,6 +64,10 @@
 .to-filter-bar__chip-label {
   @include u.truncate;
   max-width: 220px;
+
+  strong {
+    font-weight: var(--to-font-weight-medium);
+  }
 }
 
 .to-filter-bar__chip-remove {

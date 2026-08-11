@@ -62,6 +62,26 @@ interface MockBudgetRow {
   styleUrl: './style-guide.component.scss',
 })
 export class StyleGuideComponent {
+  // ─── Quick nav ──────────────────────────────────────────────
+  // Static list mirroring the <section id="…"> anchors below — this page IS the
+  // reference, so the nav order matches the template's read order top to bottom.
+  protected readonly navSections: { id: string; label: string }[] = [
+    { id: 'approval-chain', label: 'Approval Chain' },
+    { id: 'cascading-select', label: 'Cascading Select' },
+    { id: 'bulk-uploader', label: 'Bulk Uploader' },
+    { id: 'data-table', label: 'Data Table' },
+    { id: 'status-pill', label: 'Status Pill' },
+    { id: 'page-header', label: 'Page Header' },
+    { id: 'filter-bar', label: 'Filter Bar' },
+    { id: 'headroom-bar', label: 'Headroom Bar' },
+    { id: 'pipeline-stage', label: 'Pipeline Stage' },
+    { id: 'confirm-dialog', label: 'Confirm Dialog' },
+    { id: 'empty-state', label: 'Empty State' },
+    { id: 'skeleton-loader', label: 'Skeleton Loader' },
+    { id: 'activity-timeline', label: 'Activity Timeline' },
+    { id: 'number-display', label: 'Number Display' },
+  ];
+
   // ─── Status Pill ──────────────────────────────────────────
   protected readonly statuses: StatusPillStatus[] = [
     'approved',

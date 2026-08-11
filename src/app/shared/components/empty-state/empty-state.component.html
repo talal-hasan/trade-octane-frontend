@@ -1,5 +1,7 @@
 <div class="to-empty-state">
-  <tabler-icon [icon]="iconData()" [size]="40" [stroke]="1.5" class="to-empty-state__icon" />
+  <div class="to-empty-state__icon-wrap">
+    <tabler-icon [icon]="iconData()" [size]="28" [stroke]="1.5" class="to-empty-state__icon" />
+  </div>
   <h3 class="to-empty-state__heading">{{ heading() }}</h3>
   @if (description()) {
     <p class="to-empty-state__description">{{ description() }}</p>

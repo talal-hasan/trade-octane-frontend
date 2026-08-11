@@ -3,8 +3,13 @@
     @if (expanded()) {
       <div class="to-role-switcher__panel">
         <div class="to-role-switcher__header">
-          <span class="to-role-switcher__title">Switch role (mock)</span>
-          <span class="to-role-switcher__env-tag">MOCK DATA</span>
+          <div class="to-role-switcher__header-text">
+            <span class="to-role-switcher__title">Switch role</span>
+            <span class="to-role-switcher__subtitle">Dev panel — mock auth only</span>
+          </div>
+          <button type="button" class="to-role-switcher__close" (click)="toggle()" aria-label="Close">
+            <tabler-icon [icon]="icons['x']" [size]="16" />
+          </button>
         </div>
         <ul class="to-role-switcher__list">
           @for (role of authService.availableRoles; track role) {
@@ -15,7 +20,11 @@
                 [class.to-role-switcher__item--active]="authService.activeRole() === role"
                 (click)="switchTo(role)"
               >
-                {{ roleLabels[role] }}
+                <span class="to-role-switcher__item-avatar">{{ roleLabels[role].slice(0, 2) }}</span>
+                <span class="to-role-switcher__item-label">{{ roleLabels[role] }}</span>
+                @if (authService.activeRole() === role) {
+                  <tabler-icon [icon]="icons['check']" [size]="16" class="to-role-switcher__item-check" />
+                }
               </button>
             </li>
           }
@@ -25,6 +34,7 @@
     <button
       type="button"
       class="to-role-switcher__fab"
+      [class.to-role-switcher__fab--expanded]="expanded()"
       pButton
       [rounded]="true"
       (click)="toggle()"
@@ -33,6 +43,7 @@
       <span class="to-role-switcher__fab-label">
         {{ authService.activeRole() ? roleLabels[authService.activeRole()!] : 'No role' }}
       </span>
+      <tabler-icon [icon]="icons['chevron-right']" [size]="14" class="to-role-switcher__fab-chevron" />
     </button>
   </div>
 }

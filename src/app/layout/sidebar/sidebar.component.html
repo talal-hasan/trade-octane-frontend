@@ -1,7 +1,7 @@
 <nav class="to-sidebar" [class.to-sidebar--collapsed]="collapsed()">
   <div class="to-sidebar__sections">
-    @for (section of sections(); track section.label ?? $index) {
-      <div class="to-sidebar__section">
+    @for (section of sections(); track section.label ?? $index; let first = $first) {
+      <div class="to-sidebar__section" [class.to-sidebar__section--divided]="!first">
         @if (section.label && !collapsed()) {
           <div class="to-sidebar__section-label">{{ section.label }}</div>
         }
@@ -13,6 +13,7 @@
             [pTooltip]="collapsed() ? item.label : undefined"
             tooltipPosition="right"
           >
+            <span class="to-sidebar__item-indicator"></span>
             <tabler-icon [icon]="icons[item.icon]" [size]="18" class="to-sidebar__item-icon" />
             @if (!collapsed()) {
               <span class="to-sidebar__item-label">{{ item.label }}</span>
@@ -23,7 +24,7 @@
     }
   </div>
 
-  <button type="button" class="to-sidebar__collapse" (click)="toggle()">
+  <button type="button" class="to-sidebar__collapse" (click)="toggle()" [pTooltip]="collapsed() ? 'Expand' : undefined" tooltipPosition="right">
     <tabler-icon [icon]="collapsed() ? icons['chevrons-right'] : icons['chevrons-left']" [size]="16" />
     @if (!collapsed()) {
       <span>Collapse</span>

@@ -4,12 +4,15 @@
       <button type="button" class="to-shell__icon-btn" (click)="sidebarService.toggle()" aria-label="Toggle sidebar">
         <tabler-icon [icon]="icons['menu']" [size]="20" />
       </button>
-      <span class="to-shell__logo">Trade Octane</span>
+      <a routerLink="/" class="to-shell__brand">
+        <span class="to-shell__brand-mark">TO</span>
+        <span class="to-shell__logo">Trade Octane</span>
+      </a>
     </div>
 
     <div class="to-shell__topbar-center">
       <button type="button" class="to-shell__search-trigger" (click)="openCommandPalette()">
-        <tabler-icon [icon]="icons['search']" [size]="16" />
+        <tabler-icon [icon]="icons['search']" [size]="16" class="to-shell__search-icon" />
         <span>Search screens…</span>
         <kbd>Ctrl K</kbd>
       </button>
@@ -17,7 +20,7 @@
 
     <div class="to-shell__topbar-right">
       @if (useMocks) {
-        <span class="to-shell__env-badge">MOCK DATA</span>
+        <span class="to-shell__env-badge"><span class="to-shell__env-dot"></span>MOCK DATA</span>
       }
 
       <button
@@ -29,7 +32,11 @@
         <tabler-icon [icon]="icons['bell']" [size]="18" />
       </button>
       <p-popover #notificationsPanel>
-        <div class="to-shell__notifications-empty">No new notifications.</div>
+        <div class="to-shell__notifications-empty">
+          <tabler-icon [icon]="icons['inbox']" [size]="24" class="to-shell__notifications-empty-icon" />
+          <span class="to-shell__notifications-empty-title">You're all caught up</span>
+          <span class="to-shell__notifications-empty-desc">No new notifications right now.</span>
+        </div>
       </p-popover>
 
       <button
@@ -41,12 +48,9 @@
         <tabler-icon [icon]="theme() === 'dark' ? icons['sun'] : icons['moon']" [size]="18" />
       </button>
 
-      <p-avatar
-        [label]="userInitials()"
-        shape="circle"
-        class="to-shell__avatar"
-        (click)="userMenu.toggle($event)"
-      />
+      <button type="button" class="to-shell__avatar-btn" (click)="userMenu.toggle($event)" aria-label="Account menu">
+        <p-avatar [label]="userInitials()" shape="circle" class="to-shell__avatar" />
+      </button>
       <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
     </div>
   </header>

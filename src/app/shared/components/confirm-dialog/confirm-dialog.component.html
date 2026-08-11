@@ -9,6 +9,11 @@
   styleClass="to-confirm-dialog"
 >
   <div class="to-confirm-dialog__body">
+    @if (variant() === 'danger') {
+      <div class="to-confirm-dialog__icon">
+        <tabler-icon [icon]="warningIcon" [size]="20" />
+      </div>
+    }
     <h2 class="to-confirm-dialog__title" [class.to-confirm-dialog__title--danger]="variant() === 'danger'">
       {{ title() }}
     </h2>

@@ -14,6 +14,8 @@
   justify-content: space-between;
   gap: t.$to-space-3;
   flex-wrap: wrap;
+  padding-bottom: t.$to-space-3;
+  border-bottom: 1px solid var(--to-border);
 }
 
 .to-data-table__toolbar-left,
@@ -74,61 +76,6 @@
   color: var(--to-text-secondary);
   font-size: t.$to-font-size-xs;
   white-space: nowrap;
-}
-
-// ─── Loading skeleton rows ──────────────────────────────────
-// [PENDING: swap for to-skeleton once confirmed present in this parallel build]
-.to-data-table__skeleton-block {
-  display: block;
-  width: 100%;
-  height: 0.75rem;
-  border-radius: t.$to-radius-control;
-  background: var(--to-bg-2);
-  animation: to-data-table-pulse 1.4s ease-in-out infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes to-data-table-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-// ─── Empty state ────────────────────────────────────────────
-// [PENDING: swap for to-empty-state once confirmed present in this parallel build]
-.to-data-table__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: t.$to-space-1;
-  padding: t.$to-space-8 t.$to-space-4;
-  text-align: center;
-  color: var(--to-text-muted);
-}
-
-.to-data-table__empty-icon {
-  color: var(--to-text-muted);
-  margin-bottom: t.$to-space-2;
-}
-
-.to-data-table__empty-heading {
-  margin: 0;
-  color: var(--to-text-secondary);
-  font-size: t.$to-font-size-sm;
-  font-weight: var(--to-font-weight-medium);
-}
-
-.to-data-table__empty-description {
-  margin: 0;
-  font-size: t.$to-font-size-xs;
 }
 
 // ─── Frozen (sticky) first column ───────────────────────────

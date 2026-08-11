@@ -1,5 +1,5 @@
 @if (entries().length === 0) {
-  <p class="to-activity-timeline__empty">No activity yet.</p>
+  <to-empty-state icon="clock" heading="No activity yet" description="Actions on this record will appear here." />
 } @else {
   <ol class="to-activity-timeline">
     @for (entry of entries(); track $index) {

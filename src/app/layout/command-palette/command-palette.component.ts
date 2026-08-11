@@ -22,6 +22,7 @@ export class CommandPaletteComponent {
   protected readonly icons = ICON_REGISTRY;
   protected readonly visible = signal(false);
   protected readonly query = signal('');
+  protected readonly activeIndex = signal(0);
   protected readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   private readonly allItems = computed<NavItem[]>(() => {
@@ -49,6 +50,7 @@ export class CommandPaletteComponent {
 
   open(): void {
     this.query.set('');
+    this.activeIndex.set(0);
     this.visible.set(true);
     queueMicrotask(() => this.searchInput()?.nativeElement.focus());
   }
@@ -64,5 +66,30 @@ export class CommandPaletteComponent {
 
   onQueryInput(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
+    this.activeIndex.set(0);
+  }
+
+  setActive(index: number): void {
+    this.activeIndex.set(index);
+  }
+
+  onResultsKeydown(event: KeyboardEvent): void {
+    const count = this.results().length;
+    if (count === 0) {
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.activeIndex.set((this.activeIndex() + 1) % count);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.activeIndex.set((this.activeIndex() - 1 + count) % count);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const item = this.results()[this.activeIndex()];
+      if (item) {
+        this.select(item);
+      }
+    }
   }
 }

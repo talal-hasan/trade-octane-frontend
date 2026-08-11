@@ -22,11 +22,17 @@
 }
 
 .to-sidebar__section {
-  margin-bottom: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-2;
+}
+
+.to-sidebar__section--divided {
+  border-top: 1px solid var(--to-border);
+  margin-top: t.$to-space-1;
+  padding-top: t.$to-space-3;
 }
 
 .to-sidebar__section-label {
-  padding: t.$to-space-2 t.$to-space-4;
+  padding: t.$to-space-1 t.$to-space-2 t.$to-space-2;
   font-size: t.$to-font-size-2xs;
   font-weight: var(--to-font-weight-medium);
   color: var(--to-text-muted);
@@ -35,12 +41,16 @@
 }
 
 .to-sidebar__item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: t.$to-space-3;
-  padding: t.$to-space-2 t.$to-space-4;
+  padding: t.$to-space-2 t.$to-space-3;
+  margin-bottom: 1px;
+  border-radius: t.$to-radius-control;
   color: var(--to-text-secondary);
   font-size: t.$to-font-size-sm;
+  outline: none;
   @include u.motion(background-color, color);
 
   &:hover {
@@ -48,24 +58,60 @@
     color: var(--to-text-primary);
   }
 
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+
   &--active {
-    color: var(--to-accent);
+    color: var(--to-accent-text);
     background: var(--to-accent-subtle);
     font-weight: var(--to-font-weight-medium);
+
+    .to-sidebar__item-indicator {
+      opacity: 1;
+    }
+
+    .to-sidebar__item-icon {
+      color: var(--to-accent);
+    }
   }
+}
+
+.to-sidebar__item-indicator {
+  position: absolute;
+  left: -#{t.$to-space-2};
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent);
+  opacity: 0;
+  @include u.motion(opacity);
 }
 
 .to-sidebar__item-icon {
   flex-shrink: 0;
+  color: inherit;
 }
 
 .to-sidebar__item-label {
   @include u.truncate;
 }
 
+.to-sidebar--collapsed .to-sidebar__item {
+  justify-content: center;
+  padding: t.$to-space-2;
+}
+
+.to-sidebar--collapsed .to-sidebar__item-indicator {
+  left: 0;
+}
+
 .to-sidebar__collapse {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: t.$to-space-2;
   padding: t.$to-space-3 t.$to-space-4;
   background: none;
@@ -74,9 +120,19 @@
   color: var(--to-text-muted);
   font-size: t.$to-font-size-xs;
   cursor: pointer;
-  @include u.motion(color);
+  @include u.motion(color, background-color);
 
   &:hover {
     color: var(--to-text-primary);
+    background: var(--to-bg-2);
   }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--to-accent-subtle), inset 0 0 0 3px var(--to-accent);
+  }
+}
+
+.to-sidebar--collapsed .to-sidebar__collapse {
+  justify-content: center;
 }

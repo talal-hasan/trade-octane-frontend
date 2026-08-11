@@ -60,6 +60,19 @@
   background: var(--to-bg-1);
   border-color: var(--to-accent);
   box-shadow: 0 0 0 3px var(--to-accent-subtle);
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: t.$to-radius-pill;
+    background: var(--to-accent);
+  }
+}
+
+.to-pipeline-stage--compact .to-pipeline-stage__step--current .to-pipeline-stage__dot::after {
+  width: 4px;
+  height: 4px;
 }
 
 .to-pipeline-stage__connector {

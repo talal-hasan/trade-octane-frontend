@@ -1,6 +1,9 @@
 import { Component, input, output } from '@angular/core';
+import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+
+import { ICON_REGISTRY } from '../../icon-registry';
 
 export type ConfirmDialogVariant = 'default' | 'danger';
 
@@ -9,11 +12,13 @@ export type ConfirmDialogVariant = 'default' | 'danger';
 @Component({
   selector: 'to-confirm-dialog',
   standalone: true,
-  imports: [DialogModule, ButtonModule],
+  imports: [DialogModule, ButtonModule, TablerIconComponent],
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
 })
 export class ConfirmDialogComponent {
+  protected readonly warningIcon = ICON_REGISTRY['alert-triangle'];
+
   readonly visible = input.required<boolean>();
   readonly visibleChange = output<boolean>();
 

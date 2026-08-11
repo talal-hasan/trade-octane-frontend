@@ -1,8 +1,11 @@
 <div class="to-access-denied">
+  <div class="to-access-denied__icon">
+    <tabler-icon [icon]="icons['alert-triangle']" [size]="28" />
+  </div>
   <h1 class="to-access-denied__title">Access denied</h1>
   <p class="to-access-denied__subtitle">
     You don't have permission to view this screen. Contact your Admin if you believe this is
     a mistake.
   </p>
-  <a routerLink="/dashboard" pButton>Back to dashboard</a>
+  <a routerLink="/dashboard" pButton class="to-access-denied__action">Back to dashboard</a>
 </div>

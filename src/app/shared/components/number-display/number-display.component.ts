@@ -25,14 +25,19 @@ export class NumberDisplayComponent {
     if (value === null || value === undefined || Number.isNaN(value)) {
       return '—';
     }
-    switch (this.format()) {
-      case 'pkr':
-        return this.formatService.formatPkr(value);
-      case 'percent':
-        return this.formatService.formatPercent(value);
-      default:
-        return this.formatService.formatNumber(value);
-    }
+    const formatted = (() => {
+      switch (this.format()) {
+        case 'pkr':
+          return this.formatService.formatPkr(value);
+        case 'percent':
+          return this.formatService.formatPercent(value);
+        default:
+          return this.formatService.formatNumber(value);
+      }
+    })();
+    // Sign colour alone isn't an accessible signal (WCAG: don't convey meaning by
+    // colour only) — an explicit "+" backs it up whenever colorSign is in play.
+    return this.colorSign() && value > 0 ? `+${formatted}` : formatted;
   });
 
   protected readonly sign = computed(() => {
