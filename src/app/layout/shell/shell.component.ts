@@ -6,6 +6,7 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { Popover, PopoverModule } from 'primeng/popover';
 import { ScrollTopModule } from 'primeng/scrolltop';
+import { ToastModule } from 'primeng/toast';
 
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
@@ -31,6 +32,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     MenuModule,
     PopoverModule,
     ScrollTopModule,
+    ToastModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',

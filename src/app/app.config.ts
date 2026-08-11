@@ -16,6 +16,8 @@ import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
+import { ApprovalsService } from './features/dashboard/services/approvals.service';
+import { MockApprovalsService } from './features/dashboard/services/mock-approvals.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,6 +27,9 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor, errorInterceptor])),
     provideAppInitializer(() => inject(AuthService).restoreSession()),
     MessageService,
+    // Feature service bindings (CLAUDE.md §3 mock-first). Swap the mock for the real
+    // HTTP-backed service here — one line per feature, zero component changes.
+    { provide: ApprovalsService, useClass: MockApprovalsService },
     providePrimeNG({
       theme: {
         preset: TradeOctanePreset,

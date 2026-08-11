@@ -1,26 +1,161 @@
-<div class="to-dashboard">
-  <div class="to-dashboard__header">
-    <p class="to-dashboard__eyebrow">{{ greeting() }}</p>
-    <h1 class="to-dashboard__title">{{ authService.currentUser().name }}</h1>
-    <p class="to-dashboard__subtitle">
-      The shell, RBAC and navigation you're seeing are Phase 0 foundation. The approvals
-      inbox below arrives in Phase 1.
-    </p>
+<to-page-header
+  title="Approvals Inbox"
+  subtitle="Pending budget, scheme and claim decisions awaiting your action."
+  [breadcrumbs]="[{ label: 'Dashboard' }]"
+/>
+
+<div class="to-inbox">
+  <div class="to-inbox__tabs" role="tablist">
+    @for (tab of tabs; track tab.key) {
+      <button
+        type="button"
+        role="tab"
+        class="to-inbox__tab"
+        [class.to-inbox__tab--active]="activeTab() === tab.key"
+        [attr.aria-selected]="activeTab() === tab.key"
+        (click)="selectTab(tab.key)"
+      >
+        {{ tab.label }}
+        <span class="to-inbox__tab-count to-numeric">{{ countFor(tab.key) }}</span>
+      </button>
+    }
   </div>
 
-  <div class="to-dashboard__section-label">Coming in Phase 1</div>
-  <div class="to-dashboard__grid">
-    @for (widget of upcomingWidgets; track widget.title) {
-      <div class="to-dashboard__card">
-        <div class="to-dashboard__card-icon">
-          <tabler-icon [icon]="icons[widget.icon]" [size]="18" />
+  <div class="to-inbox__body">
+    <!-- ─── List pane ─────────────────────────────────────── -->
+    <div class="to-inbox__list" role="tablist" aria-label="Pending approvals">
+      @if (loading()) {
+        @for (row of skeletonRows; track row) {
+          <div class="to-inbox__card to-inbox__card--skeleton">
+            <to-skeleton variant="circle" width="32px" />
+            <div class="to-inbox__card-skeleton-lines">
+              <to-skeleton variant="text" width="70%" />
+              <to-skeleton variant="text" width="45%" />
+            </div>
+          </div>
+        }
+      } @else if (error()) {
+        <to-empty-state
+          icon="alert-triangle"
+          heading="Couldn't load your inbox"
+          description="Something went wrong fetching pending approvals."
+        >
+          <button type="button" pButton actions (click)="retry()">Retry</button>
+        </to-empty-state>
+      } @else if (filteredItems().length === 0) {
+        <to-empty-state
+          icon="circle-check"
+          heading="You're all caught up"
+          description="No pending approvals in this view."
+        />
+      } @else {
+        @for (item of filteredItems(); track item.id) {
+          <button
+            type="button"
+            class="to-inbox__card"
+            [class.to-inbox__card--active]="item.id === selectedId()"
+            (click)="selectItem(item.id)"
+          >
+            <span class="to-inbox__card-icon to-inbox__card-icon--{{ item.type }}">
+              <tabler-icon [icon]="icons[typeMeta[item.type].icon]" [size]="16" />
+            </span>
+            <span class="to-inbox__card-main">
+              <span class="to-inbox__card-top">
+                <span class="to-inbox__card-ref">{{ item.reference }}</span>
+                <to-number class="to-inbox__card-amount" [value]="item.amount" format="pkr" />
+              </span>
+              <span class="to-inbox__card-title">{{ item.title }}</span>
+              <span class="to-inbox__card-meta">
+                {{ item.requestedBy }} · {{ item.requestedAt | relativeDate }}
+              </span>
+            </span>
+          </button>
+        }
+      }
+    </div>
+
+    <!-- ─── Detail pane ───────────────────────────────────── -->
+    <div class="to-inbox__detail">
+      @if (selectedItem(); as item) {
+        <div class="to-inbox__detail-inner">
+          <div class="to-inbox__detail-header">
+            <span class="to-inbox__type-tag to-inbox__type-tag--{{ item.type }}">
+              <tabler-icon [icon]="icons[typeMeta[item.type].icon]" [size]="14" />
+              {{ typeMeta[item.type].label }}
+            </span>
+            <span class="to-inbox__detail-ref">{{ item.reference }}</span>
+          </div>
+
+          <h2 class="to-inbox__detail-title">{{ item.title }}</h2>
+          <p class="to-inbox__detail-summary">{{ item.summary }}</p>
+
+          <dl class="to-inbox__facts">
+            <div class="to-inbox__fact">
+              <dt>Requested by</dt>
+              <dd>{{ item.requestedBy }}</dd>
+            </div>
+            <div class="to-inbox__fact">
+              <dt>Region</dt>
+              <dd>{{ item.region }}</dd>
+            </div>
+            @if (item.brand) {
+              <div class="to-inbox__fact">
+                <dt>Brand</dt>
+                <dd>{{ item.brand }}</dd>
+              </div>
+            }
+            <div class="to-inbox__fact">
+              <dt>Amount</dt>
+              <dd><to-number [value]="item.amount" format="pkr" /></dd>
+            </div>
+          </dl>
+
+          @if (item.headroom; as headroom) {
+            <section class="to-inbox__section">
+              <h3 class="to-inbox__section-title">Budget headroom</h3>
+              <to-headroom-bar
+                [total]="headroom.total"
+                [consumed]="headroom.consumed"
+                [pending]="headroom.pending"
+              />
+            </section>
+          }
+
+          @if (item.pipelineStages && item.currentStageIndex !== undefined) {
+            <section class="to-inbox__section">
+              <h3 class="to-inbox__section-title">Claim pipeline</h3>
+              <to-pipeline-stage
+                [stages]="item.pipelineStages"
+                [currentStageIndex]="item.currentStageIndex"
+                variant="horizontal"
+              />
+            </section>
+          }
+
+          <section class="to-inbox__section">
+            <h3 class="to-inbox__section-title">Approval chain</h3>
+            <to-approval-chain
+              [steps]="item.steps"
+              [currentStepIndex]="item.currentStepIndex"
+              [canApprove]="canApproveSelected()"
+              (approve)="onApprove($event)"
+              (reject)="onReject($event)"
+            />
+            @if (!canApproveSelected()) {
+              <p class="to-inbox__readonly-note">
+                <tabler-icon [icon]="icons['alert-triangle']" [size]="14" />
+                You have view access to this item but can't action it with your current role.
+              </p>
+            }
+          </section>
         </div>
-        <div class="to-dashboard__card-body">
-          <span class="to-dashboard__card-title">{{ widget.title }}</span>
-          <span class="to-dashboard__card-desc">{{ widget.description }}</span>
-        </div>
-        <span class="to-dashboard__card-badge">Phase 1</span>
-      </div>
-    }
+      } @else if (!loading()) {
+        <to-empty-state
+          icon="inbox"
+          heading="Nothing selected"
+          description="Pick an item from the list to review its details and approval chain."
+        />
+      }
+    </div>
   </div>
 </div>

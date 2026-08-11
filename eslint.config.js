@@ -31,6 +31,16 @@ module.exports = defineConfig([
           style: 'kebab-case',
         },
       ],
+      // Allow a leading underscore to mark an intentionally-unused binding — e.g. a
+      // mock service method that must satisfy an interface signature it doesn't use.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {
