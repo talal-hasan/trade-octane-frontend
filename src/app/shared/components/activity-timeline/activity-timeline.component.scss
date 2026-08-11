@@ -1,0 +1,71 @@
+@use '../../../../styles/tokens' as t;
+
+.to-activity-timeline__empty {
+  margin: 0;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-sm;
+}
+
+.to-activity-timeline {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-activity-timeline__item {
+  position: relative;
+  padding-left: t.$to-space-6;
+  padding-bottom: t.$to-space-4;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: t.$to-space-3;
+    bottom: (-1 * t.$to-space-1);
+    width: 2px;
+    background: var(--to-border);
+  }
+}
+
+.to-activity-timeline__dot {
+  position: absolute;
+  left: 0;
+  top: t.$to-space-1;
+  width: 10px;
+  height: 10px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent);
+  box-shadow: 0 0 0 2px var(--to-bg-1);
+}
+
+.to-activity-timeline__line {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+  line-height: var(--to-line-height-body);
+}
+
+.to-activity-timeline__actor {
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-activity-timeline__time {
+  margin-left: t.$to-space-2;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-xs;
+}
+
+.to-activity-timeline__remarks {
+  margin: t.$to-space-1 0 0;
+  padding-left: t.$to-space-2;
+  border-left: 2px solid var(--to-border);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  font-style: italic;
+}

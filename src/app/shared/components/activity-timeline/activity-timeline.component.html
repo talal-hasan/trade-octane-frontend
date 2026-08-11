@@ -1,0 +1,23 @@
+@if (entries().length === 0) {
+  <p class="to-activity-timeline__empty">No activity yet.</p>
+} @else {
+  <ol class="to-activity-timeline">
+    @for (entry of entries(); track $index) {
+      <li class="to-activity-timeline__item">
+        <span class="to-activity-timeline__dot"></span>
+        <p class="to-activity-timeline__line">
+          <span class="to-activity-timeline__actor">{{ entry.actor }}</span>
+          {{ entry.action }}
+          <span
+            class="to-activity-timeline__time to-numeric"
+            [title]="absoluteLabel(entry.timestamp)"
+            >{{ entry.timestamp | relativeDate }}</span
+          >
+        </p>
+        @if (entry.remarks) {
+          <blockquote class="to-activity-timeline__remarks">&ldquo;{{ entry.remarks }}&rdquo;</blockquote>
+        }
+      </li>
+    }
+  </ol>
+}

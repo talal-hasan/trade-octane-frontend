@@ -1,0 +1,20 @@
+<div class="to-cascading-select">
+  @for (level of levels(); track level.key; let i = $index) {
+    <div class="to-cascading-select__level">
+      <label class="to-cascading-select__label" [for]="'to-cascade-' + level.key">{{
+        level.label
+      }}</label>
+      <p-select
+        [inputId]="'to-cascade-' + level.key"
+        class="to-cascading-select__control"
+        [options]="level.options"
+        optionLabel="label"
+        optionValue="value"
+        [placeholder]="'Select ' + level.label"
+        [disabled]="isDisabled(i)"
+        [ngModel]="valueFor(level.key)"
+        (ngModelChange)="onLevelChange(i, $event)"
+      />
+    </div>
+  }
+</div>

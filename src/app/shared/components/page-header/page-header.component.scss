@@ -1,0 +1,88 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-page-header__breadcrumb {
+  margin-bottom: t.$to-space-2;
+}
+
+.to-page-header__breadcrumb-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.to-page-header__breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+}
+
+.to-page-header__breadcrumb-link {
+  color: var(--to-text-muted);
+  text-decoration: none;
+  font-size: t.$to-font-size-xs;
+  @include u.motion(color);
+
+  &:hover {
+    color: var(--to-accent);
+    text-decoration: underline;
+  }
+}
+
+.to-page-header__breadcrumb-current {
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-xs;
+}
+
+.to-page-header__breadcrumb-separator {
+  color: var(--to-text-muted);
+  display: inline-flex;
+  margin: 0 t.$to-space-1;
+}
+
+.to-page-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+}
+
+.to-page-header__titles {
+  min-width: 0;
+}
+
+.to-page-header__title {
+  margin: 0;
+  font-size: t.$to-font-size-xl;
+  font-weight: var(--to-font-weight-medium);
+  line-height: var(--to-line-height-heading);
+  color: var(--to-text-primary);
+  @include u.truncate;
+}
+
+.to-page-header__subtitle {
+  margin: t.$to-space-1 0 0;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+}
+
+.to-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  flex-shrink: 0;
+
+  // Stack actions below the title on narrow viewports rather than compressing them —
+  // primary actions (e.g. "New Budget") must stay tappable, not shrink to icon-only.
+  @include u.respond-to(tablet) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

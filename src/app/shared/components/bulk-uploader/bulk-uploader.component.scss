@@ -1,0 +1,221 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-bulk-uploader {
+  display: flex;
+  flex-direction: column;
+}
+
+// ─── Dropzone (idle) ────────────────────────────────────────
+.to-bulk-uploader__dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-12 t.$to-space-4;
+  border: 1px dashed var(--to-border-strong);
+  border-radius: t.$to-radius-card;
+  background: var(--to-bg-1);
+  text-align: center;
+  @include u.motion(background-color, border-color);
+}
+
+.to-bulk-uploader__dropzone--active {
+  border-color: var(--to-accent);
+  background: var(--to-accent-subtle);
+}
+
+.to-bulk-uploader__dropzone-icon {
+  color: var(--to-text-muted);
+}
+
+.to-bulk-uploader__dropzone-title {
+  margin: 0;
+  color: var(--to-text-primary);
+  font-size: t.$to-font-size-md;
+}
+
+.to-bulk-uploader__browse-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: t.$to-space-2 t.$to-space-4;
+  border-radius: t.$to-radius-control;
+  background: var(--to-accent);
+  color: white;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: var(--to-accent-hover);
+  }
+}
+
+.to-bulk-uploader__file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.to-bulk-uploader__dropzone-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-xs;
+  max-width: 32rem;
+}
+
+.to-bulk-uploader__error-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  padding: t.$to-space-1 t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+  font-size: t.$to-font-size-xs;
+}
+
+// ─── Parsing / submitting status ────────────────────────────
+.to-bulk-uploader__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-12 t.$to-space-4;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+}
+
+.to-bulk-uploader__spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--to-border);
+  border-top-color: var(--to-accent);
+  animation: to-bulk-uploader-spin 0.7s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1.4s;
+  }
+}
+
+@keyframes to-bulk-uploader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ─── Preview stage ──────────────────────────────────────────
+.to-bulk-uploader__preview {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+}
+
+.to-bulk-uploader__summary {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-success-subtle);
+  color: var(--to-success);
+  font-size: t.$to-font-size-sm;
+}
+
+.to-bulk-uploader__summary--error {
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+}
+
+.to-bulk-uploader__row-index-cell {
+  width: 40px;
+  color: var(--to-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.to-bulk-uploader__row--error {
+  background: var(--to-danger-subtle);
+}
+
+.to-bulk-uploader__cell--error {
+  outline: 1px solid var(--to-danger);
+  outline-offset: -1px;
+  background: var(--to-danger-subtle);
+  cursor: help;
+}
+
+.to-bulk-uploader__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}
+
+.to-bulk-uploader__button {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-2 t.$to-space-4;
+  border-radius: t.$to-radius-control;
+  border: 1px solid transparent;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+}
+
+.to-bulk-uploader__button--primary {
+  background: var(--to-accent);
+  color: white;
+
+  &:hover {
+    background: var(--to-accent-hover);
+  }
+}
+
+.to-bulk-uploader__button--ghost {
+  background: transparent;
+  border-color: var(--to-border);
+  color: var(--to-text-secondary);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+}
+
+// ─── Done stage ─────────────────────────────────────────────
+.to-bulk-uploader__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-12 t.$to-space-4;
+  text-align: center;
+}
+
+.to-bulk-uploader__done-icon--success {
+  color: var(--to-success);
+}
+
+.to-bulk-uploader__done-icon--danger {
+  color: var(--to-danger);
+}
+
+.to-bulk-uploader__done-summary {
+  margin: 0;
+  color: var(--to-text-primary);
+  font-size: t.$to-font-size-md;
+}

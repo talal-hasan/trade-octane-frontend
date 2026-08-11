@@ -1,0 +1,40 @@
+<div class="to-filter-bar">
+  <div class="to-filter-bar__controls">
+    <div class="to-filter-bar__filters">
+      <ng-content select="[filters]" />
+    </div>
+
+    @if (presets().length) {
+      <p-select
+        class="to-filter-bar__presets"
+        [options]="presets()"
+        optionLabel="label"
+        optionValue="id"
+        placeholder="Load preset…"
+        [ngModel]="selectedPresetId()"
+        (ngModelChange)="onPresetChange($event)"
+      />
+    }
+  </div>
+
+  @if (chips().length) {
+    <div class="to-filter-bar__chips">
+      @for (chip of chips(); track chip.key) {
+        <span class="to-filter-bar__chip">
+          <span class="to-filter-bar__chip-label">{{ chip.label }}: {{ chip.value }}</span>
+          <button
+            type="button"
+            class="to-filter-bar__chip-remove"
+            [attr.aria-label]="'Remove filter ' + chip.label"
+            (click)="chipRemoved.emit(chip.key)"
+          >
+            <tabler-icon [icon]="icons['x']" [size]="12" />
+          </button>
+        </span>
+      }
+      <button type="button" class="to-filter-bar__clear-all" (click)="clearAll.emit()">
+        Clear all
+      </button>
+    </div>
+  }
+</div>

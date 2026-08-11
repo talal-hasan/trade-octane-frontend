@@ -1,0 +1,100 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-headroom-bar {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+}
+
+.to-headroom-bar__track {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: t.$to-space-3;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  overflow: hidden;
+}
+
+.to-headroom-bar__segment {
+  height: 100%;
+  flex-shrink: 0;
+  @include u.motion(width);
+}
+
+.to-headroom-bar__segment--consumed {
+  background: var(--to-text-secondary);
+}
+
+.to-headroom-bar__segment--pending {
+  // Diagonal stripe over the accent fill keeps "being entered right now" visually
+  // distinct from "already committed" (consumed), per spec.
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgb(255 255 255 / 25%) 0,
+      rgb(255 255 255 / 25%) 3px,
+      transparent 3px,
+      transparent 6px
+    ),
+    var(--to-accent);
+}
+
+.to-headroom-bar__segment--overrun {
+  width: 100%;
+  background: var(--to-danger);
+}
+
+.to-headroom-bar__labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$to-space-1 t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-headroom-bar__label {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+}
+
+.to-headroom-bar__label-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: t.$to-radius-pill;
+  flex-shrink: 0;
+}
+
+.to-headroom-bar__label-dot--consumed {
+  background: var(--to-text-secondary);
+}
+
+.to-headroom-bar__label-dot--pending {
+  background: var(--to-accent);
+}
+
+.to-headroom-bar__label--remaining {
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-headroom-bar__label--danger {
+  color: var(--to-danger);
+}
+
+.to-headroom-bar__label--total {
+  margin-left: auto;
+  color: var(--to-text-muted);
+}
+
+.to-headroom-bar__error {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  color: var(--to-danger);
+  font-size: t.$to-font-size-xs;
+}

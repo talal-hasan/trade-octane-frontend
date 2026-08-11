@@ -1,0 +1,9 @@
+<div class="to-skeleton" role="presentation" aria-hidden="true">
+  @for (block of blocks(); track $index) {
+    <div
+      class="to-skeleton__block to-skeleton__block--{{ variant() }}"
+      [style.width]="width()"
+      [style.height]="blockHeight()"
+    ></div>
+  }
+</div>

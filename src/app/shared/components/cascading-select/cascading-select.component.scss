@@ -1,0 +1,37 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-cascading-select {
+  display: flex;
+  align-items: flex-end;
+  gap: t.$to-space-3;
+  flex-wrap: wrap;
+
+  // Stack levels vertically under tablet width — six side-by-side dropdowns don't fit and
+  // progressive disclosure reads more naturally top-to-bottom on a narrow screen anyway.
+  @include u.respond-to(tablet) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.to-cascading-select__level {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  min-width: 160px;
+  flex: 1;
+}
+
+.to-cascading-select__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-cascading-select__control {
+  width: 100%;
+}

@@ -1,0 +1,30 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="onVisibleChange($event)"
+  [modal]="true"
+  [showHeader]="false"
+  [closable]="false"
+  [dismissableMask]="false"
+  [style]="{ width: '420px' }"
+  styleClass="to-confirm-dialog"
+>
+  <div class="to-confirm-dialog__body">
+    <h2 class="to-confirm-dialog__title" [class.to-confirm-dialog__title--danger]="variant() === 'danger'">
+      {{ title() }}
+    </h2>
+    <p class="to-confirm-dialog__message">{{ message() }}</p>
+  </div>
+  <div class="to-confirm-dialog__actions">
+    <button type="button" pButton [text]="true" severity="secondary" (click)="onCancel()">
+      {{ cancelLabel() }}
+    </button>
+    <button
+      type="button"
+      pButton
+      [severity]="variant() === 'danger' ? 'danger' : 'primary'"
+      (click)="onConfirm()"
+    >
+      {{ confirmLabel() }}
+    </button>
+  </div>
+</p-dialog>

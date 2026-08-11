@@ -1,0 +1,37 @@
+@use '../../../../styles/tokens' as t;
+
+.to-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: t.$to-space-12 t.$to-space-6;
+  text-align: center;
+}
+
+.to-empty-state__icon {
+  color: var(--to-text-muted);
+  margin-bottom: t.$to-space-4;
+}
+
+.to-empty-state__heading {
+  font-size: t.$to-font-size-md;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+  margin: 0 0 t.$to-space-1;
+}
+
+.to-empty-state__description {
+  max-width: 360px;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+  margin: 0;
+}
+
+.to-empty-state__actions {
+  margin-top: t.$to-space-4;
+
+  &:empty {
+    display: none;
+  }
+}

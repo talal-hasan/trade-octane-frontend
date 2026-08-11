@@ -1,0 +1,12 @@
+.to-number {
+  font-variant-numeric: tabular-nums;
+  color: var(--to-text-primary);
+}
+
+.to-number--positive {
+  color: var(--to-success);
+}
+
+.to-number--negative {
+  color: var(--to-danger);
+}

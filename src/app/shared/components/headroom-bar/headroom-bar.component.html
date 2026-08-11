@@ -1,0 +1,45 @@
+<div class="to-headroom-bar">
+  <div class="to-headroom-bar__track" [class.to-headroom-bar__track--overrun]="isOverrun()">
+    @if (isOverrun()) {
+      <div class="to-headroom-bar__segment to-headroom-bar__segment--overrun"></div>
+    } @else {
+      <div
+        class="to-headroom-bar__segment to-headroom-bar__segment--consumed"
+        [style.width.%]="consumedPct()"
+      ></div>
+      <div
+        class="to-headroom-bar__segment to-headroom-bar__segment--pending"
+        [style.width.%]="pendingPct()"
+      ></div>
+    }
+  </div>
+
+  <div class="to-headroom-bar__labels to-numeric">
+    <span class="to-headroom-bar__label">
+      <span class="to-headroom-bar__label-dot to-headroom-bar__label-dot--consumed"></span>
+      Consumed {{ consumed() | pkrCurrency }}
+    </span>
+    @if (pending() > 0) {
+      <span class="to-headroom-bar__label">
+        <span class="to-headroom-bar__label-dot to-headroom-bar__label-dot--pending"></span>
+        Pending {{ pending() | pkrCurrency }}
+      </span>
+    }
+    <span
+      class="to-headroom-bar__label to-headroom-bar__label--remaining"
+      [class.to-headroom-bar__label--danger]="isOverrun()"
+    >
+      Remaining {{ remaining() | pkrCurrency }}
+    </span>
+    <span class="to-headroom-bar__label to-headroom-bar__label--total"
+      >of {{ total() | pkrCurrency }}</span
+    >
+  </div>
+
+  @if (isOverrun()) {
+    <p class="to-headroom-bar__error">
+      <tabler-icon [icon]="alertIcon" [size]="14" />
+      Exceeds available budget by {{ overrunAmount() | pkrCurrency }}
+    </p>
+  }
+</div>

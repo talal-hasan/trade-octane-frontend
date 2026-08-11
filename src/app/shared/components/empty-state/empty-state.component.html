@@ -1,0 +1,10 @@
+<div class="to-empty-state">
+  <tabler-icon [icon]="iconData()" [size]="40" [stroke]="1.5" class="to-empty-state__icon" />
+  <h3 class="to-empty-state__heading">{{ heading() }}</h3>
+  @if (description()) {
+    <p class="to-empty-state__description">{{ description() }}</p>
+  }
+  <div class="to-empty-state__actions">
+    <ng-content select="[actions]" />
+  </div>
+</div>

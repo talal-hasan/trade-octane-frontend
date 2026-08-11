@@ -1,0 +1,140 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-data-table {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+}
+
+// ─── Toolbar ────────────────────────────────────────────────
+.to-data-table__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  flex-wrap: wrap;
+}
+
+.to-data-table__toolbar-left,
+.to-data-table__toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-data-table__saved-views {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+}
+
+.to-data-table__saved-view-chip {
+  appearance: none;
+  border: 1px solid var(--to-border);
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  border-radius: t.$to-radius-pill;
+  padding: t.$to-space-1 t.$to-space-3;
+  font-size: t.$to-font-size-xs;
+  font-family: inherit;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    background: var(--to-accent-subtle);
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+}
+
+.to-data-table__column-toggle {
+  min-width: 160px;
+}
+
+// ─── Numeric cells ──────────────────────────────────────────
+.to-numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+// ─── Checkbox column ────────────────────────────────────────
+.to-data-table__checkbox-cell {
+  width: 40px;
+  text-align: center;
+}
+
+// ─── Status cell — minimal inline badge (to-status-pill owns the real design) ──
+.to-data-table__status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+}
+
+// ─── Loading skeleton rows ──────────────────────────────────
+// [PENDING: swap for to-skeleton once confirmed present in this parallel build]
+.to-data-table__skeleton-block {
+  display: block;
+  width: 100%;
+  height: 0.75rem;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  animation: to-data-table-pulse 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes to-data-table-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+// ─── Empty state ────────────────────────────────────────────
+// [PENDING: swap for to-empty-state once confirmed present in this parallel build]
+.to-data-table__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-8 t.$to-space-4;
+  text-align: center;
+  color: var(--to-text-muted);
+}
+
+.to-data-table__empty-icon {
+  color: var(--to-text-muted);
+  margin-bottom: t.$to-space-2;
+}
+
+.to-data-table__empty-heading {
+  margin: 0;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-data-table__empty-description {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+}
+
+// ─── Frozen (sticky) first column ───────────────────────────
+// PrimeNG's pFrozenColumn directive handles position:sticky; add a hairline + shadow
+// so the seam is visible once content scrolls under it — otherwise it reads as a bug.
+:host ::ng-deep .p-datatable-frozen-column {
+  border-right: 1px solid var(--to-border);
+  box-shadow: 2px 0 4px -2px rgb(0 0 0 / 8%);
+}

@@ -1,0 +1,39 @@
+@use '../../../../styles/tokens' as t;
+
+:host {
+  display: contents;
+}
+
+:host ::ng-deep .to-confirm-dialog {
+  border-radius: t.$to-radius-modal;
+}
+
+.to-confirm-dialog__body {
+  padding: t.$to-space-6 t.$to-space-6 t.$to-space-2;
+}
+
+.to-confirm-dialog__title {
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-lg;
+  font-weight: var(--to-font-weight-medium);
+  line-height: var(--to-line-height-heading);
+  color: var(--to-text-primary);
+
+  &--danger {
+    color: var(--to-danger);
+  }
+}
+
+.to-confirm-dialog__message {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  line-height: var(--to-line-height-body);
+  color: var(--to-text-secondary);
+}
+
+.to-confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-3;
+  padding: t.$to-space-4 t.$to-space-6 t.$to-space-6;
+}

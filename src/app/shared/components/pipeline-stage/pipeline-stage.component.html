@@ -1,0 +1,31 @@
+<ol
+  class="to-pipeline-stage"
+  [class.to-pipeline-stage--horizontal]="variant() === 'horizontal'"
+  [class.to-pipeline-stage--compact]="variant() === 'compact'"
+>
+  @for (stage of stageViews(); track $index; let last = $last) {
+    <li class="to-pipeline-stage__step to-pipeline-stage__step--{{ stage.state }}">
+      <div class="to-pipeline-stage__row">
+        <span
+          class="to-pipeline-stage__dot"
+          [pTooltip]="stage.label"
+          tooltipPosition="top"
+          [tooltipDisabled]="variant() !== 'compact'"
+        >
+          @if (stage.state === 'completed') {
+            <tabler-icon [icon]="checkIcon" [size]="10" />
+          }
+        </span>
+        @if (!last) {
+          <span
+            class="to-pipeline-stage__connector"
+            [class.to-pipeline-stage__connector--filled]="stage.state === 'completed'"
+          ></span>
+        }
+      </div>
+      @if (variant() === 'horizontal') {
+        <span class="to-pipeline-stage__label">{{ stage.label }}</span>
+      }
+    </li>
+  }
+</ol>

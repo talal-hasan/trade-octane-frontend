@@ -1,0 +1,45 @@
+@if (breadcrumbs().length) {
+  <nav class="to-page-header__breadcrumb" aria-label="Breadcrumb">
+    <ol class="to-page-header__breadcrumb-list">
+      @for (crumb of breadcrumbs(); track crumb.label; let last = $last) {
+        <li class="to-page-header__breadcrumb-item">
+          @if (!last && crumb.route) {
+            <a class="to-page-header__breadcrumb-link" [routerLink]="crumb.route">{{
+              crumb.label
+            }}</a>
+            <tabler-icon
+              class="to-page-header__breadcrumb-separator"
+              [icon]="icons['chevron-right']"
+              [size]="14"
+            />
+          } @else {
+            <span
+              class="to-page-header__breadcrumb-current"
+              [attr.aria-current]="last ? 'page' : null"
+              >{{ crumb.label }}</span
+            >
+            @if (!last) {
+              <tabler-icon
+                class="to-page-header__breadcrumb-separator"
+                [icon]="icons['chevron-right']"
+                [size]="14"
+              />
+            }
+          }
+        </li>
+      }
+    </ol>
+  </nav>
+}
+
+<div class="to-page-header__row">
+  <div class="to-page-header__titles">
+    <h1 class="to-page-header__title">{{ title() }}</h1>
+    @if (subtitle()) {
+      <p class="to-page-header__subtitle">{{ subtitle() }}</p>
+    }
+  </div>
+  <div class="to-page-header__actions">
+    <ng-content select="[actions]" />
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<ol class="to-approval-chain">
+  @for (step of steps(); track $index; let i = $index) {
+    <li
+      class="to-approval-chain__step to-approval-chain__step--{{ step.status }}"
+      [class.to-approval-chain__step--current]="i === currentStepIndex()"
+    >
+      <span class="to-approval-chain__dot">
+        @switch (step.status) {
+          @case ('approved') {
+            <tabler-icon [icon]="checkIcon" [size]="12" />
+          }
+          @case ('rejected') {
+            <tabler-icon [icon]="xIcon" [size]="12" />
+          }
+          @default {
+            <tabler-icon [icon]="clockIcon" [size]="10" />
+          }
+        }
+      </span>
+
+      <div class="to-approval-chain__body">
+        <div class="to-approval-chain__header">
+          <span class="to-approval-chain__name">{{ step.name }}</span>
+          <span class="to-approval-chain__role">{{ step.role }}</span>
+        </div>
+
+        <div class="to-approval-chain__meta">
+          <span class="to-approval-chain__status-label">{{ statusLabels[step.status] }}</span>
+          @if (step.timestamp) {
+            <span
+              class="to-approval-chain__time to-numeric"
+              [title]="absoluteLabel(step.timestamp)"
+              >{{ step.timestamp | relativeDate }}</span
+            >
+          }
+        </div>
+
+        @if (step.remarks) {
+          <blockquote class="to-approval-chain__remarks">&ldquo;{{ step.remarks }}&rdquo;</blockquote>
+        }
+
+        @if (canApprove() && i === currentStepIndex()) {
+          <div class="to-approval-chain__actions">
+            <textarea
+              pTextarea
+              rows="2"
+              class="to-approval-chain__remarks-input"
+              placeholder="Remarks (required to reject, optional to approve)"
+              [formControl]="remarksControl"
+            ></textarea>
+            @if (rejectBlocked()) {
+              <p class="to-approval-chain__remarks-error">Remarks are required to reject.</p>
+            }
+            <div class="to-approval-chain__buttons">
+              <button
+                type="button"
+                pButton
+                size="small"
+                severity="danger"
+                [outlined]="true"
+                (click)="onReject(i)"
+              >
+                Reject
+              </button>
+              <button type="button" pButton size="small" severity="success" (click)="onApprove(i)">
+                Approve
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </li>
+  }
+</ol>

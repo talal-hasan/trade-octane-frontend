@@ -1,0 +1,160 @@
+<div class="to-data-table">
+  <div class="to-data-table__toolbar">
+    <div class="to-data-table__toolbar-left">
+      @if (savedViews().length > 0) {
+        <div class="to-data-table__saved-views">
+          @for (view of savedViews(); track view.id) {
+            <button
+              type="button"
+              class="to-data-table__saved-view-chip"
+              (click)="viewSelected.emit(view.id)"
+            >
+              {{ view.label }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="to-data-table__toolbar-right">
+      <p-multiSelect
+        class="to-data-table__column-toggle"
+        [options]="columnOptions()"
+        [formControl]="hiddenColumnsControl"
+        optionLabel="label"
+        optionValue="value"
+        [showToggleAll]="false"
+        [filter]="false"
+        placeholder="Hide columns"
+        appendTo="body"
+      />
+      <p-splitButton
+        label="Export"
+        [model]="exportMenuItems"
+        severity="secondary"
+        size="small"
+        (onClick)="exportRequested.emit('excel')"
+      />
+    </div>
+  </div>
+
+  <p-contextMenu #cm [model]="contextMenuItems()" />
+
+  <p-table
+    [value]="rows()"
+    [lazy]="true"
+    [paginator]="totalRecords() > 0"
+    [rows]="pageSize()"
+    [first]="page() * pageSize()"
+    [totalRecords]="totalRecords()"
+    [loading]="loading()"
+    [showLoader]="false"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [virtualScroll]="virtualScroll()"
+    [virtualScrollItemSize]="virtualScrollItemSize()"
+    [selectionMode]="selectable() ? 'multiple' : null"
+    [selection]="selection()"
+    (selectionChange)="handleSelectionChange($event)"
+    [contextMenu]="cm"
+    sortMode="single"
+    [rowHover]="true"
+    (onPage)="handlePage($event)"
+    (onSort)="handleSort($event)"
+    styleClass="to-data-table__table"
+  >
+    <ng-template #header>
+      <tr>
+        @if (selectable()) {
+          <th class="to-data-table__checkbox-cell" pFrozenColumn [frozen]="stickyFirstColumn()">
+            <p-tableHeaderCheckbox />
+          </th>
+        }
+        @for (col of visibleColumns(); track col.key; let i = $index) {
+          <th
+            [style.width]="col.width"
+            pFrozenColumn
+            [frozen]="stickyFirstColumn() && i === 0 && !selectable()"
+            [class.to-numeric]="isNumericColumn(col)"
+            [pSortableColumn]="col.key"
+            [pSortableColumnDisabled]="!col.sortable"
+          >
+            {{ col.header }}
+            @if (col.sortable) {
+              <p-sortIcon [field]="col.key" />
+            }
+          </th>
+        }
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-row>
+      <tr [pContextMenuRow]="row" [pSelectableRow]="row">
+        @if (selectable()) {
+          <td class="to-data-table__checkbox-cell" pFrozenColumn [frozen]="stickyFirstColumn()">
+            <p-tableCheckbox [value]="row" />
+          </td>
+        }
+        @for (col of visibleColumns(); track col.key; let i = $index) {
+          <td
+            [style.width]="col.width"
+            pFrozenColumn
+            [frozen]="stickyFirstColumn() && i === 0 && !selectable()"
+            [class.to-numeric]="isNumericColumn(col)"
+          >
+            @switch (col.type) {
+              @case ('currency') {
+                {{ getNumericValue(row, col) | pkrCurrency }}
+              }
+              @case ('number') {
+                {{ formatNumberValue(getNumericValue(row, col)) }}
+              }
+              @case ('date') {
+                {{ formatDateValue(getCellValue(row, col)) }}
+              }
+              @case ('status') {
+                <span class="to-data-table__status-badge">{{ getCellValue(row, col) ?? '—' }}</span>
+              }
+              @default {
+                {{ getCellValue(row, col) ?? '—' }}
+              }
+            }
+          </td>
+        }
+      </tr>
+    </ng-template>
+
+    <!-- [PENDING: swap for to-skeleton once confirmed present — inlined pulsing blocks for now] -->
+    <ng-template #loadingbody>
+      @for (i of skeletonRowIndexes(); track i) {
+        <tr class="to-data-table__skeleton-row">
+          @if (selectable()) {
+            <td class="to-data-table__checkbox-cell">
+              <span class="to-data-table__skeleton-block" style="width: 16px;"></span>
+            </td>
+          }
+          @for (col of visibleColumns(); track col.key) {
+            <td>
+              <span class="to-data-table__skeleton-block"></span>
+            </td>
+          }
+        </tr>
+      }
+    </ng-template>
+
+    <!-- [PENDING: swap for to-empty-state once confirmed present — inlined icon+text for now] -->
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="visibleColumns().length + (selectable() ? 1 : 0)">
+          <div class="to-data-table__empty">
+            <tabler-icon [icon]="emptyIcon" [size]="28" class="to-data-table__empty-icon" />
+            <p class="to-data-table__empty-heading">No records found</p>
+            <p class="to-data-table__empty-description">
+              Try adjusting your filters, or check back later.
+            </p>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

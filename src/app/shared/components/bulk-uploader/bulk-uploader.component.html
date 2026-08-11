@@ -1,0 +1,138 @@
+<div class="to-bulk-uploader">
+  @switch (state()) {
+    @case ('idle') {
+      <div
+        class="to-bulk-uploader__dropzone"
+        [class.to-bulk-uploader__dropzone--active]="isDragOver()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <tabler-icon [icon]="uploadIcon" [size]="32" class="to-bulk-uploader__dropzone-icon" />
+        <p class="to-bulk-uploader__dropzone-title">Drag and drop a file here</p>
+        <label class="to-bulk-uploader__browse-button">
+          Browse files
+          <input
+            type="file"
+            class="to-bulk-uploader__file-input"
+            accept=".xlsx,.xls,.csv"
+            (change)="onFileInputChange($event)"
+          />
+        </label>
+        <p class="to-bulk-uploader__dropzone-hint">
+          <tabler-icon [icon]="fileIcon" [size]="14" />
+          .xlsx, .xls or .csv — Excel parsing arrives in Phase 1; .csv previews end-to-end today.
+        </p>
+        @if (parseError(); as error) {
+          <p class="to-bulk-uploader__error-banner">
+            <tabler-icon [icon]="alertIcon" [size]="14" />
+            {{ error }}
+          </p>
+        }
+      </div>
+    }
+
+    @case ('parsing') {
+      <div class="to-bulk-uploader__status">
+        <span class="to-bulk-uploader__spinner"></span>
+        Parsing {{ fileName() }}…
+      </div>
+    }
+
+    @case ('preview') {
+      <div class="to-bulk-uploader__preview">
+        <div
+          class="to-bulk-uploader__summary"
+          [class.to-bulk-uploader__summary--error]="errorRowCount() > 0"
+        >
+          <tabler-icon [icon]="alertIcon" [size]="16" />
+          @if (errorRowCount() > 0) {
+            <span>{{ errorRowCount() }} of {{ parsedRows().length }} rows have errors.</span>
+          } @else {
+            <span>All {{ parsedRows().length }} rows passed client-side validation.</span>
+          }
+        </div>
+
+        <p-table
+          [value]="parsedRows()"
+          [scrollable]="true"
+          scrollHeight="360px"
+          styleClass="to-bulk-uploader__table"
+        >
+          <ng-template #header>
+            <tr>
+              <th class="to-bulk-uploader__row-index-cell">#</th>
+              @for (col of columns(); track col.key) {
+                <th>{{ col.header }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template #body let-row>
+            <tr [class.to-bulk-uploader__row--error]="hasRowErrors(row)">
+              <td class="to-bulk-uploader__row-index-cell">{{ row.rowIndex + 1 }}</td>
+              @for (col of columns(); track col.key) {
+                <td
+                  [class.to-bulk-uploader__cell--error]="!!row.cellErrors[col.key]"
+                  [pTooltip]="row.cellErrors[col.key]"
+                  [tooltipDisabled]="!row.cellErrors[col.key]"
+                >
+                  {{ row.data[col.key] ?? '—' }}
+                </td>
+              }
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <div class="to-bulk-uploader__actions">
+          <button
+            type="button"
+            class="to-bulk-uploader__button to-bulk-uploader__button--ghost"
+            (click)="reset()"
+          >
+            Start over
+          </button>
+          <button
+            type="button"
+            class="to-bulk-uploader__button to-bulk-uploader__button--primary"
+            (click)="handleSubmit()"
+          >
+            Submit {{ parsedRows().length }} rows
+          </button>
+        </div>
+      </div>
+    }
+
+    @case ('submitting') {
+      <div class="to-bulk-uploader__status">
+        <span class="to-bulk-uploader__spinner"></span>
+        Submitting {{ parsedRows().length }} rows for backend validation…
+      </div>
+    }
+
+    @case ('done') {
+      <div class="to-bulk-uploader__done">
+        <tabler-icon
+          [icon]="failureCount() > 0 ? alertIcon : successIcon"
+          [size]="32"
+          class="to-bulk-uploader__done-icon"
+          [class.to-bulk-uploader__done-icon--danger]="failureCount() > 0"
+          [class.to-bulk-uploader__done-icon--success]="failureCount() === 0"
+        />
+        <p class="to-bulk-uploader__done-summary">
+          {{ successCount() }} of {{ finalResults().length }} rows submitted successfully
+          @if (failureCount() > 0) {
+            — {{ failureCount() }} failed backend validation.
+          }
+        </p>
+        <button
+          type="button"
+          class="to-bulk-uploader__button to-bulk-uploader__button--ghost"
+          (click)="reset()"
+        >
+          <tabler-icon [icon]="refreshIcon" [size]="14" />
+          Start over
+        </button>
+      </div>
+    }
+  }
+</div>

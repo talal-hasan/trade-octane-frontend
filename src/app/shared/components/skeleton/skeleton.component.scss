@@ -1,0 +1,42 @@
+@use '../../../../styles/tokens' as t;
+
+.to-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+}
+
+.to-skeleton__block {
+  flex-shrink: 0;
+  background-color: var(--to-bg-2);
+  background-image: linear-gradient(90deg, var(--to-bg-2) 0%, var(--to-border) 50%, var(--to-bg-2) 100%);
+  background-size: 200% 100%;
+  border-radius: t.$to-radius-control;
+  animation: to-skeleton-shimmer 1.6s ease-in-out infinite;
+
+  &--circle {
+    border-radius: 50%;
+  }
+
+  &--rect {
+    border-radius: t.$to-radius-card;
+  }
+}
+
+@keyframes to-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// Shimmer is decorative motion, not a state transition — check prefers-reduced-motion
+// directly rather than through the u.motion transition mixin, and fall back to a flat fill.
+@media (prefers-reduced-motion: reduce) {
+  .to-skeleton__block {
+    background-image: none;
+    animation: none;
+  }
+}

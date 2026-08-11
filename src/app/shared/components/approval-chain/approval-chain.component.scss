@@ -1,0 +1,158 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-approval-chain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-approval-chain__step {
+  position: relative;
+  display: flex;
+  gap: t.$to-space-3;
+  padding-bottom: t.$to-space-6;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 24px;
+    bottom: 0;
+    width: 2px;
+    background: var(--to-border);
+  }
+}
+
+.to-approval-chain__step--approved:not(:last-child)::before {
+  background: var(--to-success);
+}
+
+.to-approval-chain__dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  border: 2px solid var(--to-border-strong);
+  color: var(--to-text-muted);
+  @include u.motion(background-color, border-color);
+}
+
+.to-approval-chain__step--approved .to-approval-chain__dot {
+  background: var(--to-success);
+  border-color: var(--to-success);
+  color: var(--to-bg-1);
+}
+
+.to-approval-chain__step--rejected .to-approval-chain__dot {
+  background: var(--to-danger);
+  border-color: var(--to-danger);
+  color: var(--to-bg-1);
+}
+
+.to-approval-chain__step--current .to-approval-chain__dot {
+  background: var(--to-bg-1);
+  border-color: var(--to-accent);
+  color: var(--to-accent);
+  box-shadow: 0 0 0 3px var(--to-accent-subtle);
+}
+
+.to-approval-chain__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.to-approval-chain__header {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  flex-wrap: wrap;
+}
+
+.to-approval-chain__name {
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-approval-chain__role {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// Pending/waiting steps read as greyed until they become current (CLAUDE.md §8:
+// "pending steps greyed"); the --current override below wins via source order.
+.to-approval-chain__step--pending .to-approval-chain__name,
+.to-approval-chain__step--pending .to-approval-chain__role,
+.to-approval-chain__step--waiting .to-approval-chain__name,
+.to-approval-chain__step--waiting .to-approval-chain__role {
+  color: var(--to-text-muted);
+}
+
+.to-approval-chain__step--current .to-approval-chain__name,
+.to-approval-chain__step--current .to-approval-chain__role {
+  color: var(--to-text-primary);
+}
+
+.to-approval-chain__meta {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-top: 2px;
+}
+
+.to-approval-chain__status-label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-approval-chain__step--current .to-approval-chain__status-label {
+  color: var(--to-accent-text);
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-approval-chain__time {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-approval-chain__remarks {
+  margin: t.$to-space-2 0 0;
+  padding-left: t.$to-space-2;
+  border-left: 2px solid var(--to-border);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  font-style: italic;
+}
+
+.to-approval-chain__actions {
+  margin-top: t.$to-space-3;
+}
+
+.to-approval-chain__remarks-input {
+  width: 100%;
+  resize: vertical;
+}
+
+.to-approval-chain__remarks-error {
+  margin: t.$to-space-1 0 0;
+  color: var(--to-danger);
+  font-size: t.$to-font-size-xs;
+}
+
+.to-approval-chain__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+  margin-top: t.$to-space-2;
+}
