@@ -29,6 +29,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'claims',
+        canActivate: [PermissionGuard],
+        data: { requiredPermission: 'CLAIMS_VIEW' },
+        loadComponent: () =>
+          import('./features/claims/claims-list/claims-list.component').then(
+            (m) => m.ClaimsListComponent,
+          ),
+      },
+      {
         path: 'style-guide',
         canActivate: [MocksOnlyGuard],
         loadComponent: () =>

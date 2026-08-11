@@ -1,0 +1,65 @@
+<to-page-header
+  title="Claims"
+  subtitle="Trade spend claims across the VBase → Trade Spend → Pujar pipeline."
+  [breadcrumbs]="[{ label: 'Claims' }]"
+>
+  <button type="button" pButton actions>
+    <tabler-icon [icon]="icons['file-invoice']" [size]="16" />
+    New Claim
+  </button>
+</to-page-header>
+
+<div class="to-claims-list">
+  @if (error()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Couldn't load claims"
+      description="Something went wrong fetching the claims list."
+    >
+      <button type="button" pButton actions (click)="retry()">Retry</button>
+    </to-empty-state>
+  } @else {
+    <to-data-table
+      [columns]="columns"
+      [rows]="pagedRecords()"
+      [loading]="loading()"
+      [totalRecords]="totalRecords()"
+      [pageSize]="pageSize"
+      [page]="page()"
+      (pageChange)="onPageChange($event)"
+      (sortChange)="onSortChange($event)"
+      (exportRequested)="onExport($event)"
+    >
+      <ng-template toCellTemplate="type" let-row>
+        <span class="to-claims-list__type to-claims-list__type--{{ claimTypeOf(row) }}">
+          {{ typeLabels[claimTypeOf(row)] }}
+        </span>
+      </ng-template>
+
+      <ng-template toCellTemplate="stage" let-row>
+        <to-pipeline-stage
+          [stages]="pipelineStages"
+          [currentStageIndex]="stageIndexOf(row)"
+          variant="compact"
+        />
+      </ng-template>
+
+      <ng-template toCellTemplate="status" let-row>
+        <to-status-pill [status]="claimStatusOf(row)" />
+      </ng-template>
+
+      <ng-template toCellTemplate="actions" let-row>
+        <button
+          type="button"
+          class="to-claims-list__row-action"
+          pTooltip="View details"
+          tooltipPosition="left"
+          aria-label="View claim details"
+          (click)="onView(row)"
+        >
+          <tabler-icon [icon]="icons['chevron-right']" [size]="16" />
+        </button>
+      </ng-template>
+    </to-data-table>
+  }
+</div>

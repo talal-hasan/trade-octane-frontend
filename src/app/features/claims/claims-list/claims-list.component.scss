@@ -1,0 +1,64 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+.to-claims-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  margin-top: t.$to-space-4;
+}
+
+// Claim-type tag — subtle background pattern, aligned with the status-pill treatment.
+.to-claims-list__type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  white-space: nowrap;
+
+  &--normal {
+    color: var(--to-info);
+    background: var(--to-info-subtle);
+  }
+
+  &--delay {
+    color: var(--to-warning);
+    background: var(--to-warning-subtle);
+  }
+
+  &--damage {
+    color: var(--to-danger);
+    background: var(--to-danger-subtle);
+  }
+}
+
+.to-claims-list__row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+}

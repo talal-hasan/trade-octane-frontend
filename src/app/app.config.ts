@@ -20,6 +20,8 @@ import { ApprovalsService } from './features/dashboard/services/approvals.servic
 import { MockApprovalsService } from './features/dashboard/services/mock-approvals.service';
 import { BudgetService } from './features/budget/services/budget.service';
 import { MockBudgetService } from './features/budget/services/mock-budget.service';
+import { ClaimsService } from './features/claims/services/claims.service';
+import { MockClaimsService } from './features/claims/services/mock-claims.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -33,6 +35,7 @@ export const appConfig: ApplicationConfig = {
     // HTTP-backed service here — one line per feature, zero component changes.
     { provide: ApprovalsService, useClass: MockApprovalsService },
     { provide: BudgetService, useClass: MockBudgetService },
+    { provide: ClaimsService, useClass: MockClaimsService },
     providePrimeNG({
       theme: {
         preset: TradeOctanePreset,
