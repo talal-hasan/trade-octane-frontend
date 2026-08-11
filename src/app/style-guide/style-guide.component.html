@@ -1,0 +1,220 @@
+<to-page-header
+  title="Style Guide"
+  subtitle="Live gallery of every shared component from CLAUDE.md §9 — visible in mock mode only."
+  [breadcrumbs]="[{ label: 'Style Guide' }]"
+/>
+
+<div class="to-style-guide">
+  <!-- Approval Chain -->
+  <section class="to-style-guide__section">
+    <h2>Approval Chain</h2>
+    <p class="to-style-guide__desc">
+      Used across Budget, Scheme, Promotion and Claims. Inline approve/reject only on the
+      current step, when <code>canApprove</code> is true.
+    </p>
+    <div class="to-style-guide__demo">
+      <label class="to-style-guide__toggle">
+        <input type="checkbox" [checked]="approvalCanApprove()" (change)="approvalCanApprove.set(!approvalCanApprove())" />
+        canApprove
+      </label>
+      <to-approval-chain
+        [steps]="approvalSteps"
+        [currentStepIndex]="1"
+        [canApprove]="approvalCanApprove()"
+        (approve)="onApprove($event)"
+        (reject)="onReject($event)"
+      />
+      @if (lastApprovalAction()) {
+        <p class="to-style-guide__event">{{ lastApprovalAction() }}</p>
+      }
+    </div>
+  </section>
+
+  <!-- Cascading Select -->
+  <section class="to-style-guide__section">
+    <h2>Cascading Select</h2>
+    <p class="to-style-guide__desc">
+      Year → Region → Brand pattern. Each level filters the next; downstream levels clear
+      automatically when an upstream level changes.
+    </p>
+    <div class="to-style-guide__demo">
+      <to-cascading-select
+        [levels]="cascadeLevels()"
+        [values]="cascadeValues()"
+        (valueChange)="onCascadeChange($event)"
+      />
+      <p class="to-style-guide__event">{{ cascadeValues() | json }}</p>
+    </div>
+  </section>
+
+  <!-- Bulk Uploader -->
+  <section class="to-style-guide__section">
+    <h2>Bulk Uploader</h2>
+    <p class="to-style-guide__desc">
+      Drop a .csv with <code>discount</code> and <code>liters</code> columns to see client-side
+      row validation. .xlsx/.xls are accepted but parsing lands in Phase 1.
+    </p>
+    <div class="to-style-guide__demo">
+      <to-bulk-uploader [columns]="bulkUploadColumns" />
+    </div>
+  </section>
+
+  <!-- Data Table -->
+  <section class="to-style-guide__section">
+    <h2>Data Table</h2>
+    <p class="to-style-guide__desc">
+      Server-side pagination/sort intent, column show/hide, bulk select, export, sticky first
+      column. Pure display layer — the parent owns the query.
+    </p>
+    <div class="to-style-guide__demo">
+      <button type="button" pButton [outlined]="true" size="small" (click)="toggleDataTableLoading()">
+        Toggle loading
+      </button>
+      <to-data-table
+        [columns]="dataTableColumns"
+        [rows]="dataTableRows"
+        [loading]="dataTableLoading()"
+        [totalRecords]="dataTableRows.length"
+        [selectable]="true"
+      />
+    </div>
+  </section>
+
+  <!-- Status Pill -->
+  <section class="to-style-guide__section">
+    <h2>Status Pill</h2>
+    <p class="to-style-guide__desc">Subtle background pattern only — never a saturated fill.</p>
+    <div class="to-style-guide__demo to-style-guide__row">
+      @for (status of statuses; track status) {
+        <to-status-pill [status]="status" />
+      }
+    </div>
+  </section>
+
+  <!-- Page Header -->
+  <section class="to-style-guide__section">
+    <h2>Page Header</h2>
+    <p class="to-style-guide__desc">
+      Title + breadcrumb + action slot. This page's own header above is an instance of it.
+    </p>
+    <div class="to-style-guide__demo">
+      <to-page-header
+        title="Budget Initiation"
+        subtitle="New request for FY2026"
+        [breadcrumbs]="[{ label: 'Budgets', route: '/budget' }, { label: 'New' }]"
+      >
+        <button type="button" pButton actions>Save Draft</button>
+      </to-page-header>
+    </div>
+  </section>
+
+  <!-- Filter Bar -->
+  <section class="to-style-guide__section">
+    <h2>Filter Bar</h2>
+    <p class="to-style-guide__desc">Chip-based active filters with clear-all and saved presets.</p>
+    <div class="to-style-guide__demo">
+      <to-filter-bar
+        [chips]="filterChips()"
+        [presets]="filterPresets"
+        (chipRemoved)="onChipRemoved($event)"
+        (clearAll)="onClearAllFilters()"
+        (presetSelected)="onPresetSelected($event)"
+      >
+        <span filters class="to-style-guide__filter-placeholder">[ caller-supplied filter controls go here ]</span>
+      </to-filter-bar>
+      @if (lastPreset()) {
+        <p class="to-style-guide__event">Preset selected: {{ lastPreset() }}</p>
+      }
+    </div>
+  </section>
+
+  <!-- Headroom Bar -->
+  <section class="to-style-guide__section">
+    <h2>Headroom Bar</h2>
+    <p class="to-style-guide__desc">Budget remaining visualisation — flips to danger on overrun.</p>
+    <div class="to-style-guide__demo to-style-guide__stack">
+      <to-headroom-bar [total]="headroomTotal" [consumed]="headroomConsumed" [pending]="headroomPending" />
+      <to-headroom-bar [total]="overrunTotal" [consumed]="overrunConsumed" [pending]="overrunPending" />
+    </div>
+  </section>
+
+  <!-- Pipeline Stage -->
+  <section class="to-style-guide__section">
+    <h2>Pipeline Stage</h2>
+    <p class="to-style-guide__desc">VBase → Trade Spend → Pujar — configurable stage list.</p>
+    <div class="to-style-guide__demo to-style-guide__stack">
+      <to-pipeline-stage [stages]="claimsStages" [currentStageIndex]="1" variant="horizontal" />
+      <to-pipeline-stage [stages]="claimsStages" [currentStageIndex]="1" variant="compact" />
+    </div>
+  </section>
+
+  <!-- Confirm Dialog -->
+  <section class="to-style-guide__section">
+    <h2>Confirm Dialog</h2>
+    <p class="to-style-guide__desc">PrimeNG Dialog wrapper, always used for destructive actions.</p>
+    <div class="to-style-guide__demo">
+      <button type="button" pButton severity="danger" (click)="confirmVisible.set(true)">
+        Expire Scheme…
+      </button>
+      <to-confirm-dialog
+        [visible]="confirmVisible()"
+        (visibleChange)="confirmVisible.set($event)"
+        title="Expire this scheme?"
+        message="This takes effect immediately via the API and cannot be undone."
+        confirmLabel="Expire"
+        variant="danger"
+        (confirmed)="onConfirmed()"
+        (cancelled)="onCancelled()"
+      />
+      @if (lastConfirmAction()) {
+        <p class="to-style-guide__event">{{ lastConfirmAction() }}</p>
+      }
+    </div>
+  </section>
+
+  <!-- Empty State -->
+  <section class="to-style-guide__section">
+    <h2>Empty State</h2>
+    <p class="to-style-guide__desc">Icon + heading + description + optional projected action.</p>
+    <div class="to-style-guide__demo">
+      <to-empty-state icon="inbox" heading="No claims yet" description="Claims you submit will show up here.">
+        <button type="button" pButton actions>New Claim</button>
+      </to-empty-state>
+    </div>
+  </section>
+
+  <!-- Skeleton Loader -->
+  <section class="to-style-guide__section">
+    <h2>Skeleton Loader</h2>
+    <p class="to-style-guide__desc">Matches the layout of the content it's loading.</p>
+    <div class="to-style-guide__demo to-style-guide__row">
+      <to-skeleton variant="circle" width="40px" />
+      <div class="to-style-guide__stack" style="flex: 1">
+        <to-skeleton variant="text" [count]="3" />
+      </div>
+      <to-skeleton variant="rect" width="120px" height="80px" />
+    </div>
+  </section>
+
+  <!-- Activity Timeline -->
+  <section class="to-style-guide__section">
+    <h2>Activity Timeline</h2>
+    <p class="to-style-guide__desc">Audit trail — used on approval detail screens for remarks history.</p>
+    <div class="to-style-guide__demo">
+      <to-activity-timeline [entries]="activityEntries" />
+    </div>
+  </section>
+
+  <!-- Number Display -->
+  <section class="to-style-guide__section">
+    <h2>Number Display</h2>
+    <p class="to-style-guide__desc">Tabular-nums, PKR formatting, sign colouring for +/- values.</p>
+    <div class="to-style-guide__demo to-style-guide__row">
+      <to-number [value]="1250000" format="pkr" />
+      <to-number [value]="12.5" format="percent" />
+      <to-number [value]="48200" format="plain" [colorSign]="true" />
+      <to-number [value]="-15000" format="pkr" [colorSign]="true" />
+      <to-number [value]="null" format="pkr" />
+    </div>
+  </section>
+</div>
