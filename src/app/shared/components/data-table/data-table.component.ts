@@ -1,4 +1,14 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  TemplateRef,
+  computed,
+  contentChildren,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import type { MenuItem } from 'primeng/api';
@@ -10,6 +20,7 @@ import type { TablePageEvent } from 'primeng/table';
 
 import { FormatService } from '../../../core/services/format.service';
 import { PkrCurrencyPipe } from '../../pipes/pkr-currency.pipe';
+import { CellTemplateDirective } from './cell-template.directive';
 import { EmptyStateComponent } from '../empty-state/empty-state.component';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 
@@ -51,6 +62,7 @@ const NUMERIC_COLUMN_TYPES: ReadonlySet<DataTableColumnType> = new Set(['number'
     ContextMenuModule,
     SplitButtonModule,
     ReactiveFormsModule,
+    NgTemplateOutlet,
     PkrCurrencyPipe,
     EmptyStateComponent,
     SkeletonComponent,
@@ -84,6 +96,18 @@ export class DataTableComponent {
   readonly viewSelected = output<string>();
 
   private readonly formatService = inject(FormatService);
+
+  // Per-column custom cell templates projected by the caller (see CellTemplateDirective).
+  // Lets screens render status pills, pipeline stages, or action buttons in a cell while
+  // keeping pagination / sort / export / column-toggle in this one shared component.
+  private readonly cellTemplates = contentChildren(CellTemplateDirective);
+
+  protected cellTemplateFor(columnKey: string): TemplateRef<unknown> | null {
+    return (
+      this.cellTemplates().find((template) => template.toCellTemplate() === columnKey)
+        ?.templateRef ?? null
+    );
+  }
 
   // "Hide columns" rather than "show columns" — default (empty control value) means
   // every column is visible, so there's no init-order dependency on `columns()` being

@@ -102,21 +102,28 @@
             [frozen]="stickyFirstColumn() && i === 0 && !selectable()"
             [class.to-numeric]="isNumericColumn(col)"
           >
-            @switch (col.type) {
-              @case ('currency') {
-                {{ getNumericValue(row, col) | pkrCurrency }}
-              }
-              @case ('number') {
-                {{ formatNumberValue(getNumericValue(row, col)) }}
-              }
-              @case ('date') {
-                {{ formatDateValue(getCellValue(row, col)) }}
-              }
-              @case ('status') {
-                <span class="to-data-table__status-badge">{{ getCellValue(row, col) ?? '—' }}</span>
-              }
-              @default {
-                {{ getCellValue(row, col) ?? '—' }}
+            @if (cellTemplateFor(col.key); as cellTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="cellTemplate"
+                [ngTemplateOutletContext]="{ $implicit: row, column: col }"
+              />
+            } @else {
+              @switch (col.type) {
+                @case ('currency') {
+                  {{ getNumericValue(row, col) | pkrCurrency }}
+                }
+                @case ('number') {
+                  {{ formatNumberValue(getNumericValue(row, col)) }}
+                }
+                @case ('date') {
+                  {{ formatDateValue(getCellValue(row, col)) }}
+                }
+                @case ('status') {
+                  <span class="to-data-table__status-badge">{{ getCellValue(row, col) ?? '—' }}</span>
+                }
+                @default {
+                  {{ getCellValue(row, col) ?? '—' }}
+                }
               }
             }
           </td>

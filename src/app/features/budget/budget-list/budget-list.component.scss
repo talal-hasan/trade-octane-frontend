@@ -1,0 +1,49 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+.to-budget-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  margin-top: t.$to-space-4;
+}
+
+.to-budget-list__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$to-space-2;
+
+  ::ng-deep .p-select {
+    min-width: 150px;
+  }
+}
+
+.to-budget-list__row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+}

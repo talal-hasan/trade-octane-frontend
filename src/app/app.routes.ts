@@ -20,6 +20,15 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
+        path: 'budget',
+        canActivate: [PermissionGuard],
+        data: { requiredPermission: 'BUDGET_VIEW' },
+        loadComponent: () =>
+          import('./features/budget/budget-list/budget-list.component').then(
+            (m) => m.BudgetListComponent,
+          ),
+      },
+      {
         path: 'style-guide',
         canActivate: [MocksOnlyGuard],
         loadComponent: () =>

@@ -1,0 +1,96 @@
+<to-page-header
+  title="Budgets"
+  subtitle="Trade budget allocations across regions, brands and Master SKUs."
+  [breadcrumbs]="[{ label: 'Budgets' }]"
+>
+  <button type="button" pButton actions>
+    <tabler-icon [icon]="icons['wallet']" [size]="16" />
+    New Budget
+  </button>
+</to-page-header>
+
+<div class="to-budget-list">
+  @if (error()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Couldn't load budgets"
+      description="Something went wrong fetching the budget list."
+    >
+      <button type="button" pButton actions (click)="retry()">Retry</button>
+    </to-empty-state>
+  } @else {
+    <to-filter-bar
+      [chips]="activeChips()"
+      (chipRemoved)="onChipRemoved($event)"
+      (clearAll)="onClearAll()"
+    >
+      <div filters class="to-budget-list__filters">
+        <p-select
+          [options]="yearOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Year"
+          [showClear]="true"
+          [ngModel]="yearFilter()"
+          (ngModelChange)="onYearChange($event)"
+        />
+        <p-select
+          [options]="regionOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Region"
+          [showClear]="true"
+          [ngModel]="regionFilter()"
+          (ngModelChange)="onRegionChange($event)"
+        />
+        <p-select
+          [options]="brandOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Brand"
+          [showClear]="true"
+          [ngModel]="brandFilter()"
+          (ngModelChange)="onBrandChange($event)"
+        />
+        <p-select
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Status"
+          [showClear]="true"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="onStatusChange($event)"
+        />
+      </div>
+    </to-filter-bar>
+
+    <to-data-table
+      [columns]="columns"
+      [rows]="pagedRecords()"
+      [loading]="loading()"
+      [totalRecords]="totalRecords()"
+      [pageSize]="pageSize"
+      [page]="page()"
+      (pageChange)="onPageChange($event)"
+      (sortChange)="onSortChange($event)"
+      (exportRequested)="onExport($event)"
+    >
+      <ng-template toCellTemplate="status" let-row>
+        <to-status-pill [status]="budgetStatusOf(row)" />
+      </ng-template>
+
+      <ng-template toCellTemplate="actions" let-row>
+        <button
+          type="button"
+          class="to-budget-list__row-action"
+          pTooltip="View details"
+          tooltipPosition="left"
+          aria-label="View budget details"
+          (click)="onView(row)"
+        >
+          <tabler-icon [icon]="icons['chevron-right']" [size]="16" />
+        </button>
+      </ng-template>
+    </to-data-table>
+  }
+</div>
