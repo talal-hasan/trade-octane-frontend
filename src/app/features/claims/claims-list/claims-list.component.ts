@@ -1,6 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -56,6 +56,7 @@ const PAGE_SIZE = 10;
 export class ClaimsListComponent {
   private readonly claimsService = inject(ClaimsService);
   private readonly notificationService = inject(NotificationService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly icons = ICON_REGISTRY;
@@ -135,9 +136,7 @@ export class ClaimsListComponent {
   }
 
   protected onView(row: unknown): void {
-    const record = row as ClaimRecord;
-    // Placeholder until the claims detail screen lands (Phase 1 priority #12).
-    this.notificationService.info(`${record.id} — detail screen arrives next.`, 'Open claim');
+    this.router.navigate(['/claims', (row as ClaimRecord).id]);
   }
 
   protected onExport(format: 'excel' | 'csv' | 'pdf'): void {

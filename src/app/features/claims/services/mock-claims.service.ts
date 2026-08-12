@@ -1,9 +1,16 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, delay, of, tap } from 'rxjs';
+import { Observable, delay, map, of, tap } from 'rxjs';
 
 import { PermissionService } from '../../../core/services/permission.service';
 import { ClaimRecord, ClaimStatus, ClaimType, NewClaimInput } from '../models/claim.model';
-import { buildActivity, buildChain, createClaimRecord, currentStepFor } from './claim-factory';
+import {
+  approveClaim,
+  buildActivity,
+  buildChain,
+  createClaimRecord,
+  currentStepFor,
+  rejectClaim,
+} from './claim-factory';
 import { ClaimsService } from './claims.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -88,5 +95,35 @@ export class MockClaimsService extends ClaimsService {
       delay(1200),
       tap((created) => this.claimsSignal.update((claims) => [created, ...claims])),
     );
+  }
+
+  approve(id: string, remarks: string): Observable<ClaimRecord> {
+    // 1s delay simulates the API; the transform runs on the freshest store state.
+    return of(null).pipe(
+      delay(1000),
+      map(() => this.mutate(id, (claim, approver) => approveClaim(claim, remarks, approver))),
+    );
+  }
+
+  reject(id: string, remarks: string): Observable<ClaimRecord> {
+    return of(null).pipe(
+      delay(800),
+      map(() => this.mutate(id, (claim, approver) => rejectClaim(claim, remarks, approver))),
+    );
+  }
+
+  // Applies a pure transform to the claim with the given id and writes it back to the store.
+  private mutate(
+    id: string,
+    transform: (claim: ClaimRecord, approver: string) => ClaimRecord,
+  ): ClaimRecord {
+    const current = this.claimsSignal().find((claim) => claim.id === id);
+    if (!current) {
+      throw new Error(`Claim ${id} not found`);
+    }
+    const approver = this.permissionService.context().name || 'You';
+    const updated = transform(current, approver);
+    this.claimsSignal.update((claims) => claims.map((claim) => (claim.id === id ? updated : claim)));
+    return updated;
   }
 }

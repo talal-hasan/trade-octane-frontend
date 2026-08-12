@@ -17,4 +17,10 @@ export abstract class ClaimsService {
 
   /** Creates a claim (Stage VBase, Status Pending) and prepends it to the store. */
   abstract create(input: NewClaimInput): Observable<ClaimRecord>;
+
+  /** Approves the current level — advances the pipeline and updates the store. */
+  abstract approve(id: string, remarks: string): Observable<ClaimRecord>;
+
+  /** Rejects the claim at the current level — stops the pipeline and updates the store. */
+  abstract reject(id: string, remarks: string): Observable<ClaimRecord>;
 }

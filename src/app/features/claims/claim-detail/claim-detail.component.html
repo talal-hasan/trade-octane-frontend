@@ -1,0 +1,154 @@
+<to-page-header
+  [title]="'Claim ' + id()"
+  subtitle="Review the claim, its pipeline and approval chain."
+  [breadcrumbs]="[{ label: 'Claims', route: '/claims' }, { label: id() }]"
+/>
+
+@if (claim(); as claim) {
+  <div class="to-claim-detail">
+    <div class="to-claim-detail__main">
+      <!-- Header -->
+      <div class="to-claim-detail__head">
+        <span class="to-claim-detail__type to-claim-detail__type--{{ claim.type }}">
+          {{ typeLabel(claim.type) }}
+        </span>
+        <to-status-pill [status]="claim.status" />
+      </div>
+
+      <!-- Facts -->
+      <dl class="to-claim-detail__facts">
+        <div class="to-claim-detail__fact">
+          <dt>Region</dt>
+          <dd>{{ claim.region }}</dd>
+        </div>
+        <div class="to-claim-detail__fact">
+          <dt>Head</dt>
+          <dd>{{ claim.head }}</dd>
+        </div>
+        <div class="to-claim-detail__fact">
+          <dt>Period</dt>
+          <dd>{{ claim.month }} {{ claim.year }}</dd>
+        </div>
+        <div class="to-claim-detail__fact">
+          <dt>Amount</dt>
+          <dd><to-number [value]="claim.amount" format="pkr" /></dd>
+        </div>
+        <div class="to-claim-detail__fact">
+          <dt>Raised by</dt>
+          <dd>{{ claim.raisedBy }}</dd>
+        </div>
+        <div class="to-claim-detail__fact">
+          <dt>Created</dt>
+          <dd>{{ claim.createdAt | relativeDate }}</dd>
+        </div>
+      </dl>
+
+      @if (claim.documentName) {
+        <div class="to-claim-detail__doc">
+          <tabler-icon [icon]="icons['file-spreadsheet']" [size]="16" class="to-claim-detail__doc-icon" />
+          <span class="to-claim-detail__doc-name">{{ claim.documentName }}</span>
+        </div>
+      }
+
+      @if (claim.remarks) {
+        <p class="to-claim-detail__remarks">“{{ claim.remarks }}”</p>
+      }
+
+      <!-- Pipeline -->
+      <section class="to-claim-detail__section">
+        <h3 class="to-claim-detail__section-title">Pipeline</h3>
+        <to-pipeline-stage
+          [stages]="pipelineStages"
+          [currentStageIndex]="claim.currentStageIndex"
+          variant="horizontal"
+        />
+      </section>
+
+      <!-- Approval chain -->
+      <section class="to-claim-detail__section">
+        <h3 class="to-claim-detail__section-title">Approval chain</h3>
+        <to-approval-chain
+          [steps]="claim.steps"
+          [currentStepIndex]="claim.currentStepIndex"
+          [canApprove]="false"
+        />
+      </section>
+
+      <!-- Activity -->
+      <section class="to-claim-detail__section">
+        <h3 class="to-claim-detail__section-title">Activity</h3>
+        <to-activity-timeline [entries]="claim.activity" />
+      </section>
+    </div>
+
+    <!-- Action panel -->
+    <aside class="to-claim-detail__aside">
+      @if (canApprove()) {
+        <div class="to-claim-detail__actions">
+          <h3 class="to-claim-detail__section-title">Your decision</h3>
+          <textarea
+            pTextarea
+            rows="4"
+            class="to-claim-detail__remarks-input"
+            placeholder="Remarks (required to reject, optional to approve)"
+            [formControl]="remarksControl"
+          ></textarea>
+          @if (rejectHint()) {
+            <p class="to-claim-detail__hint">Add a rejection reason before rejecting.</p>
+          }
+          <div class="to-claim-detail__buttons">
+            <button
+              type="button"
+              pButton
+              severity="danger"
+              [outlined]="true"
+              [disabled]="deciding()"
+              (click)="onRejectClick()"
+            >
+              Reject
+            </button>
+            <button type="button" pButton severity="success" [disabled]="deciding()" (click)="onApprove()">
+              @if (deciding()) {
+                <span class="to-claim-detail__spinner"></span>
+                Working…
+              } @else {
+                Approve
+              }
+            </button>
+          </div>
+        </div>
+      } @else if (alreadyResolved()) {
+        <div class="to-claim-detail__note">
+          <tabler-icon [icon]="icons['circle-check']" [size]="16" />
+          This claim has already been {{ claim.status }}.
+        </div>
+      } @else {
+        <div class="to-claim-detail__note to-claim-detail__note--muted">
+          <tabler-icon [icon]="icons['user']" [size]="16" />
+          You have view access to this claim but can't action it with your current role.
+        </div>
+      }
+    </aside>
+  </div>
+
+  <to-confirm-dialog
+    [visible]="rejectDialogVisible()"
+    (visibleChange)="rejectDialogVisible.set($event)"
+    title="Reject this claim?"
+    message="This stops the pipeline and can't be undone. The reason you entered will be recorded on the claim."
+    confirmLabel="Reject claim"
+    variant="danger"
+    (confirmed)="onRejectConfirmed()"
+    (cancelled)="onRejectCancelled()"
+  />
+} @else {
+  <div class="to-claim-detail__missing">
+    <to-empty-state
+      icon="file-invoice"
+      heading="Claim not found"
+      description="This claim doesn't exist or may have been removed."
+    >
+      <a routerLink="/claims" pButton actions>Back to claims</a>
+    </to-empty-state>
+  </div>
+}

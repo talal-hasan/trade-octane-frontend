@@ -86,6 +86,73 @@ export function createClaimRecord(
   };
 }
 
+// Approves the current chain level: marks it approved, activates the next level, advances
+// the pipeline one stage, and appends an activity entry. When the last level is approved the
+// claim becomes fully Approved and the pipeline holds at the final stage.
+export function approveClaim(
+  claim: ClaimRecord,
+  remarks: string,
+  approverName: string,
+  now: Date = new Date(),
+): ClaimRecord {
+  const ts = now.toISOString();
+  const currentIndex = claim.currentStepIndex;
+  const role = claim.steps[currentIndex]?.role ?? '';
+
+  const steps: ApprovalStep[] = claim.steps.map((step, index) =>
+    index === currentIndex
+      ? { ...step, status: 'approved' as const, timestamp: ts, remarks: remarks || step.remarks }
+      : { ...step },
+  );
+
+  const isLast = currentIndex >= steps.length - 1;
+  let nextStepIndex = currentIndex;
+  if (!isLast) {
+    nextStepIndex = currentIndex + 1;
+    steps[nextStepIndex] = { ...steps[nextStepIndex], status: 'pending' as const };
+  }
+
+  const activity: ActivityEntry[] = [
+    ...claim.activity,
+    { actor: approverName, action: `approved at ${role}`, timestamp: ts, remarks: remarks || undefined },
+  ];
+
+  return {
+    ...claim,
+    steps,
+    currentStepIndex: nextStepIndex,
+    currentStageIndex: Math.min(claim.currentStageIndex + 1, CLAIM_LAST_STAGE_INDEX),
+    status: isLast ? 'approved' : 'pending',
+    activity,
+  };
+}
+
+// Rejects the claim at the current level: marks it rejected, stops the pipeline (stage
+// unchanged), sets status to Rejected, and appends an activity entry.
+export function rejectClaim(
+  claim: ClaimRecord,
+  remarks: string,
+  approverName: string,
+  now: Date = new Date(),
+): ClaimRecord {
+  const ts = now.toISOString();
+  const currentIndex = claim.currentStepIndex;
+  const role = claim.steps[currentIndex]?.role ?? '';
+
+  const steps: ApprovalStep[] = claim.steps.map((step, index) =>
+    index === currentIndex
+      ? { ...step, status: 'rejected' as const, timestamp: ts, remarks }
+      : { ...step },
+  );
+
+  const activity: ActivityEntry[] = [
+    ...claim.activity,
+    { actor: approverName, action: `rejected at ${role}`, timestamp: ts, remarks },
+  ];
+
+  return { ...claim, steps, status: 'rejected', activity };
+}
+
 // Builds the audit trail (oldest first) from the creation event plus each resolved step.
 export function buildActivity(
   raisedBy: string,

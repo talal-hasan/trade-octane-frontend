@@ -47,6 +47,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'claims/:id',
+        canActivate: [PermissionGuard],
+        data: { requiredPermission: 'CLAIMS_VIEW' },
+        loadComponent: () =>
+          import('./features/claims/claim-detail/claim-detail.component').then(
+            (m) => m.ClaimDetailComponent,
+          ),
+      },
+      {
         path: 'style-guide',
         canActivate: [MocksOnlyGuard],
         loadComponent: () =>

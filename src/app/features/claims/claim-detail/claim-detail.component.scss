@@ -1,0 +1,204 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+.to-claim-detail {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: t.$to-space-6;
+  align-items: start;
+  margin-top: t.$to-space-4;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.to-claim-detail__main {
+  padding: t.$to-space-6;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-claim-detail__head {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-claim-detail__type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+
+  &--normal {
+    color: var(--to-info);
+    background: var(--to-info-subtle);
+  }
+
+  &--delay {
+    color: var(--to-warning);
+    background: var(--to-warning-subtle);
+  }
+
+  &--damage {
+    color: var(--to-danger);
+    background: var(--to-danger-subtle);
+  }
+}
+
+.to-claim-detail__facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: t.$to-space-4;
+  margin: 0 0 t.$to-space-4;
+  padding: t.$to-space-4;
+  background: var(--to-bg-0);
+  border-radius: t.$to-radius-card;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.to-claim-detail__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-claim-detail__doc {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-2);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-claim-detail__doc-icon {
+  color: var(--to-accent);
+}
+
+.to-claim-detail__doc-name {
+  @include u.truncate;
+}
+
+.to-claim-detail__remarks {
+  margin: 0 0 t.$to-space-4;
+  padding-left: t.$to-space-3;
+  border-left: 2px solid var(--to-border);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+  font-style: italic;
+}
+
+.to-claim-detail__section {
+  margin-top: t.$to-space-6;
+}
+
+.to-claim-detail__section-title {
+  margin: 0 0 t.$to-space-3;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--to-text-muted);
+}
+
+// ─── Action panel ────────────────────────────────────────
+.to-claim-detail__aside {
+  position: sticky;
+  top: t.$to-space-6;
+}
+
+.to-claim-detail__actions,
+.to-claim-detail__note {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-claim-detail__actions .to-claim-detail__section-title {
+  margin-top: 0;
+}
+
+.to-claim-detail__remarks-input {
+  width: 100%;
+  resize: vertical;
+  margin-bottom: t.$to-space-2;
+}
+
+.to-claim-detail__hint {
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+.to-claim-detail__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}
+
+.to-claim-detail__note {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-success);
+}
+
+.to-claim-detail__note--muted {
+  color: var(--to-text-secondary);
+}
+
+.to-claim-detail__missing {
+  margin-top: t.$to-space-8;
+}
+
+.to-claim-detail__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-top-color: #fff;
+  animation: to-claim-detail-spin 0.7s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1.4s;
+  }
+}
+
+@keyframes to-claim-detail-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
