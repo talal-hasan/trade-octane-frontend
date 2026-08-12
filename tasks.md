@@ -57,7 +57,15 @@
 - [ ] Scheme form — Trade Offer
 - [ ] Scheme bulk uploader
 - [x] Claims list — analysis-mode table; Type tags (Normal/Delay/Damage); Stage column renders the VBase→Trade Spend→Pujar pipeline (compact); status pills; 11 mock claims. `ClaimsService`/`MockClaimsService`.
-- [ ] Claims detail + approval
+- [x] Claim creation form — builder mode at /claims/new; conditional Damage-document validation; PKR-on-blur; submit→create. (Flow 1)
+- [x] Claims detail + approval — /claims/:id; pipeline + chain + activity; approve advances stage, reject stops pipeline; gated on CLAIMS_APPROVE. (Flow 1)
+
+### Flow 1 — Claims Request (branch `feature/phase-1-flows`)
+> New Claim → Submit → List → Detail → Approve, all reactive off a signal-backed claims store. Each step its own commit.
+- [x] Step 1 — creation form + validation (`f72979a`)
+- [x] Step 2 — submission flow + reactive store (`a8255bb`)
+- [x] Step 3 — claim detail + approval/reject (`e5f33d3`)
+- [x] Step 4 — dashboard inbox sourced from the store (`5b7426d`)
 - [ ] Distribution — distributor list
 - [ ] Distribution — distributor detail form
 - [ ] Reports — budget consumed/unconsumed
@@ -103,3 +111,10 @@
 - 2026-08-12: **Budgets bumped** in `angular.json` — `initial` 500kB→700kB and `anyComponentStyle` 6kB→8kB (warning). The initial-bundle growth is bundled POC mock data eagerly imported by `app.config.ts` providers; it's swapped out for real HTTP services in prod, so the prod bundle will shrink, not grow. Revisit these budgets once mocks are gone.
 - 2026-08-12: Claims list got an Actions column not in the spec's column list, for consistency with the budget list (and to give a detail affordance). Budget/Claims "View" action is a placeholder toast until the detail screens (POC #5 / #12) land.
 - 2026-08-12: **Browser smoke test was BLOCKED this session** — the Claude-in-Chrome extension could not inject/screenshot ANY page (the trivial, unchanged `/login` failed identically on both the dev server and a production static serve), so it's an extension/CDP issue in this Chrome session, not app code. Runtime bootstrap + routing + `PermissionGuard` were still confirmed working (the SPA auto-redirected `/` → `/login` when unauthenticated). Build, lint, and prod build are all green. Left a static prod serve on `http://localhost:4301` for manual visual verification. **Phase 1 screens still need a human visual pass.**
+
+### Flow 1 — Claims Request (2026-08-12, branch `feature/phase-1-flows`)
+- 2026-08-12: **Signal-backed claims store** — refactored `MockClaimsService` from stateless snapshots into the single reactive source of truth (`claims` signal + `refresh`/`create`/`approve`/`reject`). This is what makes Step 4 work: the claims list, claim detail, and dashboard inbox all read the same store signal, so a claim created or approved anywhere updates everywhere with no refetch. Pure transforms (`createClaimRecord`/`approveClaim`/`rejectClaim`) live in `claim-factory.ts`; the store just applies them after a mock delay. When the real API lands, the store keeps its signal shape and calls HttpClient instead of the factory.
+- 2026-08-12: **Pipeline stage and approval step advance together** — approving a claim marks the current chain level approved, activates the next, and moves the pipeline one stage (VBase→Trade Spend→Pujar); the claim is fully Approved only after the last level. So an inbox/detail approve advances a claim but it stays actionable until complete — intentional, and a good multi-step demo.
+- 2026-08-12: **Dashboard now depends on the claims feature** — the inbox imports `ClaimsService` + the claim model to compute claim inbox items from the store (budget/scheme items still come from `ApprovalsService`; the two hardcoded claim items were removed from the approvals mock). Cross-feature import is deliberate: the inbox aggregates claims.
+- 2026-08-12: **Permission naming** — the brief said `CLAIM_APPROVE`; used the existing `CLAIMS_APPROVE` (in `mock-users`, matches the `CLAIMS_VIEW` route guard) to avoid an orphan permission. If a distinct create permission is ever wanted, `/claims/new` is currently gated on `CLAIMS_VIEW`.
+- 2026-08-12: **Partial browser verification (extension recovered, then flaky).** Confirmed visually: login, the approvals inbox sourcing 6 store claims (tabs All 11 / Budgets 3 / Schemes 2 / Claims 6) with the budget detail (headroom + chain), the claims list (type tags + pipeline column + status pills), and the claim form's reactive Damage→document-required validation + submit-disabled. The extension dropped before the submit→list and detail→approve interactions could be walked; those remain build/lint-verified only. Static prod serve left on `http://localhost:4302` for a manual walk-through of the full flow.
