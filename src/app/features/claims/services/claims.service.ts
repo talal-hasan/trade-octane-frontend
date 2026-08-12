@@ -1,9 +1,20 @@
+import { Signal } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ClaimRecord } from '../models/claim.model';
+import { ClaimRecord, NewClaimInput } from '../models/claim.model';
 
-// Abstract class doubles as the DI token (CLAUDE.md §3 mock-first). Real implementation
-// will be HttpClient-backed; components are unaffected by the swap.
+// Stateful claims store (CLAUDE.md §3 mock-first). `claims` is the single reactive source
+// of truth shared by the list, the detail screen and the approvals inbox — mutations
+// (create, and later approve/reject) update it so every consumer reacts. The abstract class
+// doubles as the DI token; the real HttpClient-backed implementation swaps in with no
+// component changes.
 export abstract class ClaimsService {
-  abstract getClaims(): Observable<ClaimRecord[]>;
+  /** Reactive source of truth for all claims. */
+  abstract readonly claims: Signal<readonly ClaimRecord[]>;
+
+  /** Simulates an initial fetch so consumers can show a loading state. */
+  abstract refresh(): Observable<readonly ClaimRecord[]>;
+
+  /** Creates a claim (Stage VBase, Status Pending) and prepends it to the store. */
+  abstract create(input: NewClaimInput): Observable<ClaimRecord>;
 }

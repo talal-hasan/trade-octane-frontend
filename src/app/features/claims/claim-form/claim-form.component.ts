@@ -17,7 +17,9 @@ import {
   CLAIM_REGIONS,
   CLAIM_TYPE_OPTIONS,
   ClaimType,
+  NewClaimInput,
 } from '../models/claim.model';
+import { ClaimsService } from '../services/claims.service';
 
 interface ClaimFormControls {
   type: FormControl<ClaimType | null>;
@@ -49,6 +51,7 @@ interface ClaimFormControls {
 })
 export class ClaimFormComponent {
   private readonly router = inject(Router);
+  private readonly claimsService = inject(ClaimsService);
   private readonly formatService = inject(FormatService);
   private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -133,15 +136,39 @@ export class ClaimFormComponent {
   }
 
   protected onSubmit(): void {
-    if (this.form.invalid) {
+    if (this.form.invalid || this.submitting()) {
       this.form.markAllAsTouched();
       return;
     }
-    // Submission (create + navigate) is wired in the next step of this flow.
-    this.notificationService.info(
-      'Form is valid — submission is wired in the next step of this flow.',
-      'Claim ready',
-    );
+    this.submitting.set(true);
+    const value = this.form.getRawValue();
+    const input: NewClaimInput = {
+      type: value.type as ClaimType,
+      region: value.region as string,
+      head: value.head,
+      month: value.month as string,
+      year: value.year as number,
+      amount: value.amount as number,
+      documentName: value.document ?? undefined,
+      remarks: value.remarks.trim() || undefined,
+    };
+    this.claimsService
+      .create(input)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (claim) => {
+          this.notificationService.success(
+            `${claim.id} submitted — now Pending at VBase.`,
+            'Claim submitted',
+          );
+          // Give the toast a moment, then return to the list where the new claim is on top.
+          setTimeout(() => this.router.navigateByUrl('/claims'), 1500);
+        },
+        error: () => {
+          this.submitting.set(false);
+          this.notificationService.error('Could not submit the claim. Please try again.');
+        },
+      });
   }
 
   private buildYearOptions(): { label: string; value: number }[] {

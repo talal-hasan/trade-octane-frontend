@@ -3,7 +3,7 @@ import type {
   ApprovalStepStatus,
 } from '../../../shared/components/approval-chain/approval-chain.component';
 import type { ActivityEntry } from '../../../shared/components/activity-timeline/activity-timeline.component';
-import { CLAIM_PIPELINE_STAGES, ClaimStatus } from '../models/claim.model';
+import { CLAIM_PIPELINE_STAGES, ClaimRecord, ClaimStatus, NewClaimInput } from '../models/claim.model';
 
 // The three-level claim approval hierarchy (CLAUDE.md §8). Fixed approvers keep the mock
 // coherent; a real backend would resolve these dynamically by business type and value.
@@ -54,6 +54,36 @@ export function buildChain(
 
     return { role: approver.role, name: approver.name, status: stepStatus, timestamp };
   });
+}
+
+// Builds a brand-new claim from the form payload: stage 0 (VBase), status Pending, chain
+// with the first level pending, and an activity trail seeded with the submission event.
+export function createClaimRecord(
+  id: string,
+  input: NewClaimInput,
+  raisedBy: string,
+  now: Date = new Date(),
+): ClaimRecord {
+  const createdAt = now.toISOString();
+  const steps = buildChain(0, 'pending', now.getTime());
+  return {
+    id,
+    type: input.type,
+    region: input.region,
+    head: input.head,
+    month: input.month,
+    year: input.year,
+    amount: input.amount,
+    documentName: input.documentName,
+    remarks: input.remarks,
+    currentStageIndex: 0,
+    status: 'pending',
+    raisedBy,
+    createdAt,
+    steps,
+    currentStepIndex: 0,
+    activity: buildActivity(raisedBy, steps, createdAt),
+  };
 }
 
 // Builds the audit trail (oldest first) from the creation event plus each resolved step.

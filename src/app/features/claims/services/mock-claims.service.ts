@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, delay, of, tap } from 'rxjs';
 
-import { ClaimRecord, ClaimStatus, ClaimType } from '../models/claim.model';
-import { buildActivity, buildChain, currentStepFor } from './claim-factory';
+import { PermissionService } from '../../../core/services/permission.service';
+import { ClaimRecord, ClaimStatus, ClaimType, NewClaimInput } from '../models/claim.model';
+import { buildActivity, buildChain, createClaimRecord, currentStepFor } from './claim-factory';
 import { ClaimsService } from './claims.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -63,8 +64,29 @@ const MOCK_CLAIMS: ClaimRecord[] = [
 
 @Injectable()
 export class MockClaimsService extends ClaimsService {
-  getClaims(): Observable<ClaimRecord[]> {
-    // 500ms delay exercises the data table's loading (skeleton) state.
-    return of(MOCK_CLAIMS.map((record) => ({ ...record }))).pipe(delay(500));
+  private readonly permissionService = inject(PermissionService);
+
+  // The store: a single signal every consumer reads reactively.
+  private readonly claimsSignal = signal<ClaimRecord[]>(MOCK_CLAIMS);
+  readonly claims = this.claimsSignal.asReadonly();
+
+  // Sequence for generated ids, offset well past the seed set to avoid collisions.
+  private sequence = 900;
+
+  refresh(): Observable<readonly ClaimRecord[]> {
+    // 500ms delay exercises the loading (skeleton) state on first load.
+    return of(this.claimsSignal()).pipe(delay(500));
+  }
+
+  create(input: NewClaimInput): Observable<ClaimRecord> {
+    const id = `CLM-${new Date().getFullYear()}-${String(++this.sequence).padStart(3, '0')}`;
+    const raisedBy = this.permissionService.context().name || 'You';
+    const claim = createClaimRecord(id, input, raisedBy);
+    // 1.2s delay simulates the API round-trip; the store updates on success so the list
+    // (and inbox) show the new claim reactively.
+    return of(claim).pipe(
+      delay(1200),
+      tap((created) => this.claimsSignal.update((claims) => [created, ...claims])),
+    );
   }
 }

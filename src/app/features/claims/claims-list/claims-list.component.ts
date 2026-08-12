@@ -63,7 +63,9 @@ export class ClaimsListComponent {
   protected readonly pipelineStages = [...CLAIM_PIPELINE_STAGES];
   protected readonly typeLabels = TYPE_LABELS;
 
-  protected readonly records = signal<ClaimRecord[]>([]);
+  // Reactive source of truth: reads the store signal directly, so claims created elsewhere
+  // (the form, the approvals inbox) appear here without a manual refetch.
+  protected readonly records = this.claimsService.claims;
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
 
@@ -149,14 +151,13 @@ export class ClaimsListComponent {
   private load(): void {
     this.loading.set(true);
     this.error.set(false);
+    // The store already holds the data; refresh() just simulates the initial fetch so the
+    // skeleton shows briefly. The table reads `records` (the store signal) reactively.
     this.claimsService
-      .getClaims()
+      .refresh()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (records) => {
-          this.records.set(records);
-          this.loading.set(false);
-        },
+        next: () => this.loading.set(false),
         error: () => {
           this.loading.set(false);
           this.error.set(true);
