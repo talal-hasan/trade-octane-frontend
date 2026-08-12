@@ -1,0 +1,179 @@
+<to-page-header
+  title="New Claim"
+  subtitle="Raise a trade spend claim for approval."
+  [breadcrumbs]="[{ label: 'Claims', route: '/claims' }, { label: 'New' }]"
+/>
+
+<form class="to-claim-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  <div class="to-claim-form__card">
+    <!-- Claim Type -->
+    <div class="to-claim-form__field">
+      <label class="to-claim-form__label" for="claim-type">Claim Type <span class="to-claim-form__req">*</span></label>
+      <p-select
+        inputId="claim-type"
+        formControlName="type"
+        [options]="typeOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select claim type"
+        styleClass="to-claim-form__control"
+      />
+      @if (showError('type')) {
+        <p class="to-claim-form__error">Claim type is required.</p>
+      }
+    </div>
+
+    <!-- Region -->
+    <div class="to-claim-form__field">
+      <label class="to-claim-form__label" for="claim-region">Region <span class="to-claim-form__req">*</span></label>
+      <p-select
+        inputId="claim-region"
+        formControlName="region"
+        [options]="regionOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select region"
+        [filter]="true"
+        styleClass="to-claim-form__control"
+      />
+      @if (showError('region')) {
+        <p class="to-claim-form__error">Region is required.</p>
+      }
+    </div>
+
+    <!-- Head -->
+    <div class="to-claim-form__field">
+      <label class="to-claim-form__label" for="claim-head">Head <span class="to-claim-form__req">*</span></label>
+      <input
+        id="claim-head"
+        type="text"
+        class="to-claim-form__input"
+        formControlName="head"
+        placeholder="e.g. North Modern Trade"
+        autocomplete="off"
+      />
+      @if (showError('head')) {
+        <p class="to-claim-form__error">Head is required.</p>
+      }
+    </div>
+
+    <!-- Month + Year -->
+    <div class="to-claim-form__row">
+      <div class="to-claim-form__field">
+        <label class="to-claim-form__label" for="claim-month">Month <span class="to-claim-form__req">*</span></label>
+        <p-select
+          inputId="claim-month"
+          formControlName="month"
+          [options]="monthOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select month"
+          styleClass="to-claim-form__control"
+        />
+        @if (showError('month')) {
+          <p class="to-claim-form__error">Month is required.</p>
+        }
+      </div>
+
+      <div class="to-claim-form__field">
+        <label class="to-claim-form__label" for="claim-year">Year <span class="to-claim-form__req">*</span></label>
+        <p-select
+          inputId="claim-year"
+          formControlName="year"
+          [options]="yearOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select year"
+          styleClass="to-claim-form__control"
+        />
+        @if (showError('year')) {
+          <p class="to-claim-form__error">Year is required.</p>
+        }
+      </div>
+    </div>
+
+    <!-- Amount -->
+    <div class="to-claim-form__field">
+      <label class="to-claim-form__label" for="claim-amount">Amount <span class="to-claim-form__req">*</span></label>
+      <input
+        id="claim-amount"
+        type="text"
+        inputmode="numeric"
+        class="to-claim-form__input to-numeric"
+        [value]="amountText()"
+        (input)="onAmountInput($event)"
+        (focus)="onAmountFocus()"
+        (blur)="onAmountBlur()"
+        placeholder="PKR 0"
+        autocomplete="off"
+      />
+      <p class="to-claim-form__hint">Whole rupees only — formatted as PKR 1,000,000.</p>
+      @if (showError('amount')) {
+        @if (form.controls.amount.errors?.['min']) {
+          <p class="to-claim-form__error">Amount must be greater than 0.</p>
+        } @else {
+          <p class="to-claim-form__error">Amount is required.</p>
+        }
+      }
+    </div>
+
+    <!-- Supporting Document -->
+    <div class="to-claim-form__field">
+      <span class="to-claim-form__label">
+        Supporting Document
+        @if (isDamage()) {
+          <span class="to-claim-form__req">*</span>
+        } @else {
+          <span class="to-claim-form__optional">(optional)</span>
+        }
+      </span>
+
+      @if (form.controls.document.value; as fileName) {
+        <div class="to-claim-form__file">
+          <tabler-icon [icon]="icons['file-spreadsheet']" [size]="16" class="to-claim-form__file-icon" />
+          <span class="to-claim-form__file-name">{{ fileName }}</span>
+          <button type="button" class="to-claim-form__file-clear" aria-label="Remove file" (click)="clearFile()">
+            <tabler-icon [icon]="icons['x']" [size]="14" />
+          </button>
+        </div>
+      } @else {
+        <label class="to-claim-form__file-btn">
+          <tabler-icon [icon]="icons['cloud-upload']" [size]="16" />
+          Choose file
+          <input type="file" accept=".pdf,image/*" (change)="onFileSelected($event)" hidden />
+        </label>
+      }
+      <p class="to-claim-form__hint">PDF or image. Required for Damage claims.</p>
+      @if (showError('document')) {
+        <p class="to-claim-form__error">A supporting document is required for Damage claims.</p>
+      }
+    </div>
+
+    <!-- Remarks -->
+    <div class="to-claim-form__field">
+      <label class="to-claim-form__label" for="claim-remarks">
+        Remarks <span class="to-claim-form__optional">(optional)</span>
+      </label>
+      <textarea
+        id="claim-remarks"
+        pTextarea
+        rows="3"
+        class="to-claim-form__textarea"
+        formControlName="remarks"
+        placeholder="Any context for the approvers…"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="to-claim-form__actions">
+    <button type="button" pButton [text]="true" severity="secondary" (click)="cancel()">Cancel</button>
+    <button type="submit" pButton [disabled]="form.invalid || submitting()">
+      @if (submitting()) {
+        <span class="to-claim-form__spinner"></span>
+        Submitting…
+      } @else {
+        Submit Claim
+      }
+    </button>
+  </div>
+</form>

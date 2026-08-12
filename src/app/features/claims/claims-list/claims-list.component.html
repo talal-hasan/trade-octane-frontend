@@ -3,10 +3,10 @@
   subtitle="Trade spend claims across the VBase → Trade Spend → Pujar pipeline."
   [breadcrumbs]="[{ label: 'Claims' }]"
 >
-  <button type="button" pButton actions>
+  <a pButton routerLink="/claims/new" actions>
     <tabler-icon [icon]="icons['file-invoice']" [size]="16" />
     New Claim
-  </button>
+  </a>
 </to-page-header>
 
 <div class="to-claims-list">

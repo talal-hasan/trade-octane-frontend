@@ -38,6 +38,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'claims/new',
+        canActivate: [PermissionGuard],
+        data: { requiredPermission: 'CLAIMS_VIEW' },
+        loadComponent: () =>
+          import('./features/claims/claim-form/claim-form.component').then(
+            (m) => m.ClaimFormComponent,
+          ),
+      },
+      {
         path: 'style-guide',
         canActivate: [MocksOnlyGuard],
         loadComponent: () =>

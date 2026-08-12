@@ -1,28 +1,70 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 
-import { ClaimRecord } from '../models/claim.model';
+import { ClaimRecord, ClaimStatus, ClaimType } from '../models/claim.model';
+import { buildActivity, buildChain, currentStepFor } from './claim-factory';
 import { ClaimsService } from './claims.service';
 
-// 11 fixture claims spanning all three types (Normal / Delay / Damage), all three pipeline
-// stages, and a mix of statuses — enough to demonstrate the pipeline column and status pills.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+interface SeedInput {
+  id: string;
+  type: ClaimType;
+  region: string;
+  head: string;
+  month: string;
+  year: number;
+  amount: number;
+  currentStageIndex: number;
+  status: ClaimStatus;
+  raisedBy: string;
+  documentName?: string;
+  createdDaysAgo: number;
+}
+
+// Expands a compact seed row into a full ClaimRecord with a coherent chain + activity trail.
+function seed(input: SeedInput): ClaimRecord {
+  const createdMs = Date.now() - input.createdDaysAgo * DAY_MS;
+  const createdAt = new Date(createdMs).toISOString();
+  const steps = buildChain(input.currentStageIndex, input.status, createdMs + 60 * 60 * 1000);
+  return {
+    id: input.id,
+    type: input.type,
+    region: input.region,
+    head: input.head,
+    month: input.month,
+    year: input.year,
+    amount: input.amount,
+    documentName: input.documentName,
+    currentStageIndex: input.currentStageIndex,
+    status: input.status,
+    raisedBy: input.raisedBy,
+    createdAt,
+    steps,
+    currentStepIndex: currentStepFor(input.currentStageIndex, input.status),
+    activity: buildActivity(input.raisedBy, steps, createdAt),
+  };
+}
+
+// 11 fixture claims across all three types, all pipeline stages, and a mix of statuses.
 const MOCK_CLAIMS: ClaimRecord[] = [
-  { id: 'CLM-2026-201', type: 'normal', region: 'Punjab-North', amount: 2_240_000, currentStageIndex: 0, status: 'pending', raisedBy: 'Waqas Distribution Co.' },
-  { id: 'CLM-2026-202', type: 'damage', region: 'Sindh', amount: 845_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Waqas Distribution Co.' },
-  { id: 'CLM-2026-203', type: 'delay', region: 'Punjab-South', amount: 1_120_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Mehran Traders' },
-  { id: 'CLM-2026-204', type: 'normal', region: 'KPK', amount: 3_500_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Frontier Sales' },
-  { id: 'CLM-2026-205', type: 'damage', region: 'Punjab-North', amount: 610_000, currentStageIndex: 0, status: 'draft', raisedBy: 'Waqas Distribution Co.' },
-  { id: 'CLM-2026-206', type: 'delay', region: 'Balochistan', amount: 980_000, currentStageIndex: 2, status: 'rejected', raisedBy: 'Quetta Traders' },
-  { id: 'CLM-2026-207', type: 'normal', region: 'Sindh', amount: 4_150_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Indus Distribution' },
-  { id: 'CLM-2026-208', type: 'damage', region: 'Punjab-South', amount: 1_750_000, currentStageIndex: 1, status: 'overdue', raisedBy: 'Mehran Traders' },
-  { id: 'CLM-2026-209', type: 'delay', region: 'Punjab-North', amount: 720_000, currentStageIndex: 0, status: 'pending', raisedBy: 'Waqas Distribution Co.' },
-  { id: 'CLM-2026-210', type: 'normal', region: 'KPK', amount: 2_960_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Frontier Sales' },
-  { id: 'CLM-2026-211', type: 'damage', region: 'Sindh', amount: 1_340_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Indus Distribution' },
+  seed({ id: 'CLM-2026-201', type: 'normal', region: 'Punjab-North', head: 'North Modern Trade', month: 'June', year: 2026, amount: 2_240_000, currentStageIndex: 0, status: 'pending', raisedBy: 'Waqas Distribution Co.', createdDaysAgo: 2 }),
+  seed({ id: 'CLM-2026-202', type: 'damage', region: 'Sindh', head: 'South General Trade', month: 'June', year: 2026, amount: 845_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Waqas Distribution Co.', documentName: 'damage-report-202.pdf', createdDaysAgo: 4 }),
+  seed({ id: 'CLM-2026-203', type: 'delay', region: 'Punjab-South', head: 'Central Wholesale', month: 'May', year: 2026, amount: 1_120_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Mehran Traders', createdDaysAgo: 9 }),
+  seed({ id: 'CLM-2026-204', type: 'normal', region: 'KPK', head: 'Frontier Retail', month: 'May', year: 2026, amount: 3_500_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Frontier Sales', createdDaysAgo: 3 }),
+  seed({ id: 'CLM-2026-205', type: 'damage', region: 'Punjab-North', head: 'North Modern Trade', month: 'June', year: 2026, amount: 610_000, currentStageIndex: 0, status: 'draft', raisedBy: 'Waqas Distribution Co.', documentName: 'transit-damage-205.jpg', createdDaysAgo: 1 }),
+  seed({ id: 'CLM-2026-206', type: 'delay', region: 'Balochistan', head: 'West Distribution', month: 'April', year: 2026, amount: 980_000, currentStageIndex: 1, status: 'rejected', raisedBy: 'Quetta Traders', createdDaysAgo: 12 }),
+  seed({ id: 'CLM-2026-207', type: 'normal', region: 'Sindh', head: 'South General Trade', month: 'May', year: 2026, amount: 4_150_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Indus Distribution', createdDaysAgo: 15 }),
+  seed({ id: 'CLM-2026-208', type: 'damage', region: 'Punjab-South', head: 'Central Wholesale', month: 'June', year: 2026, amount: 1_750_000, currentStageIndex: 1, status: 'overdue', raisedBy: 'Mehran Traders', documentName: 'damage-claim-208.pdf', createdDaysAgo: 20 }),
+  seed({ id: 'CLM-2026-209', type: 'delay', region: 'Punjab-North', head: 'North Modern Trade', month: 'June', year: 2026, amount: 720_000, currentStageIndex: 0, status: 'pending', raisedBy: 'Waqas Distribution Co.', createdDaysAgo: 1 }),
+  seed({ id: 'CLM-2026-210', type: 'normal', region: 'KPK', head: 'Frontier Retail', month: 'April', year: 2026, amount: 2_960_000, currentStageIndex: 1, status: 'pending', raisedBy: 'Frontier Sales', createdDaysAgo: 6 }),
+  seed({ id: 'CLM-2026-211', type: 'damage', region: 'Sindh', head: 'South General Trade', month: 'May', year: 2026, amount: 1_340_000, currentStageIndex: 2, status: 'approved', raisedBy: 'Indus Distribution', documentName: 'damage-claim-211.pdf', createdDaysAgo: 18 }),
 ];
 
 @Injectable()
 export class MockClaimsService extends ClaimsService {
   getClaims(): Observable<ClaimRecord[]> {
+    // 500ms delay exercises the data table's loading (skeleton) state.
     return of(MOCK_CLAIMS.map((record) => ({ ...record }))).pipe(delay(500));
   }
 }

@@ -1,5 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -38,6 +39,7 @@ const PAGE_SIZE = 10;
   selector: 'to-claims-list',
   standalone: true,
   imports: [
+    RouterLink,
     TablerIconComponent,
     ButtonModule,
     TooltipModule,

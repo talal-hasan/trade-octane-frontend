@@ -1,0 +1,198 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+.to-claim-form {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  max-width: 560px;
+  margin-top: t.$to-space-4;
+}
+
+.to-claim-form__card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  padding: t.$to-space-6;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-claim-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  min-width: 0;
+}
+
+.to-claim-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: t.$to-space-4;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.to-claim-form__label {
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-claim-form__req {
+  color: var(--to-danger);
+}
+
+.to-claim-form__optional {
+  color: var(--to-text-muted);
+  font-weight: var(--to-font-weight-regular);
+  font-size: t.$to-font-size-xs;
+}
+
+.to-claim-form__input,
+.to-claim-form__textarea {
+  width: 100%;
+  padding: 0 t.$to-space-3;
+  height: var(--to-field-height);
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  @include u.motion(border-color, box-shadow);
+
+  &::placeholder {
+    color: var(--to-text-muted);
+  }
+
+  &:hover {
+    border-color: var(--to-border-strong);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--to-accent);
+    box-shadow: 0 0 0 3px var(--to-accent-subtle);
+  }
+}
+
+.to-claim-form__textarea {
+  height: auto;
+  padding: t.$to-space-2 t.$to-space-3;
+  resize: vertical;
+  line-height: var(--to-line-height-body);
+}
+
+.to-claim-form__control {
+  width: 100%;
+}
+
+.to-claim-form__hint {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-claim-form__error {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+// ─── File upload ─────────────────────────────────────────
+.to-claim-form__file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  align-self: flex-start;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+}
+
+.to-claim-form__file {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: t.$to-space-1 t.$to-space-1 t.$to-space-1 t.$to-space-3;
+  background: var(--to-accent-subtle);
+  border-radius: t.$to-radius-control;
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-sm;
+}
+
+.to-claim-form__file-icon {
+  flex-shrink: 0;
+  color: var(--to-accent);
+}
+
+.to-claim-form__file-name {
+  @include u.truncate;
+}
+
+.to-claim-form__file-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-control;
+  color: var(--to-accent-text);
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: var(--to-accent);
+    color: #fff;
+  }
+}
+
+// ─── Actions ─────────────────────────────────────────────
+.to-claim-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-3;
+}
+
+.to-claim-form__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-top-color: #fff;
+  animation: to-claim-form-spin 0.7s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1.4s;
+  }
+}
+
+@keyframes to-claim-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
