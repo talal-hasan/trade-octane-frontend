@@ -14,6 +14,8 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 import { PipelineStageComponent } from '../../shared/components/pipeline-stage/pipeline-stage.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
+import { CLAIM_PIPELINE_STAGES, ClaimRecord, ClaimType } from '../claims/models/claim.model';
+import { ClaimsService } from '../claims/services/claims.service';
 import {
   ApprovalDecision,
   ApprovalInboxItem,
@@ -28,6 +30,35 @@ const TYPE_META: Record<ApprovalItemType, { label: string; icon: string }> = {
   scheme: { label: 'Scheme', icon: 'discount-2' },
   claim: { label: 'Claim', icon: 'file-invoice' },
 };
+
+const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
+  normal: 'Normal',
+  delay: 'Delay',
+  damage: 'Damage',
+};
+
+// Maps a claim from the shared store into an inbox item. Only actionable (pending/overdue)
+// claims surface in the inbox; approving/rejecting routes back to the store so the /claims
+// list and detail update from the same source of truth.
+function claimToInboxItem(claim: ClaimRecord): ApprovalInboxItem {
+  const label = CLAIM_TYPE_LABELS[claim.type];
+  return {
+    id: claim.id,
+    type: 'claim',
+    reference: claim.id,
+    title: `${label} claim — ${claim.region}`,
+    summary: `${label} trade claim raised by ${claim.raisedBy}.`,
+    requestedBy: claim.raisedBy,
+    requestedAt: claim.createdAt,
+    region: claim.region,
+    amount: claim.amount,
+    requiredPermission: 'CLAIMS_APPROVE',
+    pipelineStages: [...CLAIM_PIPELINE_STAGES],
+    currentStageIndex: claim.currentStageIndex,
+    steps: claim.steps,
+    currentStepIndex: claim.currentStepIndex,
+  };
+}
 
 // Dashboard = the approvals inbox (CLAUDE.md §7 queue mode): a triage surface where the
 // user works pending Budget / Scheme / Claim decisions without leaving the list. Split
@@ -52,6 +83,7 @@ const TYPE_META: Record<ApprovalItemType, { label: string; icon: string }> = {
 })
 export class DashboardComponent {
   private readonly approvalsService = inject(ApprovalsService);
+  private readonly claimsService = inject(ClaimsService);
   private readonly permissionService = inject(PermissionService);
   private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -59,7 +91,20 @@ export class DashboardComponent {
   protected readonly icons = ICON_REGISTRY;
   protected readonly typeMeta = TYPE_META;
 
-  protected readonly items = signal<ApprovalInboxItem[]>([]);
+  // Budget + scheme items come from the approvals service; claim items come from the shared
+  // claims store, so a claim created or approved anywhere stays in sync here.
+  private readonly serviceItems = signal<ApprovalInboxItem[]>([]);
+  private readonly claimItems = computed<ApprovalInboxItem[]>(() =>
+    this.claimsService
+      .claims()
+      .filter((claim) => claim.status === 'pending' || claim.status === 'overdue')
+      .map(claimToInboxItem),
+  );
+  protected readonly items = computed<ApprovalInboxItem[]>(() =>
+    [...this.serviceItems(), ...this.claimItems()].sort(
+      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+    ),
+  );
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
   protected readonly deciding = signal(false);
@@ -130,7 +175,7 @@ export class DashboardComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
-          this.items.set(items);
+          this.serviceItems.set(items);
           this.loading.set(false);
           this.autoSelect();
         },
@@ -157,12 +202,56 @@ export class DashboardComponent {
       return;
     }
     this.deciding.set(true);
+    if (item.type === 'claim') {
+      this.resolveClaim(item, decision, remarks);
+    } else {
+      this.resolveApproval(item, decision, remarks);
+    }
+  }
+
+  // Claims route through the shared store, so the /claims list and detail update reactively.
+  private resolveClaim(
+    item: ApprovalInboxItem,
+    decision: ApprovalDecision,
+    remarks: string,
+  ): void {
+    const op =
+      decision === 'approve'
+        ? this.claimsService.approve(item.id, remarks)
+        : this.claimsService.reject(item.id, remarks);
+    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (updated) => {
+        // No manual removal: the store update recomputes claimItems, so a fully-resolved
+        // claim drops out of the inbox on its own and autoSelect moves to the next item.
+        this.autoSelect();
+        this.deciding.set(false);
+        if (decision === 'reject') {
+          this.notificationService.warn(`${updated.id} was rejected.`, 'Rejected');
+        } else if (updated.status === 'approved') {
+          this.notificationService.success(`${updated.id} is fully approved.`, 'Approved');
+        } else {
+          const stage = CLAIM_PIPELINE_STAGES[updated.currentStageIndex];
+          this.notificationService.success(`Claim approved and moved to ${stage}.`, 'Approved');
+        }
+      },
+      error: () => {
+        this.deciding.set(false);
+        this.notificationService.error('Could not record your decision. Please try again.');
+      },
+    });
+  }
+
+  private resolveApproval(
+    item: ApprovalInboxItem,
+    decision: ApprovalDecision,
+    remarks: string,
+  ): void {
     this.approvalsService
       .decide(item.id, decision, remarks)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.items.update((items) => items.filter((current) => current.id !== item.id));
+          this.serviceItems.update((items) => items.filter((current) => current.id !== item.id));
           this.autoSelect();
           this.deciding.set(false);
           const verb = decision === 'approve' ? 'Approved' : 'Rejected';
