@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
+import { unwrapData } from '../../../core/api/api.types';
 import {
   AccountResponse,
   ChangePasswordRequest,
@@ -50,15 +51,15 @@ export class AdminUsersApi {
 
   get(userId: string): Observable<UserResponse> {
     return this.api
-      .get<UserWrapperResponse>(`/admin/users/${encodeURIComponent(userId)}`)
-      .pipe(map((response) => response.data));
+      .get<UserResponse | UserWrapperResponse>(`/admin/users/${encodeURIComponent(userId)}`)
+      .pipe(map(unwrapData));
   }
 
   /** The "Check" button: is this address taken, and what should the form pre-fill with? */
   lookupByEmail(email: string): Observable<UserLookupResponse> {
     return this.api
-      .get<UserLookupWrapperResponse>('/admin/users/lookup', { email })
-      .pipe(map((response) => response.data));
+      .get<UserLookupResponse | UserLookupWrapperResponse>('/admin/users/lookup', { email })
+      .pipe(map(unwrapData));
   }
 
   /**
@@ -127,7 +128,9 @@ export class AdminUsersApi {
   // ─── The signed-in user's own account ───────────────────────────────────────
 
   account(): Observable<AccountResponse> {
-    return this.api.get<AccountResponse>('/admin/account');
+    return this.api
+      .get<AccountResponse | { data: AccountResponse }>('/admin/account')
+      .pipe(map(unwrapData));
   }
 
   changeOwnPassword(request: ChangePasswordRequest): Observable<PasswordChangeResponse> {

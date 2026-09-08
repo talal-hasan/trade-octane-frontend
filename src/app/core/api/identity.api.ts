@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, delay, map, of } from 'rxjs';
 
 import { ApiClient } from './api-client.service';
+import { unwrapData } from './api.types';
 import {
   CurrentUserResponse,
   CurrentUserWrapperResponse,
@@ -32,7 +33,11 @@ export class HttpIdentityApi extends IdentityApi {
   private readonly api = inject(ApiClient);
 
   login(request: LoginRequest): Observable<LoginResponse> {
-    return this.api.post<LoginResponse>('/identity/login_old', request);
+    // Unwrapped: the deployment returns `{ data: { accessToken, ... } }` even though the
+    // contract declares LoginResponse's fields at the top level. See unwrapData.
+    return this.api
+      .post<LoginResponse | { data: LoginResponse }>('/identity/login_old', request)
+      .pipe(map(unwrapData));
   }
 
   /**
@@ -41,31 +46,32 @@ export class HttpIdentityApi extends IdentityApi {
    */
   ssoAvailable(): Observable<boolean> {
     return this.api
-      .get<SsoAvailabilityResponse>('/identity/login/sso')
-      .pipe(map((response) => response.enabled));
+      .get<SsoAvailabilityResponse | { data: SsoAvailabilityResponse }>('/identity/login/sso')
+      .pipe(map((response) => unwrapData(response).enabled));
   }
 
   ssoLogin(request: SsoLoginRequest): Observable<LoginResponse> {
-    return this.api.post<LoginResponse>('/identity/login/sso', request);
+    return this.api
+      .post<LoginResponse | { data: LoginResponse }>('/identity/login/sso', request)
+      .pipe(map(unwrapData));
   }
 
   me(): Observable<CurrentUserResponse> {
     return this.api
-      .get<CurrentUserWrapperResponse>('/identity/me')
-      .pipe(map((response) => response.data));
+      .get<CurrentUserResponse | CurrentUserWrapperResponse>('/identity/me')
+      .pipe(map(unwrapData));
   }
 
   menu(): Observable<UserMenuResponse> {
-    // The menu endpoint is documented as returning UserMenuResponse, but the captured
-    // response wraps it in `data` like /identity/me does. Accept either rather than break
-    // on whichever shape the deployment actually serves.
     return this.api
       .get<UserMenuResponse | { data: UserMenuResponse }>('/identity/menu')
-      .pipe(map((response) => ('data' in response ? response.data : response)));
+      .pipe(map(unwrapData));
   }
 
   logout(): Observable<LogoutResponse> {
-    return this.api.post<LogoutResponse>('/identity/logout');
+    return this.api
+      .post<LogoutResponse | { data: LogoutResponse }>('/identity/logout')
+      .pipe(map(unwrapData));
   }
 }
 

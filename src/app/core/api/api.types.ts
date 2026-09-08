@@ -55,6 +55,50 @@ export interface CursorPage<T> {
   snapshotVersion: ApiInt;
 }
 
+// ─── Response envelopes ───────────────────────────────────────────────────────
+// The deployment wraps some single-object responses in `{ "data": ... }` where the
+// OpenAPI document declares the object directly. `login_old` is the one that bit us:
+// the contract declares LoginResponse's fields at the top level, but the server returns
+// `{ "data": { "accessToken": "...", ... } }`, so reading `response.accessToken` yielded
+// undefined, no Authorization header was attached, and every subsequent call 401'd —
+// surfacing on the login form as "username and password did not match".
+//
+// The contract *does* declare envelopes for some endpoints (CurrentUserWrapperResponse,
+// UserWrapperResponse, UserLookupWrapperResponse), so the wrapping is real but applied
+// inconsistently. Rather than guess per endpoint, unwrap defensively.
+
+/**
+ * Unwraps a `{ data: T }` envelope, if that is what this is.
+ *
+ * **The single-key test is the whole safety of this.** Several real payloads have a `data`
+ * property that is *not* an envelope — `UserPageResponse` is
+ * `{ data: [...], nextCursor, totalCount, pageSize, snapshotVersion }`, and blindly
+ * unwrapping it would silently discard the pagination cursor and the total. So a body is
+ * only treated as an envelope when `data` is its **sole** property, which no paged
+ * response ever satisfies.
+ *
+ * Safe to apply to a body that is already unwrapped: it passes straight through.
+ *
+ * One caveat on the *type*: given `T | { data: T }`, TypeScript resolves `T` to the
+ * envelope reading whenever the argument has a `data` property, so calling this on a paged
+ * response would infer the row array even though the runtime correctly returns the page.
+ * That mismatch never bites in practice because call sites annotate the union explicitly
+ * (`get<AccountResponse | { data: AccountResponse }>`) and paged endpoints do not call this
+ * at all — but do not "simplify" a paged call through here.
+ */
+export function unwrapData<T>(body: T | { data: T }): T {
+  if (
+    body !== null &&
+    typeof body === 'object' &&
+    !Array.isArray(body) &&
+    'data' in body &&
+    Object.keys(body).length === 1
+  ) {
+    return (body as { data: T }).data;
+  }
+  return body as T;
+}
+
 /** RFC 7807 error body returned by every non-2xx response. */
 export interface ProblemDetails {
   type?: string | null;
