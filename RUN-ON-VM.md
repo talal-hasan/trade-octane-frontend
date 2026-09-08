@@ -100,21 +100,45 @@ the mock deliberately serves a *real* captured menu payload.
 The dev server prints its backend on startup, so you can confirm without guessing:
 
 ```
-[proxy] /api/* -> http://10.10.30.17
+[proxy] /api/* -> https://10.10.30.17
 ```
 
-The target defaults to `http://10.10.30.17/TradeOctane` (see `proxy.conf.js`); override it
-with `$env:TO_API_TARGET` only if the API moves.
+The target defaults to `https://10.10.30.17` (see `proxy.conf.js`); override it with
+`$env:TO_API_TARGET` only if the API moves.
 
-**The `/TradeOctane` suffix is deliberate.** The API is an IIS sub-application, not the site
-root, so `http://10.10.30.17/api/v1/...` returns a 404 from IIS. The proxy prepends the
-prefix; never put `/api/v1` or `/swagger` in the target yourself.
+**HTTPS on 443, not HTTP on 80.** The VM runs two IIS sites:
 
-### Verify the API before blaming the app
+| Site | Physical path | Binding | What it is |
+|---|---|---|---|
+| `Default Web Site` | `C:\inetpub\wwwroot` | `*:80` | the legacy ASP.NET Web Forms app |
+| `TradeOctaneWebAPI` | `C:\inetpub\wwwroot\TradeWebAPI` | `10.10.30.17:443` | **the API** |
+
+Port 80 is the legacy monolith. Its `web.config` carries `<system.Web>` and
+`System.Web.UI.DataVisualization.Charting`; its app pool runs managed runtime v4.0. The
+`TradeOctaneWebAPI` pool reports a *blank* managed runtime — "No Managed Code" — which is
+how an ASP.NET Core site is configured.
+
+The API sits at the **root** of its own site, so the target carries no path suffix.
+
+Two dead ends, recorded so they are not repeated:
+
+| Target tried | Result |
+|---|---|
+| `http://10.10.30.17` | 404 — that is the legacy site |
+| `http://10.10.30.17/TradeOctane` | 404 with `Handler: StaticFile` — IIS looked for a file literally named `login_old` on disk, because `/TradeOctane` is the legacy app's folder |
+
+`Handler: StaticFile` in an IIS detailed error is the tell: it means IIS never routed the
+request to ASP.NET at all and tried to serve it as a file. Whenever you see it, the base is
+pointing at static content rather than at an application.
+
+## Verify the API before blaming the app
 
 ```powershell
-curl.exe http://localhost/api/v1/identity/login/sso
+curl.exe -k https://10.10.30.17/api/v1/identity/login/sso
 ```
+
+`-k` skips certificate validation — the internal site almost certainly uses a self-signed
+certificate. The dev proxy does the same via `secure: false`.
 
 Expect `{"enabled":true}` or `{"enabled":false}`. A 404 means the API is hosted under a
 path prefix and `ApiClient`'s base needs adjusting. A connection error means IIS is not

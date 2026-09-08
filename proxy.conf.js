@@ -41,26 +41,34 @@
  */
 
 /**
- * The Trade Octane API VM (IIS, port 80 — hence no port in the URL).
+ * The Trade Octane API.
  *
- * **The `/TradeOctane` suffix is required.** The API is not at the site root: IIS hosts it
- * as a sub-application (`Get-WebApplication` reports `/TradeOctane` →
- * `C:\inetpub\wwwroot\TradeOctane`). The OpenAPI document declares no `servers` block and
- * its paths begin at `/api/v1/...`, so it *assumes* the root — which is why requesting
- * `http://10.10.30.17/api/v1/identity/login_old` returns an IIS 404.
+ * **HTTPS on 443, not HTTP on 80.** The VM runs two IIS sites, and only one of them is the
+ * API:
  *
- * `http-proxy` prepends the target's path, so this is handled entirely here and no part of
- * the application needs to know about the prefix. Verified end to end against an echo
- * server: the browser requests `/api/v1/identity/login/sso` and upstream receives
- * `/TradeOctane/api/v1/identity/login/sso`.
+ *   Default Web Site   *:80                  C:\inetpub\wwwroot        the legacy app
+ *   TradeOctaneWebAPI  10.10.30.17:443       C:\inetpub\wwwroot\TradeWebAPI
  *
- * Baked in rather than left to an environment variable because `npm run start:live` then
- * works with nothing to remember or mistype over an RDP session.
+ * Port 80 is the **legacy ASP.NET Web Forms monolith** — its web.config is full of
+ * `<system.Web>` and `System.Web.UI.DataVisualization.Charting`, and its app pool runs
+ * managed runtime v4.0. The `TradeOctaneWebAPI` pool reports a *blank* managed runtime
+ * ("No Managed Code"), which is how an ASP.NET Core site is configured.
  *
- * `10.10.30.17` rather than `localhost`: it works from the VM either way, and keeps working
- * if IIS is bound to a host header that `localhost` does not match.
+ * Two earlier attempts failed for this reason and are worth recording so nobody repeats
+ * them:
+ *   http://10.10.30.17/api/v1/...              404 — that is the legacy site
+ *   http://10.10.30.17/TradeOctane/api/v1/...  404 with `Handler: StaticFile`, because
+ *                                              /TradeOctane is the legacy app's folder and
+ *                                              IIS looked for a file literally named
+ *                                              `login_old` on disk
+ *
+ * The API is at the **root** of its own site, so no path suffix belongs here.
+ *
+ * `secure: false` below matters now rather than hypothetically: an internal IIS site on 443
+ * is almost certainly using a self-signed certificate, which the proxy would otherwise
+ * reject.
  */
-const DEFAULT_TARGET = 'http://10.10.30.17/TradeOctane';
+const DEFAULT_TARGET = 'https://10.10.30.17';
 
 const target = process.env['TO_API_TARGET'] || DEFAULT_TARGET;
 
