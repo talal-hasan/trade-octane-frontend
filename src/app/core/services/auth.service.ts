@@ -131,10 +131,17 @@ export class AuthService {
   bootstrap(): Observable<void> {
     return forkJoin({
       menu: this.identityApi.menu(),
-      // Non-fatal. A user who cannot read `/admin/account` still has a valid session —
-      // they just get their login name as a display name. Letting a 403 here cost them
-      // the whole app would be the wrong trade.
-      account: this.usersApi.account().pipe(catchError(() => of(null))),
+      // `/admin/account` is a *real* HTTP call — AdminUsersApi has no mock, because the
+      // Administration screens are built against the live contract. In mock mode the
+      // bearer token is a fake (`mock-token.ADMIN`), so calling it there produces a
+      // guaranteed failure and a confusing 500 in the console of an otherwise working
+      // demo. Skip it: mock mode already has a display name from MOCK_USERS.
+      account: environment.useMocks
+        ? of(null)
+        : // Non-fatal. A user who cannot read `/admin/account` still has a valid session —
+          // they just get their login name as a display name. Letting a 403 here cost them
+          // the whole app would be the wrong trade.
+          this.usersApi.account().pipe(catchError(() => of(null))),
     }).pipe(
       tap(({ menu, account }) => {
         const name = account?.fullName ?? menu.userId;
