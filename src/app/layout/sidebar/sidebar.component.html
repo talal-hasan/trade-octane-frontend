@@ -45,10 +45,17 @@
             <tabler-icon [icon]="icons[iconFor(item)]" [size]="18" class="to-sidebar__item-icon" />
             @if (!collapsed()) {
               <span class="to-sidebar__item-label">{{ item.label }}</span>
-              @if (item.pending) {
-                <!-- Not yet ported. Saying so beats a nav item that silently goes nowhere. -->
-                <span class="to-sidebar__legacy" aria-label="Opens in the legacy portal">legacy</span>
-              }
+            }
+            @if (item.pending) {
+              <!-- A dot, not the word "legacy".
+                   Almost every module is still legacy today, so the word appeared on 24 of
+                   28 items — it stopped marking the exception and became the background.
+                   A 5px dot carries the same signal at a fraction of the ink, and the
+                   tooltip (see tooltipFor) still spells it out on hover. -->
+              <span
+                class="to-sidebar__pending-dot"
+                aria-hidden="true"
+              ></span>
             }
             @if (badgeFor(item); as count) {
               <span

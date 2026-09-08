@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, concat, defer, last, map, of, switchMap } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
-import { int } from '../../../core/api/api.types';
+import { int, unwrapData } from '../../../core/api/api.types';
 import {
   RoleResponse,
   RoleStatusFilter,
@@ -30,14 +30,18 @@ export class AdminRolesApi {
 
   /** The assignable role catalogue. Defaults to active roles only, server-side. */
   listRoles(options: { status?: RoleStatusFilter; search?: string } = {}): Observable<RoleResponse[]> {
-    return this.api.get<RoleResponse[]>('/admin/roles', options as Query);
+    return this.api
+      .get<RoleResponse[] | { data: RoleResponse[] }>('/admin/roles', options as Query)
+      .pipe(map(unwrapData));
   }
 
   /** The roles one user holds, and the roles they could hold. */
   userRoles(userId: string): Observable<UserRoleAssignmentResponse> {
-    return this.api.get<UserRoleAssignmentResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/roles`,
-    );
+    return this.api
+      .get<UserRoleAssignmentResponse | { data: UserRoleAssignmentResponse }>(
+        `/admin/users/${encodeURIComponent(userId)}/roles`,
+      )
+      .pipe(map(unwrapData));
   }
 
   assignRole(

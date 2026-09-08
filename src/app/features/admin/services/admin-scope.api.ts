@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
+import { unwrapData } from '../../../core/api/api.types';
 import {
   BrandResponse,
   BrandStatusFilter,
@@ -62,7 +63,9 @@ export class AdminScopeApi {
   listRegions(
     options: { status?: RegionStatusFilter; search?: string } = {},
   ): Observable<RegionResponse[]> {
-    return this.api.get<RegionResponse[]>('/admin/regions', options as Query);
+    return this.api
+      .get<RegionResponse[] | { data: RegionResponse[] }>('/admin/regions', options as Query)
+      .pipe(map(unwrapData));
   }
 
   /**
@@ -76,15 +79,19 @@ export class AdminScopeApi {
   listBrands(
     options: { status?: BrandStatusFilter; search?: string } = {},
   ): Observable<BrandResponse[]> {
-    return this.api.get<BrandResponse[]>('/admin/brands', options as Query);
+    return this.api
+      .get<BrandResponse[] | { data: BrandResponse[] }>('/admin/brands', options as Query)
+      .pipe(map(unwrapData));
   }
 
   // ─── Per-user assignment ────────────────────────────────────────────────────
 
   userRegions(userId: string): Observable<UserRegionAssignmentResponse> {
-    return this.api.get<UserRegionAssignmentResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/regions`,
-    );
+    return this.api
+      .get<UserRegionAssignmentResponse | { data: UserRegionAssignmentResponse }>(
+        `/admin/users/${encodeURIComponent(userId)}/regions`,
+      )
+      .pipe(map(unwrapData));
   }
 
   replaceUserRegions(
@@ -119,9 +126,11 @@ export class AdminScopeApi {
   }
 
   userBrands(userId: string): Observable<UserBrandAssignmentResponse> {
-    return this.api.get<UserBrandAssignmentResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/brands`,
-    );
+    return this.api
+      .get<UserBrandAssignmentResponse | { data: UserBrandAssignmentResponse }>(
+        `/admin/users/${encodeURIComponent(userId)}/brands`,
+      )
+      .pipe(map(unwrapData));
   }
 
   replaceUserBrands(

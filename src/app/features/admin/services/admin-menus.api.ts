@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
+import { unwrapData } from '../../../core/api/api.types';
 import {
   MenuActivation,
   MenuOctane,
@@ -53,16 +54,22 @@ export class AdminMenusApi {
   tree(
     options: { octane?: MenuOctane; status?: MenuStatusFilter } = {},
   ): Observable<MenuTreeResponse> {
-    return this.api.get<MenuTreeResponse>('/admin/menus/tree', options as Query);
+    return this.api
+      .get<MenuTreeResponse | { data: MenuTreeResponse }>('/admin/menus/tree', options as Query)
+      .pipe(map(unwrapData));
   }
 
   /** The icon names the menu can render — FontAwesome 4, mapped to Tabler on display. */
   icons(): Observable<string[]> {
-    return this.api.get<string[]>('/admin/menus/icons');
+    return this.api
+      .get<string[] | { data: string[] }>('/admin/menus/icons')
+      .pipe(map(unwrapData));
   }
 
   get(menuId: number): Observable<MenuResponse> {
-    return this.api.get<MenuResponse>(`/admin/menus/${menuId}`);
+    return this.api
+      .get<MenuResponse | { data: MenuResponse }>(`/admin/menus/${menuId}`)
+      .pipe(map(unwrapData));
   }
 
   /**

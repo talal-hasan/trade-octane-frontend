@@ -86,6 +86,9 @@
   min-height: 0;
   overflow-y: auto;
   padding: t.$to-space-3 0;
+  // The rail scrolls (20 modules), and a permanently-drawn scrollbar next to a column of
+  // icons reads as a second border. The thumb now fades in on hover or keyboard focus.
+  @include u.quiet-scrollbar(6px);
 }
 
 .to-sidebar__section {
@@ -254,26 +257,23 @@
 }
 
 // ─── Not-yet-ported destinations ──────────────────────────────────────────────
-// The menu fold renders every grant the user holds, including modules that still live in
-// the legacy portal. Marking them is the honest option: an unmarked nav item that lands on
-// a placeholder reads as a broken screen, whereas "legacy" reads as a migration in
-// progress — which is what it is. Muted, not alarming; these are working screens today.
-.to-sidebar__legacy {
-  margin-left: auto;
+// The menu fold renders every grant the user holds, including modules still served by the
+// legacy portal. They are marked, because an unmarked item that lands on a placeholder
+// reads as a broken screen — but marked *quietly*: today that is most of the nav, and a
+// word repeated 24 times is noise rather than information.
+.to-sidebar__pending-dot {
+  width: 5px;
+  height: 5px;
   flex-shrink: 0;
-  padding: 1px t.$to-space-1;
-  border: 1px solid var(--to-border);
+  margin-left: auto;
   border-radius: t.$to-radius-pill;
-  color: var(--to-text-muted);
-  font-size: t.$to-font-size-2xs;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--to-text-muted) 55%, transparent);
 }
 
 .to-sidebar__item--pending {
   .to-sidebar__item-icon,
   .to-sidebar__item-label {
-    opacity: 0.75;
+    opacity: 0.78;
   }
 
   &:hover .to-sidebar__item-icon,
@@ -282,6 +282,10 @@
   }
 }
 
-.to-sidebar--collapsed .to-sidebar__legacy {
-  display: none;
+// In the icon rail the dot sits on the icon's corner rather than taking a row of its own.
+.to-sidebar--collapsed .to-sidebar__pending-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin-left: 0;
 }

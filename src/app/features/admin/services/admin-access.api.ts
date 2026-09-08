@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
+import { unwrapData } from '../../../core/api/api.types';
 import {
   AccessSortField,
   AccessStatusFilter,
@@ -52,10 +53,12 @@ export class AdminAccessApi {
     userId: string,
     options: { scope?: AccessTreeScope; status?: AccessStatusFilter } = {},
   ): Observable<UserAccessResponse> {
-    return this.api.get<UserAccessResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/access`,
-      options as Query,
-    );
+    return this.api
+      .get<UserAccessResponse | { data: UserAccessResponse }>(
+        `/admin/users/${encodeURIComponent(userId)}/access`,
+        options as Query,
+      )
+      .pipe(map(unwrapData));
   }
 
   /**
@@ -102,7 +105,12 @@ export class AdminAccessApi {
     roleId: number,
     options: { scope?: AccessTreeScope; status?: AccessStatusFilter } = {},
   ): Observable<RoleAccessResponse> {
-    return this.api.get<RoleAccessResponse>(`/admin/roles/${roleId}/access`, options as Query);
+    return this.api
+      .get<RoleAccessResponse | { data: RoleAccessResponse }>(
+        `/admin/roles/${roleId}/access`,
+        options as Query,
+      )
+      .pipe(map(unwrapData));
   }
 
   /**

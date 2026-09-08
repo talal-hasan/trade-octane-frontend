@@ -95,3 +95,45 @@ $to-breakpoint-desktop: 1280px;
     }
   }
 }
+
+// Scrollbar that stays out of the way until you interact with the region.
+//
+// The gutter keeps its width at all times and only the *thumb* fades in. Animating the
+// width instead would reflow the content by 8px on every hover — which is why the obvious
+// `::-webkit-scrollbar { width: 0 }` trick is wrong for a scrolling nav.
+//
+// `:focus-within` is not decoration: keyboard users tab through the region without ever
+// hovering it, and a scrollbar that only ever appears on hover is invisible to them.
+@mixin quiet-scrollbar($size: 8px) {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &::-webkit-scrollbar {
+    width: $size;
+    height: $size;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    @include motion(background-color);
+  }
+
+  &:hover,
+  &:focus-within {
+    scrollbar-color: color-mix(in srgb, var(--to-text-muted) 45%, transparent) transparent;
+  }
+
+  &:hover::-webkit-scrollbar-thumb,
+  &:focus-within::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--to-text-muted) 35%, transparent);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--to-text-muted) 60%, transparent);
+  }
+}

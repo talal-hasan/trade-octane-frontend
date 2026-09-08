@@ -230,7 +230,33 @@
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  // The content area had no padding at all, so every screen's first pixel sat flush
+  // against the sidebar's border and under the top bar — which is what made the chrome
+  // read as "merged" with the page rather than framing it. Generous horizontal padding is
+  // what separates them; the extra bottom padding stops the last card butting into the
+  // viewport edge on scroll.
+  padding: t.$to-space-6 t.$to-space-8 t.$to-space-12;
   background-color: var(--to-bg-0);
   background-image: var(--to-canvas-page);
   background-attachment: fixed;
+  @include u.quiet-scrollbar;
+}
+
+// Router-inserted components are siblings of <router-outlet>, not children of it. The
+// shell runs with ViewEncapsulation.None, so this reaches them.
+//
+// The cap matters on wide monitors: without it a table stretches to 2000px+ and the eye
+// loses the row it is tracking between the first and last column. Centring the column
+// keeps a half-empty page looking deliberate rather than broken.
+.to-shell__content > *:not(router-outlet) {
+  display: block;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+@include u.respond-to(tablet) {
+  .to-shell__content {
+    padding: t.$to-space-4 t.$to-space-4 t.$to-space-8;
+  }
 }

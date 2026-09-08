@@ -119,6 +119,10 @@
       @switch (activeTab()) {
         <!-- ── Profile ──────────────────────────────────────────────────────── -->
         @case ('profile') {
+          <!-- Details and Password sit side by side rather than stacked: they are two short
+               forms, and stacking them left the right half of a wide screen empty while
+               pushing the password fields below the fold. -->
+          <div class="to-ud__columns">
           <section class="to-ud__section">
             <h2 class="to-ud__section-title">Details</h2>
             <form class="to-ud__form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
@@ -200,6 +204,7 @@
               </div>
             </form>
           </section>
+          </div>
         }
 
         <!-- ── Roles ────────────────────────────────────────────────────────── -->

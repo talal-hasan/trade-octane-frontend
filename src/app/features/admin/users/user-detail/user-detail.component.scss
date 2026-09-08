@@ -133,6 +133,16 @@
   gap: t.$to-space-4;
 }
 
+// Two short forms side by side on a wide screen, stacked on a narrow one. `align-items:
+// start` stops the shorter card stretching to match the taller one, which otherwise leaves
+// a tall empty box under the Details fields.
+.to-ud__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
 .to-ud__section {
   padding: t.$to-space-4;
   background: var(--to-bg-1);
@@ -170,7 +180,8 @@
   display: flex;
   flex-direction: column;
   gap: t.$to-space-3;
-  max-width: 420px;
+  // No max-width: the column already constrains the measure, and capping again left a
+  // second band of dead space inside the card.
 }
 
 .to-ud__field {

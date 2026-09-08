@@ -9,6 +9,11 @@
 />
 
 <form class="to-uc" [formGroup]="form" (ngSubmit)="submit()">
+  <!-- Two columns rather than a form floating in a half-empty page. The right column is
+       not filler: it is the same "show the grant while you build it" idea as
+       to-access-summary on the provisioning wizard (CLAUDE.md §4) — what this account will
+       be, and what it still needs after creation. -->
+  <div class="to-uc__layout">
   <section class="to-uc__section">
     <h2 class="to-uc__title">Identity</h2>
     <p class="to-uc__note">
@@ -112,10 +117,50 @@
     </div>
   </section>
 
-  <div class="to-uc__actions">
-    <a pButton routerLink="/admin/users" class="p-button-text p-button-sm">Cancel</a>
-    <button type="submit" pButton class="p-button-sm" [disabled]="submitting() || !!existingUserId">
-      {{ submitting() ? 'Creating…' : 'Create user' }}
-    </button>
+  <aside class="to-uc__aside">
+    <div class="to-uc__summary">
+      <h2 class="to-uc__summary-title">This account</h2>
+
+      <dl class="to-uc__summary-list">
+        <div class="to-uc__summary-row">
+          <dt>Name</dt>
+          <dd>{{ form.controls.fullName.value || '—' }}</dd>
+        </div>
+        <div class="to-uc__summary-row">
+          <dt>Login</dt>
+          <dd class="to-uc__mono">{{ form.controls.loginName.value || '—' }}</dd>
+        </div>
+        <div class="to-uc__summary-row">
+          <dt>Email</dt>
+          <dd>{{ form.controls.email.value || '—' }}</dd>
+        </div>
+        <div class="to-uc__summary-row">
+          <dt>Domain ID</dt>
+          <dd class="to-uc__mono">{{ form.controls.domainId.value || 'Not set' }}</dd>
+        </div>
+      </dl>
+
+      <!-- The honest headline: creation grants nothing. Saying so here stops an admin
+           assuming the job is finished when the success toast appears. -->
+      <div class="to-uc__next">
+        <h3 class="to-uc__next-title">Access after creation</h3>
+        <ul class="to-uc__next-list">
+          <li><strong>No roles.</strong> They can sign in and see nothing.</li>
+          <li><strong>No regions or brands.</strong> Nothing is in scope for them.</li>
+          <li><strong>No menu access.</strong> Every screen is closed.</li>
+        </ul>
+        <p class="to-uc__next-note">
+          You will land on their Roles tab next, which is where access starts.
+        </p>
+      </div>
+    </div>
+
+    <div class="to-uc__actions">
+      <a pButton routerLink="/admin/users" class="p-button-text p-button-sm">Cancel</a>
+      <button type="submit" pButton class="p-button-sm" [disabled]="submitting() || !!existingUserId">
+        {{ submitting() ? 'Creating…' : 'Create user' }}
+      </button>
+    </div>
+  </aside>
   </div>
 </form>
