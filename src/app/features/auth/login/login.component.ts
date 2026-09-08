@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -103,14 +104,44 @@ export class LoginComponent {
         this.submitting.set(false);
         this.handleOutcome(outcome);
       },
-      error: () => {
-        this.failedAttempts += 1;
+      error: (error: unknown) => {
         this.submitting.set(false);
         // The error interceptor already raised a toast; this is the inline message that
         // stays on screen next to the form the user has to correct.
-        this.errorMessage.set('That username and password did not match. Please try again.');
+        this.errorMessage.set(this.messageFor(error));
       },
     });
+  }
+
+  /**
+   * Says what actually went wrong, rather than blaming the credentials for everything.
+   *
+   * The previous version reported "username and password did not match" for *any* failure
+   * — including a 404 from a misconfigured API base, which sent us hunting for a bad
+   * password when the endpoint was not there at all. Only a 400/401 is genuinely an
+   * authentication failure; everything else is an infrastructure problem, and only a
+   * real rejection should count toward `failedAttemptCount`.
+   */
+  private messageFor(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'Sign-in failed. Please try again.';
+    }
+
+    switch (true) {
+      case error.status === 0:
+        return 'Could not reach the server. The API may be down, or the dev proxy is pointing somewhere unreachable.';
+      case error.status === 400 || error.status === 401:
+        this.failedAttempts += 1;
+        return 'That username and password did not match. Please try again.';
+      case error.status === 403:
+        return 'That account is not permitted to sign in here.';
+      case error.status === 404:
+        return 'The sign-in endpoint was not found (404). The API base path is probably wrong — see RUN-ON-VM.md.';
+      case error.status >= 500:
+        return `The server errored (${error.status}) handling the sign-in. This is a backend problem, not your credentials.`;
+      default:
+        return `Sign-in failed (${error.status}).`;
+    }
   }
 
   private handleOutcome(outcome: SignInOutcome): void {

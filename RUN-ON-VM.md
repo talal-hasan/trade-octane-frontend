@@ -174,3 +174,65 @@ npm run start:live
 Nothing else changes. `proxy.conf.js` and the `live` configuration already handle it, and
 because the dev server proxies same-origin, **the API does not need CORS changes** for
 this to work.
+
+---
+
+## Troubleshooting: "the Network tab shows localhost:4200, not the VM"
+
+That is correct and expected. The **browser** always talks to `localhost:4200`; the **dev
+server** forwards to the API server-side, where the browser cannot see it. The invisibility
+is the point — it is what makes every call same-origin and removes the CORS requirement.
+
+To prove a response really came from the VM, look at the **response headers** of the failing
+call:
+
+```
+Server:       Microsoft-IIS/10.0
+X-Powered-By: ASP.NET
+```
+
+The Angular dev server is Node/Vite and can never emit those. If you see them, the request
+reached IIS and IIS produced the answer — including if that answer was a 404.
+
+## Troubleshooting: 404 on `/api/v1/...` from IIS
+
+The proxy is reaching IIS, but the API is not at the path we are asking for. The OpenAPI
+document declares no `servers` block and its paths start at `/api/v1/...`, so it assumes the
+API is at the **root** of its host. If IIS 404s, the API is almost certainly hosted in a
+**virtual directory or sub-application** instead.
+
+Find the real base. On the VM:
+
+```powershell
+foreach ($p in '/api/v1/identity/login/sso','/swagger/index.html','/swagger/v1/swagger.json') {
+  $u = "http://10.10.30.17$p"
+  try   { "$((Invoke-WebRequest $u -UseBasicParsing -TimeoutSec 10).StatusCode)  $u" }
+  catch { "$($_.Exception.Response.StatusCode.value__)  $u" }
+}
+```
+
+If you have IIS rights, this answers it outright:
+
+```powershell
+Import-Module WebAdministration
+Get-Website     | Select-Object Name, State, @{n='Bindings';e={$_.bindings.Collection -join ', '}}
+Get-WebApplication | Select-Object Path, ApplicationPool, PhysicalPath
+```
+
+A `Path` such as `/TradeOctaneApi` means the API lives under that prefix, and the real
+endpoint is `http://10.10.30.17/TradeOctaneApi/api/v1/identity/login_old`.
+
+**The fix is the proxy target, not the code.** `http-proxy` prepends a path on the target,
+so point it at the sub-application:
+
+```powershell
+$env:TO_API_TARGET = 'http://10.10.30.17/TradeOctaneApi'
+npm run start:live
+```
+
+`ApiClient` keeps requesting `/api/v1/...` and the proxy prepends the prefix. Nothing in the
+application needs to know.
+
+Also worth reading the Swagger page's own base: open `http://10.10.30.17/swagger/` on the
+VM, and in DevTools → Network find the request for `swagger.json`. Its URL shows the prefix
+the API is really mounted under.
