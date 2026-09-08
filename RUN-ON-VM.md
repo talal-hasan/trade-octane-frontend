@@ -103,9 +103,12 @@ The dev server prints its backend on startup, so you can confirm without guessin
 [proxy] /api/* -> http://10.10.30.17
 ```
 
-The target defaults to `http://10.10.30.17` (see `proxy.conf.js`); override it with
-`$env:TO_API_TARGET` only if the API moves. It is the **origin only** — no `/api/v1`, no
-`/swagger`.
+The target defaults to `http://10.10.30.17/TradeOctane` (see `proxy.conf.js`); override it
+with `$env:TO_API_TARGET` only if the API moves.
+
+**The `/TradeOctane` suffix is deliberate.** The API is an IIS sub-application, not the site
+root, so `http://10.10.30.17/api/v1/...` returns a 404 from IIS. The proxy prepends the
+prefix; never put `/api/v1` or `/swagger` in the target yourself.
 
 ### Verify the API before blaming the app
 

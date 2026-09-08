@@ -43,16 +43,24 @@
 /**
  * The Trade Octane API VM (IIS, port 80 — hence no port in the URL).
  *
- * This is the default rather than `localhost` because the only machine that can currently
- * reach it *is* the VM, and there the API is a peer, not a local process. Baking it in
- * means `npm run start:live` works with no environment variable to remember or mistype
- * over an RDP session — the single most common way to end up staring at mock data and
- * wondering why.
+ * **The `/TradeOctane` suffix is required.** The API is not at the site root: IIS hosts it
+ * as a sub-application (`Get-WebApplication` reports `/TradeOctane` →
+ * `C:\inetpub\wwwroot\TradeOctane`). The OpenAPI document declares no `servers` block and
+ * its paths begin at `/api/v1/...`, so it *assumes* the root — which is why requesting
+ * `http://10.10.30.17/api/v1/identity/login_old` returns an IIS 404.
  *
- * `10.10.30.17` rather than `localhost`: it works from the VM either way, and it keeps
- * working if IIS is bound to a host header that `localhost` does not match.
+ * `http-proxy` prepends the target's path, so this is handled entirely here and no part of
+ * the application needs to know about the prefix. Verified end to end against an echo
+ * server: the browser requests `/api/v1/identity/login/sso` and upstream receives
+ * `/TradeOctane/api/v1/identity/login/sso`.
+ *
+ * Baked in rather than left to an environment variable because `npm run start:live` then
+ * works with nothing to remember or mistype over an RDP session.
+ *
+ * `10.10.30.17` rather than `localhost`: it works from the VM either way, and keeps working
+ * if IIS is bound to a host header that `localhost` does not match.
  */
-const DEFAULT_TARGET = 'http://10.10.30.17';
+const DEFAULT_TARGET = 'http://10.10.30.17/TradeOctane';
 
 const target = process.env['TO_API_TARGET'] || DEFAULT_TARGET;
 
