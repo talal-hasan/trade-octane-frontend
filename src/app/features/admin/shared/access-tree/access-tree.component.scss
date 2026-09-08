@@ -1,0 +1,163 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-access-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  background: var(--to-bg-1);
+}
+
+.to-access-tree__row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  // Children indent by one step only — the tree is two levels and always will be; the
+  // API returns it that way and the legacy menu renders it that way.
+  &--child {
+    padding-left: t.$to-space-8;
+  }
+
+  &--inherited .to-access-tree__name {
+    color: var(--to-text-secondary);
+  }
+}
+
+.to-access-tree__twisty {
+  display: inline-flex;
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.to-access-tree__twisty-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(color, background-color);
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// Native checkbox, themed to the accent so it does not read as browser chrome next to
+// PrimeNG controls elsewhere on the screen.
+.to-access-tree__checkbox {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+.to-access-tree__label {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+}
+
+.to-access-tree__name {
+  @include u.truncate;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+// The legacy page name. Kept visible rather than hidden behind a tooltip: it is the only
+// thing that disambiguates two menu rows with the same label, and it is what an admin
+// cross-references against the legacy system.
+.to-access-tree__page {
+  @include u.truncate;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-access-tree__flags {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.to-access-tree__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 t.$to-space-1;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  white-space: nowrap;
+  cursor: help;
+
+  // Informational, not a problem — inherited access is the system working as designed.
+  &--role {
+    border: 1px solid var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-secondary);
+  }
+
+  // A grant that cannot authorise anything. Warning, not danger: nothing is broken, but
+  // the admin's mental model of this row is wrong.
+  &--dead {
+    border: 1px solid var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+}
+
+.to-access-tree__empty {
+  margin: 0;
+  padding: t.$to-space-6;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  background: var(--to-bg-1);
+  text-align: center;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+}

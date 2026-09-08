@@ -1,22 +1,89 @@
 @use '../../../styles/tokens' as t;
 @use '../../../styles/utilities' as u;
 
+// The rail is a pastel surface, not flat white: a vertical run through sky → lime →
+// magenta at 3–11% alpha over near-white. At that strength no hue is nameable, but the
+// nav no longer reads as grey chrome, which is the "colour in the menu" the client
+// asked for. Data surfaces stay flat — see _tokens.scss §Pastel canvas.
 .to-sidebar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   width: 200px;
   height: 100%;
-  background: var(--to-bg-1);
-  border-right: 1px solid var(--to-border);
+  flex-shrink: 0;
+  background-color: var(--to-bg-1);
+  background-image: var(--to-canvas-rail);
+  border-right: 1px solid var(--to-border-canvas);
   @include u.motion(width);
 
+  // 48px per CLAUDE.md §6.
   &--collapsed {
     width: 48px;
   }
 }
 
+// ─── Brand block ──────────────────────────────────────────────────────────────
+.to-sidebar__brand {
+  display: block;
+  flex-shrink: 0;
+  padding: t.$to-space-3;
+  border-bottom: 1px solid var(--to-border-canvas);
+  outline: none;
+
+  &:focus-visible .to-sidebar__brand-plate {
+    box-shadow: 0 0 0 2px var(--to-accent);
+  }
+}
+
+// Milk White keeper plate. The supplied lockup is a flat white-background PNG with no
+// alpha, so it needs an actual white ground to sit on — in light mode the plate is
+// nearly invisible, in dark mode it is what makes the mark legible at all. Same element
+// either way rather than a theme-conditional hack.
+.to-sidebar__brand-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$to-space-2;
+  background: #fff;
+  border: 1px solid var(--to-border-canvas);
+  border-radius: t.$to-radius-card;
+  box-shadow: var(--to-shadow-sm);
+  @include u.motion(box-shadow, transform);
+
+  .to-sidebar__brand:hover & {
+    box-shadow: var(--to-glow-accent-sm);
+  }
+}
+
+// ~156px wide against the old 61px. The lockup is 2.18:1, so at full rail width the
+// wordmark finally renders at a readable size instead of the ~8px it got in the top bar.
+.to-sidebar__brand-lockup {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.to-sidebar__brand-mark {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+// 48px rail − 2×6px brand padding − 2×4px plate padding leaves 26px for the star.
+.to-sidebar--collapsed {
+  .to-sidebar__brand {
+    padding: 6px;
+  }
+
+  .to-sidebar__brand-plate {
+    padding: 4px;
+  }
+}
+
+// ─── Nav ──────────────────────────────────────────────────────────────────────
 .to-sidebar__sections {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: t.$to-space-3 0;
 }
@@ -26,7 +93,7 @@
 }
 
 .to-sidebar__section--divided {
-  border-top: 1px solid var(--to-border);
+  border-top: 1px solid var(--to-border-canvas);
   margin-top: t.$to-space-1;
   padding-top: t.$to-space-3;
 }
@@ -37,7 +104,7 @@
   font-weight: var(--to-font-weight-medium);
   color: var(--to-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--to-tracking-label);
 }
 
 .to-sidebar__item {
@@ -46,57 +113,108 @@
   align-items: center;
   gap: t.$to-space-3;
   padding: t.$to-space-2 t.$to-space-3;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
   border-radius: t.$to-radius-control;
   color: var(--to-text-secondary);
   font-size: t.$to-font-size-sm;
   outline: none;
-  @include u.motion(background-color, color);
+  overflow: hidden;
+  @include u.motion(background-color, color, box-shadow);
 
-  &:hover {
-    background: var(--to-bg-2);
-    color: var(--to-text-primary);
+  &:hover:not(.to-sidebar__item--active) {
+    background: color-mix(in srgb, var(--to-accent) 10%, transparent);
+    color: var(--to-accent-text);
+
+    .to-sidebar__item-icon {
+      color: var(--to-accent);
+    }
   }
 
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
   }
 
+  // Active state is a filled Sky Blue gradient with a white label and a tinted glow —
+  // a decisive, unambiguous "you are here" rather than a pale tint. On a pastel rail a
+  // 6%-tint active state would be indistinguishable from the background wash, so the
+  // active item has to carry real weight. The rail is retained on its left edge because
+  // it is the app's shared state language (CLAUDE.md §5) and it survives the collapse
+  // to the icon rail where the label is gone.
   &--active {
-    color: var(--to-accent-text);
-    background: var(--to-accent-subtle);
+    color: #fff;
+    background: var(--to-gradient-accent-vivid);
+    box-shadow: var(--to-glow-accent-sm);
     font-weight: var(--to-font-weight-medium);
 
     .to-sidebar__item-indicator {
       opacity: 1;
+      transform: translateY(-50%) scaleY(1);
     }
 
     .to-sidebar__item-icon {
-      color: var(--to-accent);
+      color: #fff;
+    }
+
+    .to-sidebar__badge {
+      background: #fff;
+      color: var(--to-accent-text);
     }
   }
 }
 
 .to-sidebar__item-indicator {
   position: absolute;
-  left: -#{t.$to-space-2};
+  left: 0;
   top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  border-radius: t.$to-radius-pill;
-  background: var(--to-accent);
+  transform: translateY(-50%) scaleY(0.4);
+  width: var(--to-accent-rail);
+  height: 100%;
+  background: var(--to-brand-lime);
   opacity: 0;
-  @include u.motion(opacity);
+  @include u.motion(opacity, transform);
 }
 
 .to-sidebar__item-icon {
   flex-shrink: 0;
   color: inherit;
+  @include u.motion(color);
 }
 
 .to-sidebar__item-label {
   @include u.truncate;
+  flex: 1;
+}
+
+// Pending-count badge. Sky Blue at full strength on a white pill — the one place in the
+// nav where the brand colour is a filled shape rather than a rail, because a count is
+// exactly the kind of thing the guidelines mean by "highlight important information".
+.to-sidebar__badge {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent);
+  color: #fff;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  text-align: center;
+  @include u.motion(background-color, color);
+}
+
+// In the icon rail the label is gone, so the badge shrinks to a dot pinned to the
+// icon's top-right corner — presence still readable, the number itself no longer is.
+.to-sidebar__badge--rail {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  background: var(--to-critical-solid);
 }
 
 .to-sidebar--collapsed .to-sidebar__item {
@@ -104,27 +222,24 @@
   padding: t.$to-space-2;
 }
 
-.to-sidebar--collapsed .to-sidebar__item-indicator {
-  left: 0;
-}
-
 .to-sidebar__collapse {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: t.$to-space-2;
+  flex-shrink: 0;
   padding: t.$to-space-3 t.$to-space-4;
   background: none;
   border: none;
-  border-top: 1px solid var(--to-border);
+  border-top: 1px solid var(--to-border-canvas);
   color: var(--to-text-muted);
   font-size: t.$to-font-size-xs;
   cursor: pointer;
   @include u.motion(color, background-color);
 
   &:hover {
-    color: var(--to-text-primary);
-    background: var(--to-bg-2);
+    color: var(--to-accent-text);
+    background: color-mix(in srgb, var(--to-accent) 10%, transparent);
   }
 
   &:focus-visible {
@@ -135,4 +250,38 @@
 
 .to-sidebar--collapsed .to-sidebar__collapse {
   justify-content: center;
+  padding: t.$to-space-3 t.$to-space-2;
+}
+
+// ─── Not-yet-ported destinations ──────────────────────────────────────────────
+// The menu fold renders every grant the user holds, including modules that still live in
+// the legacy portal. Marking them is the honest option: an unmarked nav item that lands on
+// a placeholder reads as a broken screen, whereas "legacy" reads as a migration in
+// progress — which is what it is. Muted, not alarming; these are working screens today.
+.to-sidebar__legacy {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 1px t.$to-space-1;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.to-sidebar__item--pending {
+  .to-sidebar__item-icon,
+  .to-sidebar__item-label {
+    opacity: 0.75;
+  }
+
+  &:hover .to-sidebar__item-icon,
+  &:hover .to-sidebar__item-label {
+    opacity: 1;
+  }
+}
+
+.to-sidebar--collapsed .to-sidebar__legacy {
+  display: none;
 }

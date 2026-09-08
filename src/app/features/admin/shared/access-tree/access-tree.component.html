@@ -1,0 +1,78 @@
+@if (isEmpty()) {
+  <p class="to-access-tree__empty">No menu items match this filter.</p>
+} @else {
+  <ul class="to-access-tree" role="tree">
+    @for (row of rows(); track row.menuId) {
+      <li
+        class="to-access-tree__row"
+        [class.to-access-tree__row--child]="row.depth > 0"
+        [class.to-access-tree__row--inherited]="row.inherited"
+        role="treeitem"
+        [attr.aria-level]="row.depth + 1"
+        [attr.aria-selected]="row.checked || row.inherited"
+        [attr.aria-expanded]="row.hasChildren ? row.expanded : null"
+      >
+        <span class="to-access-tree__twisty">
+          @if (row.hasChildren) {
+            <button
+              type="button"
+              class="to-access-tree__twisty-btn"
+              (click)="toggleExpand(row.menuId)"
+              [attr.aria-label]="(row.expanded ? 'Collapse ' : 'Expand ') + row.node.menuName"
+            >
+              <tabler-icon
+                [icon]="row.expanded ? icons['chevron-down'] : icons['chevron-right']"
+                [size]="14"
+              />
+            </button>
+          }
+        </span>
+
+        <!-- A native control, not p-checkbox: PrimeNG's checkbox needs an ngModel or a
+             form control binding, and this tree is driven by a signal set rather than a
+             FormGroup. Template-driven forms are banned outright (CLAUDE.md §3), so the
+             native input is the honest choice — it is styled to match in the stylesheet.
+
+             Locked when a role supplies it: PUT on this endpoint cannot remove
+             role-derived access, so an editable tick here would refuse to clear. -->
+        <input
+          type="checkbox"
+          class="to-access-tree__checkbox"
+          [id]="'menu-' + row.menuId"
+          [checked]="row.checked || row.inherited"
+          [disabled]="disabled() || row.inherited"
+          (change)="onToggle(row)"
+        />
+
+        <label class="to-access-tree__label" [for]="'menu-' + row.menuId">
+          <span class="to-access-tree__name">{{ row.node.menuName }}</span>
+          @if (row.node.menuPage) {
+            <span class="to-access-tree__page">{{ row.node.menuPage }}</span>
+          }
+        </label>
+
+        <span class="to-access-tree__flags">
+          @if (row.inherited) {
+            <span
+              class="to-access-tree__flag to-access-tree__flag--role"
+              [pTooltip]="inheritedTooltip(row)"
+              tooltipPosition="left"
+            >
+              via role
+            </span>
+          }
+          @if (deadReason(row); as reason) {
+            <span
+              class="to-access-tree__flag to-access-tree__flag--dead"
+              [pTooltip]="reason"
+              tooltipPosition="left"
+            >
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="12" />
+              {{ row.node.isOrphaned ? 'orphaned' : 'hidden' }}
+            </span>
+          }
+        </span>
+      </li>
+    }
+  </ul>
+}

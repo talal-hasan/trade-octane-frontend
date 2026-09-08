@@ -1,0 +1,138 @@
+<to-page-header
+  title="User Access"
+  subtitle="Who can sign in to Trade Octane, and what they can do once they're in."
+  [breadcrumbs]="[{ label: 'Dashboard', route: '/dashboard' }, { label: 'Admin' }, { label: 'User Access' }]"
+>
+  <a actions routerLink="/admin/user-management/new" pButton class="to-users__new">
+    <tabler-icon [icon]="icons['user']" [size]="16" />
+    Add user
+  </a>
+</to-page-header>
+
+@if (error()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Couldn't load users"
+    description="The user directory didn't come back. Nothing has been changed."
+  >
+    <button actions type="button" pButton severity="secondary" (click)="retry()">Try again</button>
+  </to-empty-state>
+} @else {
+  @if (expiringSoon().length) {
+    <div class="to-users__notice">
+      <tabler-icon [icon]="icons['clock']" [size]="16" class="to-users__notice-icon" />
+      <span>
+        <strong>{{ expiringSoon().length }}</strong>
+        temporary
+        {{ expiringSoon().length === 1 ? 'account expires' : 'accounts expire' }}
+        within 30 days. They will be disabled automatically on their end date.
+      </span>
+    </div>
+  }
+
+  <div class="to-users__toolbar">
+    <div class="to-users__tabs" role="tablist">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-users__tab"
+          [class.to-users__tab--active]="typeFilter() === tab.key"
+          [attr.aria-selected]="typeFilter() === tab.key"
+          (click)="selectTab(tab.key)"
+        >
+          {{ tab.label }}
+          <span class="to-users__tab-count to-numeric">{{ countFor(tab.key) }}</span>
+        </button>
+      }
+    </div>
+
+    <label class="to-users__search">
+      <tabler-icon [icon]="icons['search']" [size]="16" class="to-users__search-icon" />
+      <input
+        type="search"
+        placeholder="Search name, email or role…"
+        [value]="search()"
+        (input)="setSearch($event)"
+        aria-label="Search users"
+      />
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="to-users__list">
+      @for (row of skeletonRows; track row) {
+        <div class="to-users__row to-users__row--skeleton">
+          <to-skeleton variant="circle" width="32px" />
+          <to-skeleton width="180px" height="14px" />
+          <to-skeleton width="120px" height="12px" />
+          <to-skeleton width="90px" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <to-empty-state
+      icon="users-group"
+      heading="No users match"
+      description="Try a different search term, or switch to another user type."
+    />
+  } @else {
+    <ul class="to-users__list">
+      @for (user of filtered(); track user.id) {
+        <li class="to-users__row to-users__row--{{ user.status }}">
+          <span class="to-users__rail" aria-hidden="true"></span>
+
+          <span class="to-users__avatar">{{ initialsOf(user.name) }}</span>
+
+          <div class="to-users__identity">
+            <span class="to-users__name">{{ user.name }}</span>
+            <span class="to-users__email">{{ user.email }}</span>
+          </div>
+
+          <div class="to-users__meta">
+            <span class="to-users__type">{{ typeLabels[user.userType] }}</span>
+            @if (user.endDate) {
+              <span class="to-users__end-date">Ends {{ user.endDate }}</span>
+            }
+          </div>
+
+          <div class="to-users__roles">
+            @for (role of user.roles; track role) {
+              <span class="to-users__role-chip">{{ roleLabels[role] }}</span>
+            }
+          </div>
+
+          <div class="to-users__scope">
+            <span class="to-numeric">{{ user.regions.length }}</span>
+            {{ user.regions.length === 1 ? 'region' : 'regions' }} ·
+            <!-- An empty brand list means unrestricted, so it must read "All brands" here
+                 exactly as the provisioning summary promised — "0 brands" would read as
+                 no access at all, the opposite of what was granted. -->
+            @if (user.brands.length === 0) {
+              All brands ·
+            } @else {
+              <span class="to-numeric">{{ user.brands.length }}</span>
+              {{ user.brands.length === 1 ? 'brand' : 'brands' }} ·
+            }
+            <span class="to-numeric">{{ user.permissions.length }}</span>
+            {{ user.permissions.length === 1 ? 'permission' : 'permissions' }}
+          </div>
+
+          <span class="to-users__status to-users__status--{{ user.status }}">
+            <span class="to-users__status-dot"></span>
+            {{ user.status }}
+          </span>
+
+          <button
+            type="button"
+            class="to-users__action"
+            [disabled]="busyId() === user.id || user.status === 'pending'"
+            (click)="toggleStatus(user)"
+          >
+            {{ user.status === 'active' ? 'Revoke' : 'Restore' }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+}

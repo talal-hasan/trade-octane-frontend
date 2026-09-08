@@ -1,0 +1,424 @@
+@if (createdUser(); as created) {
+  <!-- === Success ================================================== -->
+  <to-success-panel
+    heading="{{ created.name }} can now sign in"
+    description="{{ createdSummary() }}"
+  >
+    <div body class="to-uf__receipt">
+      <div class="to-uf__receipt-row">
+        <span>Account type</span>
+        <strong>{{ typeLabels[created.userType] }}</strong>
+      </div>
+      <div class="to-uf__receipt-row">
+        <span>Email</span>
+        <strong>{{ created.email }}</strong>
+      </div>
+      <div class="to-uf__receipt-row">
+        <span>Roles</span>
+        <strong>{{ created.roles.length }}</strong>
+      </div>
+      <div class="to-uf__receipt-row">
+        <span>Status</span>
+        <strong class="to-uf__receipt-status">{{ created.status }}</strong>
+      </div>
+    </div>
+
+    <button actions type="button" pButton (click)="provisionAnother()">
+      <tabler-icon [icon]="icons['user-plus']" [size]="16" />
+      Add another user
+    </button>
+    <a actions routerLink="/admin/user-management" pButton severity="secondary">
+      Back to user list
+    </a>
+  </to-success-panel>
+} @else {
+  <to-page-header
+    title="Add user"
+    subtitle="Three decisions: who they are, what they do, and where they do it."
+    [breadcrumbs]="[
+      { label: 'Dashboard', route: '/dashboard' },
+      { label: 'Admin' },
+      { label: 'User Access', route: '/admin/user-management' },
+      { label: 'Add user' },
+    ]"
+  />
+
+  <to-wizard-steps
+    [steps]="steps"
+    [current]="currentStep()"
+    [furthestReached]="furthestStep()"
+    (stepSelected)="goToStep($event)"
+  />
+
+  <form class="to-uf" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="to-uf__main">
+      <!-- === 1 - Identity ========================================== -->
+      @if (currentStep() === 0) {
+        <section class="to-uf__step">
+          <header class="to-uf__step-head">
+            <h2 class="to-uf__step-title">Who is this?</h2>
+            <p class="to-uf__step-hint">{{ typeHints[userType()] }}</p>
+          </header>
+
+          <div class="to-uf__types" role="radiogroup" aria-label="User type">
+            @for (type of userTypes; track type) {
+              <button
+                type="button"
+                role="radio"
+                class="to-uf__type"
+                [class.to-uf__type--active]="userType() === type"
+                [attr.aria-checked]="userType() === type"
+                (click)="selectUserType(type)"
+              >
+                {{ typeLabels[type] }}
+              </button>
+            }
+          </div>
+
+          <!-- Company user: found in the directory, never typed. -->
+          @if (userType() === 'ad') {
+            @if (pickedPerson(); as person) {
+              <div class="to-uf__picked">
+                <span class="to-uf__picked-avatar">{{ person.name.charAt(0) }}</span>
+                <div class="to-uf__picked-body">
+                  <span class="to-uf__picked-name">{{ person.name }}</span>
+                  <span class="to-uf__picked-meta">
+                    {{ person.designation }} - {{ person.department }} - {{ person.employeeId }}
+                  </span>
+                  <span class="to-uf__picked-meta">{{ person.email }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="to-uf__picked-clear"
+                  (click)="clearPerson()"
+                  aria-label="Choose someone else"
+                >
+                  <tabler-icon [icon]="icons['x']" [size]="16" />
+                </button>
+              </div>
+            } @else {
+              <label class="to-uf__search">
+                <tabler-icon [icon]="icons['search']" [size]="16" class="to-uf__search-icon" />
+                <input
+                  type="search"
+                  placeholder="Search Active Directory by name, email or employee ID"
+                  [value]="directoryQuery()"
+                  (input)="onDirectoryInput($event)"
+                  aria-label="Search Active Directory"
+                />
+              </label>
+
+              @if (directorySearching()) {
+                <p class="to-uf__search-status">Searching the directory...</p>
+              } @else if (directoryResults().length) {
+                <ul class="to-uf__results">
+                  @for (person of directoryResults(); track person.employeeId) {
+                    <li>
+                      <button type="button" class="to-uf__result" (click)="pickPerson(person)">
+                        <span class="to-uf__result-avatar">{{ person.name.charAt(0) }}</span>
+                        <span class="to-uf__result-body">
+                          <span class="to-uf__result-name">{{ person.name }}</span>
+                          <span class="to-uf__result-meta">
+                            {{ person.designation }} - {{ person.region }}
+                          </span>
+                        </span>
+                        <tabler-icon
+                          [icon]="icons['chevron-right']"
+                          [size]="16"
+                          class="to-uf__result-chevron"
+                        />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else if (directoryQuery().length >= 2) {
+                <p class="to-uf__search-status">
+                  Nobody matches, or everyone who does already has an account.
+                </p>
+              }
+            }
+          }
+
+          <!-- Distributor: found in the SAP master list. -->
+          @if (userType() === 'distributor') {
+            @if (pickedDistributor(); as distributor) {
+              <div class="to-uf__picked">
+                <span class="to-uf__picked-avatar">
+                  <tabler-icon [icon]="icons['truck-delivery']" [size]="16" />
+                </span>
+                <div class="to-uf__picked-body">
+                  <span class="to-uf__picked-name">{{ distributor.name }}</span>
+                  <span class="to-uf__picked-meta">
+                    {{ distributor.code }} - {{ distributor.businessType }} -
+                    {{ distributor.region }}
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <label class="to-uf__search">
+                <tabler-icon [icon]="icons['search']" [size]="16" class="to-uf__search-icon" />
+                <input
+                  type="search"
+                  placeholder="Search the SAP distributor master list"
+                  [value]="distributorQuery()"
+                  (input)="onDistributorInput($event)"
+                  aria-label="Search distributors"
+                />
+              </label>
+              @if (distributorResults().length) {
+                <ul class="to-uf__results">
+                  @for (distributor of distributorResults(); track distributor.code) {
+                    <li>
+                      <button
+                        type="button"
+                        class="to-uf__result"
+                        (click)="pickDistributor(distributor)"
+                      >
+                        <span class="to-uf__result-body">
+                          <span class="to-uf__result-name">{{ distributor.name }}</span>
+                          <span class="to-uf__result-meta">
+                            {{ distributor.code }} - {{ distributor.businessType }} -
+                            {{ distributor.region }}
+                          </span>
+                        </span>
+                        <tabler-icon
+                          [icon]="icons['chevron-right']"
+                          [size]="16"
+                          class="to-uf__result-chevron"
+                        />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+
+            <div class="to-uf__fields">
+              <label class="to-uf__field">
+                <span class="to-uf__label">KPO contact email</span>
+                <input type="email" formControlName="email" placeholder="kpo.name@distributor.pk" />
+              </label>
+              <label class="to-uf__field">
+                <span class="to-uf__label">City</span>
+                <!-- Structured, not free text - closes the legacy data-quality gap. -->
+                <select formControlName="city" [disabled]="cityOptions().length === 0">
+                  <option value="">
+                    {{ cityOptions().length ? 'Select a city' : 'Pick a distributor first' }}
+                  </option>
+                  @for (city of cityOptions(); track city) {
+                    <option [value]="city">{{ city }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          }
+
+          <!-- Temporary: named by convention, expires by date. -->
+          @if (userType() === 'temporary') {
+            <div class="to-uf__fields">
+              <label class="to-uf__field to-uf__field--wide">
+                <span class="to-uf__label">Username</span>
+                <div class="to-uf__input-row">
+                  <input type="text" formControlName="name" placeholder="ASM_FSD_Lahore_FCBL" />
+                  <button type="button" class="to-uf__ghost-btn" (click)="generateTempUsername()">
+                    <tabler-icon [icon]="icons['refresh']" [size]="14" />
+                    Generate
+                  </button>
+                </div>
+                <span class="to-uf__help">
+                  Convention: ROLE_REGION_FCBL. Generate fills it from the role and region you
+                  pick next.
+                </span>
+              </label>
+              <label class="to-uf__field">
+                <span class="to-uf__label">Email</span>
+                <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="name@frieslandcampina.com"
+                />
+              </label>
+              <label class="to-uf__field">
+                <span class="to-uf__label">Access ends on</span>
+                <input type="date" formControlName="endDate" />
+                <span class="to-uf__help">Disabled automatically overnight on this date.</span>
+              </label>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- === 2 - Access ============================================ -->
+      @if (currentStep() === 1) {
+        <section class="to-uf__step">
+          <header class="to-uf__step-head">
+            <h2 class="to-uf__step-title">What do they do?</h2>
+            <p class="to-uf__step-hint">
+              Pick the job. Permissions come with it - you can adjust them afterwards.
+            </p>
+          </header>
+
+          <div class="to-uf__templates">
+            @for (template of templates(); track template.key) {
+              <button
+                type="button"
+                class="to-uf__template"
+                [class.to-uf__template--active]="appliedTemplate()?.key === template.key"
+                (click)="applyTemplate(template)"
+              >
+                <span class="to-uf__template-rail" aria-hidden="true"></span>
+                <span class="to-uf__template-head">
+                  <tabler-icon [icon]="icons[template.icon]" [size]="16" />
+                  <span class="to-uf__template-name">{{ template.label }}</span>
+                  @if (appliedTemplate()?.key === template.key) {
+                    <tabler-icon [icon]="icons['check']" [size]="14" class="to-uf__template-check" />
+                  }
+                </span>
+                <span class="to-uf__template-desc">{{ template.description }}</span>
+                <span class="to-uf__template-count to-numeric">
+                  {{ template.permissions.length }} permissions
+                </span>
+              </button>
+            }
+          </div>
+
+          @if (cloneCandidates().length) {
+            <div class="to-uf__clone">
+              <span class="to-uf__clone-label">Or mirror an existing user</span>
+              <div class="to-uf__clone-list">
+                @for (user of cloneCandidates(); track user.id) {
+                  <button
+                    type="button"
+                    class="to-uf__clone-chip"
+                    [class.to-uf__clone-chip--active]="clonedFrom()?.id === user.id"
+                    (click)="cloneFrom(user)"
+                  >
+                    <tabler-icon [icon]="icons['copy']" [size]="12" />
+                    {{ user.name }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="to-uf__roles">
+            <span class="to-uf__label">Roles</span>
+            <span class="to-uf__help">A user can hold more than one.</span>
+            <div class="to-uf__chips">
+              @for (role of allRoles; track role) {
+                <button
+                  type="button"
+                  class="to-uf__chip"
+                  [class.to-uf__chip--active]="selectedRoles().includes(role)"
+                  [attr.aria-pressed]="selectedRoles().includes(role)"
+                  (click)="toggleRole(role)"
+                >
+                  {{ roleLabels[role] }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <to-permission-matrix
+            [permissions]="selectedPermissions()"
+            (toggled)="togglePermission($event)"
+          />
+        </section>
+      }
+
+      <!-- === 3 - Scope ============================================= -->
+      @if (currentStep() === 2) {
+        <section class="to-uf__step">
+          <header class="to-uf__step-head">
+            <h2 class="to-uf__step-title">Where do they do it?</h2>
+            <p class="to-uf__step-hint">
+              Data outside this scope stays invisible to them - region boundaries are enforced,
+              not advisory.
+            </p>
+          </header>
+
+          <div class="to-uf__scope-group">
+            <div class="to-uf__scope-head">
+              <span class="to-uf__label">Regions</span>
+              <button type="button" class="to-uf__ghost-btn" (click)="selectAllRegions()">
+                Select all
+              </button>
+            </div>
+            <div class="to-uf__chips">
+              @for (region of regions; track region) {
+                <button
+                  type="button"
+                  class="to-uf__chip"
+                  [class.to-uf__chip--active]="selectedRegions().includes(region)"
+                  [attr.aria-pressed]="selectedRegions().includes(region)"
+                  (click)="toggleRegion(region)"
+                >
+                  {{ region }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="to-uf__scope-group">
+            <div class="to-uf__scope-head">
+              <span class="to-uf__label">Brands</span>
+              <button type="button" class="to-uf__ghost-btn" (click)="selectAllBrands()">
+                Select all
+              </button>
+            </div>
+            <div class="to-uf__chips">
+              @for (brand of brands; track brand) {
+                <button
+                  type="button"
+                  class="to-uf__chip"
+                  [class.to-uf__chip--active]="selectedBrands().includes(brand)"
+                  [attr.aria-pressed]="selectedBrands().includes(brand)"
+                  (click)="toggleBrand(brand)"
+                >
+                  {{ brand }}
+                </button>
+              }
+            </div>
+            <span class="to-uf__help">Leave empty to grant every brand.</span>
+          </div>
+        </section>
+      }
+
+      <!-- === Step navigation ======================================= -->
+      <div class="to-uf__nav">
+        @if (currentStep() > 0) {
+          <button type="button" pButton severity="secondary" (click)="back()">Back</button>
+        }
+        <span class="to-uf__nav-spacer"></span>
+        @if (!isLastStep()) {
+          <button type="button" pButton [disabled]="!currentStepValid()" (click)="next()">
+            Continue
+            <tabler-icon [icon]="icons['chevron-right']" [size]="16" />
+          </button>
+        } @else {
+          <button type="submit" pButton [disabled]="!canSubmit()">
+            {{ submitting() ? 'Creating...' : 'Create user' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- === Live summary - visible at every step ==================== -->
+    <aside class="to-uf__summary">
+      <to-access-summary
+        [effect]="effectSentence()"
+        [roleCount]="selectedRoles().length"
+        [permissionCount]="selectedPermissions().length"
+        [regionCount]="selectedRegions().length"
+        [brandLabel]="brandLabel()"
+        [clicks]="clicks()"
+        [sourceLabel]="sourceLabel()"
+        [sourceIcon]="sourceIcon()"
+        [drifted]="driftedFromTemplate()"
+        [showError]="form.invalid && form.touched && isLastStep()"
+      >
+        <a actions routerLink="/admin/user-management" pButton severity="secondary">Cancel</a>
+      </to-access-summary>
+    </aside>
+  </form>
+}

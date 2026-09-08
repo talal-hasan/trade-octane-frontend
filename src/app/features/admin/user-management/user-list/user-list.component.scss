@@ -1,0 +1,331 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+.to-users__new {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// ─── Expiry notice ──────────────────────────────────────────
+.to-users__notice {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: t.$to-space-4 0 0;
+  padding: t.$to-space-3 t.$to-space-4;
+  background: var(--to-warning-subtle);
+  border-left: var(--to-accent-rail) solid var(--to-warning-solid);
+  border-radius: 0 t.$to-radius-control t.$to-radius-control 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-warning);
+
+  strong {
+    font-weight: var(--to-font-weight-medium);
+  }
+}
+
+.to-users__notice-icon {
+  flex-shrink: 0;
+}
+
+// ─── Toolbar ────────────────────────────────────────────────
+.to-users__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+  margin: t.$to-space-6 0 t.$to-space-4;
+  flex-wrap: wrap;
+}
+
+.to-users__tabs {
+  display: flex;
+  gap: t.$to-space-1;
+}
+
+.to-users__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(color, border-color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+    border-radius: t.$to-radius-control;
+  }
+
+  // Sky Blue underline on the active tab — the same hard 2px rail used on the page
+  // header and the sidebar, so "where am I" reads identically everywhere.
+  &--active {
+    color: var(--to-text-primary);
+    font-weight: var(--to-font-weight-medium);
+    border-bottom-color: transparent;
+    border-image: var(--to-gradient-accent) 1;
+
+    .to-users__tab-count {
+      background: var(--to-accent-subtle);
+      color: var(--to-accent-text);
+    }
+  }
+}
+
+.to-users__tab-count {
+  padding: 0 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  color: var(--to-text-muted);
+}
+
+.to-users__search {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 260px;
+  height: var(--to-field-height);
+  padding: 0 t.$to-space-3;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  @include u.motion(border-color, box-shadow);
+
+  &:focus-within {
+    border-color: var(--to-accent);
+    box-shadow: var(--to-focus-ring);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    outline: none;
+    font-family: inherit;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+
+    &::placeholder {
+      color: var(--to-text-muted);
+    }
+  }
+}
+
+.to-users__search-icon {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
+}
+
+// ─── Rows ───────────────────────────────────────────────────
+// Rows rather than a generic data table: a user record is a small profile, not a grid
+// of comparable numbers, and the identity/roles/scope grouping reads far faster than
+// eight equal-weight columns would.
+.to-users__list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-users__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(180px, 1.4fr) minmax(120px, 1fr) minmax(140px, 1.2fr) minmax(160px, 1.2fr) 100px 80px;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-3 t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+  @include u.lift-on-hover;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: 32px 1fr auto;
+    row-gap: t.$to-space-2;
+  }
+}
+
+.to-users__row--skeleton {
+  grid-template-columns: 32px 1fr 1fr 1fr;
+}
+
+// A disabled account is greyed but never hidden — an admin auditing access needs to see
+// revoked users, and hiding them is how orphaned accounts survive audits.
+.to-users__row--disabled {
+  background: var(--to-bg-0);
+
+  .to-users__identity,
+  .to-users__meta,
+  .to-users__roles,
+  .to-users__scope {
+    opacity: 0.55;
+  }
+}
+
+// The rail is the row's status in one stroke, so it runs the same gradient its filled
+// button would — brand hex at the top falling into the AA-safe darker partner.
+.to-users__rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--to-accent-rail);
+  background: var(--to-gradient-success);
+}
+
+.to-users__row--disabled .to-users__rail {
+  background: var(--to-brand-grey);
+}
+
+.to-users__row--pending .to-users__rail {
+  background: var(--to-gradient-warning);
+}
+
+.to-users__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-gradient-accent);
+  color: #fff;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-users__identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.to-users__name {
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+  @include u.truncate;
+}
+
+.to-users__email {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+  @include u.truncate;
+}
+
+.to-users__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-users__end-date {
+  color: var(--to-warning);
+}
+
+.to-users__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+  min-width: 0;
+}
+
+.to-users__role-chip {
+  padding: 1px t.$to-space-2;
+  border: 1px solid var(--to-accent-muted);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent-subtle);
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  white-space: nowrap;
+}
+
+.to-users__scope {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-users__status {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  text-transform: capitalize;
+  color: var(--to-text-secondary);
+}
+
+.to-users__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-brand-grey);
+  flex-shrink: 0;
+}
+
+.to-users__status--active {
+  color: var(--to-success);
+
+  .to-users__status-dot {
+    background: var(--to-success-solid);
+  }
+}
+
+.to-users__status--pending {
+  color: var(--to-warning);
+
+  .to-users__status-dot {
+    background: var(--to-warning-solid);
+  }
+}
+
+.to-users__action {
+  padding: t.$to-space-1 t.$to-space-3;
+  background: none;
+  border: 1px solid var(--to-border-strong);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(border-color, color, background-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-danger);
+    color: var(--to-danger);
+    background: var(--to-danger-subtle);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

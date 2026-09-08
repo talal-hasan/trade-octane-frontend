@@ -1,0 +1,129 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-uc {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  max-width: 760px;
+}
+
+.to-uc__section {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-uc__title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-uc__note {
+  margin: t.$to-space-1 0 t.$to-space-4;
+  max-width: 62ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// The check row leads the form: it is the step that fills in everything below it, so it
+// sits above the grid rather than inside it.
+.to-uc__check-row {
+  display: flex;
+  align-items: flex-end;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+}
+
+.to-uc__check-btn {
+  flex-shrink: 0;
+}
+
+.to-uc__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: t.$to-space-3;
+  margin-top: t.$to-space-4;
+}
+
+.to-uc__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+
+  &--grow {
+    flex: 1;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  :is(p-password, .p-password) {
+    display: block;
+    width: 100%;
+  }
+}
+
+.to-uc__label {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-uc__hint {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-uc__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+// ─── Lookup result ────────────────────────────────────────────────────────────
+
+.to-uc__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left-width: 3px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  &--warn {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+
+  &--ok {
+    border-color: var(--to-success);
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+}
+
+.to-uc__link {
+  margin-left: t.$to-space-1;
+  color: var(--to-accent-text);
+  text-decoration: underline;
+}
+
+.to-uc__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}

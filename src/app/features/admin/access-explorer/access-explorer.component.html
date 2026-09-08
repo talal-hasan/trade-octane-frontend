@@ -1,0 +1,163 @@
+<to-page-header
+  title="Access Explorer"
+  subtitle="Every access mapping in the system, across users, roles, regions, brands and menus."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Access Explorer' }]"
+>
+  <button
+    actions
+    type="button"
+    pButton
+    class="p-button-outlined p-button-sm"
+    (click)="exportCsv()"
+    [disabled]="exporting() || loading()"
+  >
+    <tabler-icon [icon]="icons['download']" [size]="15" />
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</to-page-header>
+
+<div class="to-ax">
+  <!-- The source toggle. Each option was its own screen in the legacy system; the legacy
+       name is kept on the chip so someone trained there recognises what they are looking
+       at rather than having to infer it. -->
+  <div class="to-ax__sources" role="tablist" aria-label="Mapping type">
+    @for (entry of sources; track entry.key) {
+      <button
+        type="button"
+        role="tab"
+        class="to-ax__source"
+        [class.to-ax__source--active]="source() === entry.key"
+        [attr.aria-selected]="source() === entry.key"
+        [pTooltip]="'Legacy: ' + entry.legacy"
+        tooltipPosition="bottom"
+        (click)="setSource(entry.key)"
+      >
+        {{ entry.label }}
+      </button>
+    }
+  </div>
+
+  <div class="to-ax__toolbar">
+    <div class="to-ax__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" class="to-ax__search-icon" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="onSearch()"
+        (keyup.enter)="onSearch()"
+        placeholder="Search"
+        aria-label="Search mappings"
+      />
+    </div>
+
+    <!-- The filter that makes this screen worth having: mappings that exist and authorise
+         nothing. These are the rows an admin believes are working. -->
+    <label class="to-ax__toggle">
+      <input type="checkbox" class="to-ax__checkbox" [checked]="deadOnly()" (change)="toggleDeadOnly()" />
+      <span>Only mappings that grant nothing</span>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="to-ax__table-wrap" aria-busy="true" aria-label="Loading mappings">
+      @for (row of skeletonRows; track row) {
+        <div class="to-ax__skeleton-row">
+          <to-skeleton width="26%" height="12px" />
+          <to-skeleton width="18%" height="12px" />
+          <to-skeleton width="34%" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load mappings"
+      description="The grid did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (rows().length === 0) {
+    <to-empty-state
+      icon="list-search"
+      [heading]="deadOnly() ? 'No dead mappings here' : 'No mappings match'"
+      [description]="
+        deadOnly()
+          ? 'Every mapping of this type currently grants what it says it grants.'
+          : 'Try a different mapping type, or clear the search.'
+      "
+    />
+  } @else {
+    <div class="to-ax__table-wrap">
+      <table class="to-ax__table">
+        <thead>
+          <tr>
+            @for (column of descriptor().columns; track column) {
+              <th scope="col" class="to-ax__th">{{ column }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.key) {
+            <tr class="to-ax__row" [class.to-ax__row--dead]="row.dead">
+              @for (cell of row.cells; track $index) {
+                <td
+                  class="to-ax__td"
+                  [class.to-ax__td--mono]="cell.mono"
+                  [class.to-ax__td--muted]="cell.muted"
+                >
+                  {{ cell.text }}
+                </td>
+              }
+              <td class="to-ax__td">
+                @if (row.dead) {
+                  <span
+                    class="to-ax__flag"
+                    [pTooltip]="row.deadReason ?? 'This mapping does not authorise anything.'"
+                    tooltipPosition="left"
+                  >
+                    <tabler-icon [icon]="icons['alert-triangle']" [size]="12" />
+                    grants nothing
+                  </span>
+                } @else {
+                  <span class="to-ax__ok">
+                    <tabler-icon [icon]="icons['check']" [size]="13" />
+                  </span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="to-ax__pager">
+      <span class="to-ax__pager-range to-numeric">{{ totalLabel() }}</span>
+      <div class="to-ax__pager-buttons">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasPrevious"
+          (click)="previousPage()"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+          Previous
+        </button>
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasNext"
+          (click)="nextPage()"
+        >
+          Next
+          <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+        </button>
+      </div>
+    </div>
+  }
+</div>

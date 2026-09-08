@@ -1,0 +1,107 @@
+@use '../../../../../styles/tokens' as t;
+
+// A 2px Sky Blue cap on the panel — the same brand rail used on the shell top bar and
+// under every page title, applied here to mark this as the authoritative panel on the
+// screen rather than another card.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-top: 2px solid var(--to-accent);
+  border-radius: t.$to-radius-card;
+}
+
+.to-as__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+}
+
+.to-as__title {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+// The click counter is the client's acceptance criterion made visible. Keeping it on
+// screen means any future change that adds friction shows up immediately.
+.to-as__clicks {
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-secondary);
+}
+
+.to-as__effect {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  line-height: var(--to-line-height-body);
+  color: var(--to-text-secondary);
+}
+
+.to-as__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: t.$to-space-3 0;
+  border-top: 1px solid var(--to-border);
+  border-bottom: 1px solid var(--to-border);
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: var(--to-tracking-label);
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: t.$to-font-size-lg;
+    font-weight: var(--to-font-weight-medium);
+    line-height: var(--to-line-height-data);
+    color: var(--to-text-primary);
+  }
+}
+
+.to-as__source {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-success);
+}
+
+.to-as__drift {
+  color: var(--to-warning);
+}
+
+.to-as__error {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-danger-subtle);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+.to-as__actions {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+
+  ::ng-deep button,
+  ::ng-deep a {
+    width: 100%;
+    justify-content: center;
+  }
+}

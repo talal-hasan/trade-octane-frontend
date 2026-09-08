@@ -1,0 +1,215 @@
+<to-page-header
+  title="Menus"
+  subtitle="The menu catalogue both portals render from."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Menus' }]"
+>
+  <button
+    actions
+    type="button"
+    pButton
+    class="p-button-outlined p-button-sm"
+    (click)="exportCsv()"
+    [disabled]="exporting() || loading()"
+  >
+    <tabler-icon [icon]="icons['download']" [size]="15" />
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</to-page-header>
+
+<div class="to-ml">
+  <div class="to-ml__toolbar">
+    <div class="to-ml__tabs" role="tablist" aria-label="Application">
+      @for (tab of octaneTabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-ml__tab"
+          [class.to-ml__tab--active]="octane() === tab.key"
+          [attr.aria-selected]="octane() === tab.key"
+          (click)="setOctane(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="to-ml__tabs" role="tablist" aria-label="Visibility">
+      @for (tab of statusTabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-ml__tab"
+          [class.to-ml__tab--active]="status() === tab.key"
+          [attr.aria-selected]="status() === tab.key"
+          (click)="setStatus(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="to-ml__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" class="to-ml__search-icon" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="onSearch()"
+        (keyup.enter)="onSearch()"
+        placeholder="Search name or page"
+        aria-label="Search menus"
+      />
+    </div>
+  </div>
+
+  <!-- A row can be live in one portal and hidden in the other. Reporting the disagreement
+       is better than picking one of them to believe. -->
+  @if (mismatchCount() > 0) {
+    <div class="to-ml__notice" role="status">
+      <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+      <span class="to-numeric">{{ mismatchCount() }}</span>
+      menu item(s) render differently in the legacy portal than in the ported one.
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="to-ml__table-wrap" aria-busy="true" aria-label="Loading menus">
+      @for (row of skeletonRows; track row) {
+        <div class="to-ml__skeleton-row">
+          <to-skeleton width="8%" height="12px" />
+          <to-skeleton width="28%" height="12px" />
+          <to-skeleton width="24%" height="12px" />
+          <to-skeleton width="14%" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load menus"
+      description="The catalogue did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (rows().length === 0) {
+    <to-empty-state
+      icon="menu-2"
+      heading="No menu items match"
+      description="Try the other application, a different visibility, or clear the search."
+    />
+  } @else {
+    <div class="to-ml__table-wrap">
+      <table class="to-ml__table">
+        <thead>
+          <tr>
+            <th scope="col" class="to-ml__th to-ml__th--id">ID</th>
+            <th scope="col" class="to-ml__th">Name</th>
+            <th scope="col" class="to-ml__th">Page</th>
+            <th scope="col" class="to-ml__th">Grants</th>
+            <th scope="col" class="to-ml__th">Portal</th>
+            <th scope="col" class="to-ml__th to-ml__th--actions">Visibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (menu of rows(); track menu.menuId) {
+            <tr
+              class="to-ml__row"
+              [class.to-ml__row--child]="+menu.parentId > 0"
+              [class.to-ml__row--busy]="busyMenuId() === menuId(menu)"
+            >
+              <!-- menuId is the join key the whole navigation fold depends on, so it is a
+                   first-class column here rather than a hidden detail. -->
+              <td class="to-ml__td to-ml__td--mono to-numeric">{{ menu.menuId }}</td>
+              <td class="to-ml__td">
+                <span class="to-ml__name">
+                  @if (+menu.parentId > 0) {
+                    <span class="to-ml__indent" aria-hidden="true">›</span>
+                  }
+                  {{ menu.menuName }}
+                </span>
+                @if (!menu.isReachable) {
+                  <span
+                    class="to-ml__flag to-ml__flag--warn"
+                    pTooltip="Nothing links to this item — nobody can reach it."
+                    tooltipPosition="top"
+                  >
+                    unreachable
+                  </span>
+                }
+              </td>
+              <td class="to-ml__td to-ml__td--mono">{{ menu.menuPage || '—' }}</td>
+              <td class="to-ml__td to-ml__td--muted to-numeric">
+                {{ menu.roleGrants }} role / {{ menu.userGrants }} user
+              </td>
+              <td class="to-ml__td">
+                <!-- Whether this application knows what to do with the row. An active,
+                     granted, unmapped row is a nav item that lands on the placeholder. -->
+                @if (isMapped(menu)) {
+                  <span class="to-ml__flag to-ml__flag--ok">ported</span>
+                } @else {
+                  <span
+                    class="to-ml__flag"
+                    pTooltip="No blueprint entry — this renders under More and opens the legacy placeholder."
+                    tooltipPosition="top"
+                  >
+                    legacy only
+                  </span>
+                }
+                @if (menu.rendersInLegacyMenu !== menu.rendersInPortedMenu) {
+                  <span
+                    class="to-ml__flag to-ml__flag--warn"
+                    pTooltip="This item is visible in one portal but not the other."
+                    tooltipPosition="top"
+                  >
+                    mismatch
+                  </span>
+                }
+              </td>
+              <td class="to-ml__td to-ml__td--actions">
+                <button
+                  type="button"
+                  class="to-ml__toggle"
+                  [class.to-ml__toggle--on]="menu.activation === 'Active'"
+                  [disabled]="busyMenuId() === menuId(menu)"
+                  (click)="toggleActivation(menu)"
+                  [attr.aria-pressed]="menu.activation === 'Active'"
+                >
+                  {{ menu.activation === 'Active' ? 'Visible' : menu.activation === 'Hidden' ? 'Hidden' : 'Unset' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="to-ml__pager">
+      <span class="to-ml__pager-range to-numeric">{{ totalLabel() }}</span>
+      <div class="to-ml__pager-buttons">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasPrevious"
+          (click)="previousPage()"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+          Previous
+        </button>
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasNext"
+          (click)="nextPage()"
+        >
+          Next
+          <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,121 @@
+<to-page-header
+  title="New user"
+  subtitle="Create an account. Roles and access are granted afterwards."
+  [breadcrumbs]="[
+    { label: 'Administration' },
+    { label: 'Users', route: '/admin/users' },
+    { label: 'New user' },
+  ]"
+/>
+
+<form class="to-uc" [formGroup]="form" (ngSubmit)="submit()">
+  <section class="to-uc__section">
+    <h2 class="to-uc__title">Identity</h2>
+    <p class="to-uc__note">
+      Check the email address first — it tells you whether the person already has an
+      account, and fills in the rest of this form if the directory knows them.
+    </p>
+
+    <div class="to-uc__check-row">
+      <div class="to-uc__field to-uc__field--grow">
+        <label class="to-uc__label" for="email">Email</label>
+        <input pInputText id="email" type="email" formControlName="email" autocomplete="off" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="to-uc__error">Enter a valid email address.</span>
+        }
+      </div>
+      <button
+        type="button"
+        pButton
+        class="p-button-outlined to-uc__check-btn"
+        (click)="check()"
+        [disabled]="checking()"
+      >
+        <tabler-icon [icon]="icons['search']" [size]="15" />
+        {{ checking() ? 'Checking…' : 'Check' }}
+      </button>
+    </div>
+
+    @if (lookup(); as result) {
+      @if (result.exists) {
+        <!-- Creating a second account is the wrong action here, so the form does not
+             pre-fill and the useful action is offered instead. -->
+        <div class="to-uc__alert to-uc__alert--warn" role="status">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>
+            <strong>{{ result.user?.fullName || 'Someone' }}</strong> already uses this
+            address.
+            @if (existingUserId) {
+              <a class="to-uc__link" [routerLink]="['/admin/users', existingUserId]">
+                Open their account
+              </a>
+            }
+          </span>
+        </div>
+      } @else if (result.suggestion) {
+        <div class="to-uc__alert to-uc__alert--ok" role="status">
+          <tabler-icon [icon]="icons['circle-check']" [size]="16" />
+          <span>
+            Address is free. Details pre-filled from
+            <strong>{{ result.suggestion.source }}</strong
+            >.
+          </span>
+        </div>
+      } @else {
+        <div class="to-uc__alert" role="status">
+          <tabler-icon [icon]="icons['info-circle']" [size]="16" />
+          <span>Address is free. Fill in the details below.</span>
+        </div>
+      }
+    }
+
+    <div class="to-uc__grid">
+      <div class="to-uc__field">
+        <label class="to-uc__label" for="fullName">Full name</label>
+        <input pInputText id="fullName" type="text" formControlName="fullName" />
+        @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+          <span class="to-uc__error">A full name is required.</span>
+        }
+      </div>
+
+      <div class="to-uc__field">
+        <label class="to-uc__label" for="loginName">
+          Login name
+          <span class="to-uc__hint">Cannot be changed later without breaking history</span>
+        </label>
+        <input pInputText id="loginName" type="text" formControlName="loginName" />
+        @if (form.controls.loginName.touched && form.controls.loginName.invalid) {
+          <span class="to-uc__error">A login name is required.</span>
+        }
+      </div>
+
+      <div class="to-uc__field">
+        <label class="to-uc__label" for="domainId">
+          Domain ID <span class="to-uc__hint">Optional — for FCEPL domain sign-in</span>
+        </label>
+        <input pInputText id="domainId" type="text" formControlName="domainId" />
+      </div>
+
+      <div class="to-uc__field">
+        <label class="to-uc__label" for="password">Initial password</label>
+        <p-password
+          inputId="password"
+          formControlName="password"
+          [toggleMask]="true"
+          [feedback]="true"
+          autocomplete="new-password"
+        />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="to-uc__error">Use at least 8 characters.</span>
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="to-uc__actions">
+    <a pButton routerLink="/admin/users" class="p-button-text p-button-sm">Cancel</a>
+    <button type="submit" pButton class="p-button-sm" [disabled]="submitting() || !!existingUserId">
+      {{ submitting() ? 'Creating…' : 'Create user' }}
+    </button>
+  </div>
+</form>

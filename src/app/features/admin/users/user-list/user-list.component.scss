@@ -1,0 +1,276 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-users {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-users__header-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// ─── Toolbar ──────────────────────────────────────────────────────────────────
+
+.to-users__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-users__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-users__tab {
+  padding: t.$to-space-1 t.$to-space-3;
+  border: none;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--active {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-users__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+
+  input {
+    width: 100%;
+    padding-left: t.$to-space-8;
+  }
+}
+
+.to-users__search-icon {
+  position: absolute;
+  left: t.$to-space-3;
+  color: var(--to-text-muted);
+  pointer-events: none;
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+// Flat `<table>` rather than to-data-table: that component paginates by page *number*,
+// and this API is keyset-paginated with cursors that cannot be computed for an arbitrary
+// page. Wiring a numbered paginator to a cursor API would either lie about the page count
+// or fetch every intervening page. See CursorPager.
+
+.to-users__table-wrap {
+  overflow-x: auto;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-users__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$to-font-size-sm;
+}
+
+.to-users__th {
+  @include u.table-head;
+  padding: t.$to-space-3 t.$to-space-4;
+  text-align: left;
+  font-weight: 500;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  white-space: nowrap;
+
+  &--sortable {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color: var(--to-accent-text);
+    }
+  }
+
+  &--actions {
+    text-align: right;
+  }
+}
+
+.to-users__row {
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color, opacity);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  // A row mid-write is dimmed and inert rather than replaced by a spinner: the figures
+  // stay readable, and the row does not jump.
+  &--busy {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+.to-users__td {
+  padding: t.$to-space-3 t.$to-space-4;
+  vertical-align: middle;
+  color: var(--to-text-primary);
+
+  &--muted {
+    color: var(--to-text-secondary);
+  }
+
+  &--mono {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-secondary);
+  }
+
+  &--actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.to-users__identity {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover .to-users__name {
+    color: var(--to-accent-text);
+    text-decoration: underline;
+  }
+}
+
+.to-users__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  letter-spacing: 0.02em;
+}
+
+.to-users__identity-text {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-users__name {
+  @include u.motion(color);
+}
+
+.to-users__admin-tag {
+  padding: 0 t.$to-space-1;
+  border: 1px solid var(--to-accent-muted);
+  border-radius: t.$to-radius-pill;
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+}
+
+// ─── Row actions ──────────────────────────────────────────────────────────────
+
+.to-users__action {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-1 t.$to-space-2;
+  margin-left: t.$to-space-1;
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &--danger:hover:not(:disabled) {
+    border-color: var(--to-danger);
+    background: var(--to-danger-subtle);
+    color: var(--to-danger);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Skeleton & pager ─────────────────────────────────────────────────────────
+
+.to-users__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-users__pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+}
+
+.to-users__pager-range {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-users__pager-buttons {
+  display: flex;
+  gap: t.$to-space-1;
+}

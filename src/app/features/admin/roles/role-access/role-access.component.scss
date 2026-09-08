@@ -1,0 +1,78 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-ra__loading {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-ra__actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// The reach banner uses the accent rail rather than a warning colour: this is context, not
+// an error. It escalates to warning only once the role reaches ten or more people, where
+// an accidental save stops being a small mistake.
+.to-ra__reach {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-accent);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  &--wide {
+    border-left-color: var(--to-warning-solid);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+
+  strong {
+    font-weight: 500;
+    color: inherit;
+  }
+}
+
+.to-ra__reach-note {
+  color: var(--to-text-muted);
+}
+
+.to-ra__notice {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-warning);
+}
+
+.to-ra__filter {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+  color: var(--to-text-muted);
+
+  input {
+    flex: 1;
+  }
+}
+
+.to-ra__count {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}

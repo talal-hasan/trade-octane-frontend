@@ -1,0 +1,110 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  border-top: 1px solid var(--to-border);
+  padding-top: t.$to-space-3;
+}
+
+.to-pm__disclosure {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  width: 100%;
+  padding: t.$to-space-1 0;
+  background: none;
+  border: none;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+    border-radius: t.$to-radius-control;
+  }
+}
+
+.to-pm__disclosure-icon {
+  flex-shrink: 0;
+  @include u.motion(transform);
+
+  &--open {
+    transform: rotate(90deg);
+  }
+}
+
+.to-pm__count {
+  margin-left: auto;
+  padding: 0 t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent-subtle);
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  line-height: 18px;
+}
+
+// The grid is the one table in the app that can legitimately outgrow its container on a
+// narrow viewport, so it scrolls inside itself rather than pushing the page sideways.
+.to-pm__scroll {
+  margin-top: t.$to-space-3;
+  overflow-x: auto;
+}
+
+.to-pm__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$to-font-size-xs;
+
+  th,
+  td {
+    padding: t.$to-space-2 t.$to-space-3;
+    border-bottom: 1px solid var(--to-border);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-size: t.$to-font-size-2xs;
+    font-weight: var(--to-font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: var(--to-tracking-label);
+    color: var(--to-text-muted);
+  }
+}
+
+.to-pm__module-head {
+  text-align: left;
+}
+
+.to-pm__module {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  text-align: left;
+  font-weight: var(--to-font-weight-regular);
+  color: var(--to-text-primary);
+}
+
+.to-pm__cell {
+  display: inline-flex;
+  cursor: pointer;
+
+  input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--to-accent-strong);
+    cursor: pointer;
+  }
+}
+
+.to-pm__na {
+  color: var(--to-text-muted);
+}

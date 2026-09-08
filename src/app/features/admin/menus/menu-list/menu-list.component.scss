@@ -1,0 +1,253 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-ml {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-ml__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-ml__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-ml__tab {
+  padding: t.$to-space-1 t.$to-space-3;
+  border: none;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--active {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-ml__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+
+  input {
+    width: 100%;
+    padding-left: t.$to-space-8;
+  }
+}
+
+.to-ml__search-icon {
+  position: absolute;
+  left: t.$to-space-3;
+  color: var(--to-text-muted);
+  pointer-events: none;
+}
+
+.to-ml__notice {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-warning);
+}
+
+.to-ml__table-wrap {
+  overflow-x: auto;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-ml__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$to-font-size-sm;
+}
+
+.to-ml__th {
+  @include u.table-head;
+  padding: t.$to-space-3 t.$to-space-4;
+  text-align: left;
+  font-weight: 500;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  white-space: nowrap;
+
+  &--id {
+    width: 72px;
+  }
+
+  &--actions {
+    text-align: right;
+  }
+}
+
+.to-ml__row {
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color, opacity);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  &--busy {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+.to-ml__td {
+  padding: t.$to-space-2 t.$to-space-4;
+  vertical-align: middle;
+  color: var(--to-text-primary);
+
+  &--mono {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-secondary);
+  }
+
+  &--muted {
+    color: var(--to-text-secondary);
+  }
+
+  &--actions {
+    text-align: right;
+  }
+}
+
+.to-ml__name {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin-right: t.$to-space-2;
+}
+
+// The tree is two levels and the grid is sorted by TreeOrder, so a single indent marker is
+// enough to show which rows are children without a full tree control.
+.to-ml__indent {
+  color: var(--to-text-muted);
+}
+
+.to-ml__flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 t.$to-space-1;
+  margin-right: 3px;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  white-space: nowrap;
+
+  &--ok {
+    border-color: var(--to-success);
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+
+  &--warn {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+    cursor: help;
+  }
+}
+
+// A two-state toggle, because Unset is a state the data carries but the UI must never
+// create — see MenuListComponent.toggleActivation.
+.to-ml__toggle {
+  padding: t.$to-space-1 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    border-color: var(--to-success);
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-ml__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-ml__pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+}
+
+.to-ml__pager-range {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ml__pager-buttons {
+  display: flex;
+  gap: t.$to-space-1;
+}

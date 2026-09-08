@@ -1,0 +1,785 @@
+{
+  "data": {
+    "userId": "t_SufyaM01",
+    "role": [
+      "Admin"
+    ],
+    "menu": [
+      {
+        "menuId": 4,
+        "name": "Administration 1.0",
+        "icon": "cogs",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 17,
+            "name": "Create User",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 136,
+            "name": "Assign Role to User",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 42,
+            "name": "User Region Mapping",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 41,
+            "name": "User Brand Mapping",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 142,
+            "name": "Access Control | By Role",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 19,
+            "name": "Access Control",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 22,
+            "name": "Re-Route Scheme",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 225,
+            "name": "Change Budget Ownership",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 226,
+            "name": "Change Activity Ownership",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 133,
+            "name": "Employee Resignation",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 135,
+            "name": "Hierarchy",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 20,
+            "name": "Change User Details",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 18,
+            "name": "Edit Password",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 204,
+            "name": "Integration",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 229,
+            "name": "Activity Logs",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 196,
+        "name": "FSD Bulk Schemes",
+        "icon": "money",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 202,
+            "name": "BRD Schemes",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 217,
+            "name": "TO Schemes",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 203,
+            "name": "BRD Schemes Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 209,
+            "name": "Budget Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 219,
+            "name": "Consumption Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 231,
+        "name": "FAQs",
+        "icon": "clipboard",
+        "catalog": "1",
+        "children": [],
+        "hasChildren": false
+      },
+      {
+        "menuId": 1,
+        "name": "Initiate",
+        "icon": "pencil-square-o",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 38,
+            "name": "Trade Offer - in Litres",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 61,
+            "name": "Trade Spend",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 94,
+        "name": "Claim Module",
+        "icon": "envelope-o",
+        "catalog": "2",
+        "children": [],
+        "hasChildren": false
+      },
+      {
+        "menuId": 35,
+        "name": "Master Data",
+        "icon": "stack-overflow",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 36,
+            "name": "Budget",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 53,
+            "name": "Define WBS",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 54,
+            "name": "Manage Budget Shell",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 57,
+            "name": "Distributor Resignation",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 2,
+        "name": "Approve",
+        "icon": "check",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 40,
+            "name": "Budgets",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 31,
+        "name": "Reports",
+        "icon": "files-o",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 47,
+            "name": "Pending Schemes",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 49,
+            "name": "Pending Budgets",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 56,
+            "name": "Claims Report TradeOffer",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 113,
+            "name": "Claims Report BRD",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 127,
+            "name": "Claims Report WS",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 143,
+            "name": "Claims Detail Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 58,
+            "name": "Pending Budgets Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 81,
+            "name": "PS Target v/s Achievement",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 86,
+            "name": "Approved Budgets",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 110,
+            "name": "Approved Schemes",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 155,
+        "name": "Auto Replenishment",
+        "icon": "flash",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 156,
+            "name": "Generate Min Max",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 157,
+            "name": "Generate Replenishment",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 164,
+            "name": "Forecast",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 180,
+            "name": "Stock Cover Days Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 181,
+            "name": "Floor Stock Report",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 165,
+            "name": "Forecast View",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 177,
+            "name": "SKU Tagging",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 192,
+        "name": "PS Portal",
+        "icon": null,
+        "catalog": "1",
+        "children": [],
+        "hasChildren": false
+      },
+      {
+        "menuId": 51,
+        "name": "Claims",
+        "icon": "clipboard",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 52,
+            "name": "Initiate TO Claims",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 82,
+            "name": "Initiate BRD Claims",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 102,
+            "name": "Initiate WS Claims",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 65,
+        "name": "Dashboard",
+        "icon": "tachometer",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 112,
+            "name": "On-Invoice",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 66,
+            "name": "Promotion Management",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 75,
+            "name": "Budget Management",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 85,
+            "name": "Perfect Store",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 69,
+        "name": "JBP",
+        "icon": "retweet",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 80,
+            "name": "JBP Initiate",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 76,
+        "name": "Perfect Store",
+        "icon": "shopping-cart",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 239,
+            "name": "Target Incentive - Approvals",
+            "icon": "bar-chart-o",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 119,
+            "name": "PS Portal Report",
+            "icon": "desktop",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 120,
+            "name": "PS Portal Report Detail",
+            "icon": "desktop",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 95,
+        "name": "Distributor ROI",
+        "icon": "desktop",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 98,
+            "name": "View Distributor ROI",
+            "icon": "desktop",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 128,
+            "name": "ROI Power Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 150,
+            "name": "ROI Raise Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 151,
+            "name": "ROI Status Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 191,
+            "name": "ROI CS Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 193,
+            "name": "Market Credit Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 194,
+            "name": "Cost Sharing Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 195,
+            "name": "Vans Report",
+            "icon": "clipboard",
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 107,
+        "name": "Claim Status Report",
+        "icon": "flag-o",
+        "catalog": "2",
+        "children": [],
+        "hasChildren": false
+      },
+      {
+        "menuId": 114,
+        "name": "Claim Raise Report",
+        "icon": "files-o",
+        "catalog": "2",
+        "children": [],
+        "hasChildren": false
+      },
+      {
+        "menuId": 227,
+        "name": "Auto DA",
+        "icon": null,
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 228,
+            "name": "Auto DA Status",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 210,
+        "name": "Hub & Spoke",
+        "icon": "clipboard",
+        "catalog": "1",
+        "children": [
+          {
+            "menuId": 211,
+            "name": "Approval",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 213,
+            "name": "Margin",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 214,
+            "name": "Margin Posting",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 215,
+            "name": "OBF",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 216,
+            "name": "OBF Posting",
+            "icon": null,
+            "catalog": "1",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      },
+      {
+        "menuId": 188,
+        "name": "Advance SIDA",
+        "icon": "money",
+        "catalog": "2",
+        "children": [
+          {
+            "menuId": 174,
+            "name": "Advance SIDA HBL",
+            "icon": "money",
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 178,
+            "name": "Advance SIDA Meezan",
+            "icon": "money",
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 189,
+            "name": "Report",
+            "icon": null,
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 190,
+            "name": "HBL Advance SIDA CTRL",
+            "icon": null,
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 197,
+            "name": "Advance SIDA Status",
+            "icon": null,
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          },
+          {
+            "menuId": 206,
+            "name": "DT Meezan Mapping",
+            "icon": null,
+            "catalog": "2",
+            "children": [],
+            "hasChildren": false
+          }
+        ],
+        "hasChildren": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+<header class="to-as__head">
+  <h2 class="to-as__title">Access summary</h2>
+  <span class="to-as__clicks">
+    <span class="to-numeric">{{ clicks() }}</span>
+    {{ clicks() === 1 ? 'click' : 'clicks' }}
+  </span>
+</header>
+
+<p class="to-as__effect">{{ effect() }}</p>
+
+<dl class="to-as__stats">
+  <div>
+    <dt>Roles</dt>
+    <dd class="to-numeric">{{ roleCount() }}</dd>
+  </div>
+  <div>
+    <dt>Permissions</dt>
+    <dd class="to-numeric">{{ permissionCount() }}</dd>
+  </div>
+  <div>
+    <dt>Regions</dt>
+    <dd class="to-numeric">{{ regionCount() }}</dd>
+  </div>
+  <div>
+    <dt>Brands</dt>
+    <dd class="to-numeric">{{ brandLabel() }}</dd>
+  </div>
+</dl>
+
+@if (sourceLabel(); as source) {
+  <div class="to-as__source">
+    <tabler-icon [icon]="icons[sourceIcon()]" [size]="14" />
+    <span>
+      {{ source }}
+      @if (drifted()) {
+        <span class="to-as__drift">· edited</span>
+      }
+    </span>
+  </div>
+}
+
+@if (showError()) {
+  <p class="to-as__error">
+    <tabler-icon [icon]="icons['alert-triangle']" [size]="14" />
+    Finish the highlighted steps before creating this user.
+  </p>
+}
+
+<div class="to-as__actions">
+  <ng-content select="[actions]" />
+</div>

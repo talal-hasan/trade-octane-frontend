@@ -1,0 +1,51 @@
+<button type="button" class="to-pm__disclosure" (click)="toggleOpen()" [attr.aria-expanded]="open()">
+  <tabler-icon
+    [icon]="icons['chevron-right']"
+    [size]="14"
+    class="to-pm__disclosure-icon"
+    [class.to-pm__disclosure-icon--open]="open()"
+  />
+  Fine-tune individual permissions
+  <span class="to-pm__count to-numeric">{{ count() }} on</span>
+</button>
+
+@if (open()) {
+  <div class="to-pm__scroll">
+    <table class="to-pm__table">
+      <thead>
+        <tr>
+          <th scope="col" class="to-pm__module-head">Module</th>
+          @for (action of actions; track action) {
+            <th scope="col">{{ actionLabels[action] }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (module of modules; track module.key) {
+          <tr>
+            <th scope="row" class="to-pm__module">
+              <tabler-icon [icon]="icons[module.icon]" [size]="14" />
+              {{ module.label }}
+            </th>
+            @for (action of actions; track action) {
+              <td>
+                @if (permissionFor(module, action); as permission) {
+                  <label class="to-pm__cell">
+                    <input
+                      type="checkbox"
+                      [checked]="isOn(permission)"
+                      (change)="onToggle(permission)"
+                      [attr.aria-label]="actionLabels[action] + ' ' + module.label"
+                    />
+                  </label>
+                } @else {
+                  <span class="to-pm__na" aria-label="Not applicable">—</span>
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

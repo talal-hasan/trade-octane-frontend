@@ -13,12 +13,19 @@
 }
 
 // ─── Left — branded panel ─────────────────────────────────
+// The one full-bleed brand surface in the product. Everywhere else the guidelines'
+// white-space discipline holds; here Sky Blue runs deep and at full strength, with a
+// single Magical magenta bloom in the lower left for the edge the client asked for.
+// One support colour, used once — consistent with the guidelines' "never more than
+// one at a time" rule for support hues.
 .to-login__brand {
   position: relative;
   display: flex;
   align-items: center;
   padding: t.$to-space-12;
-  background: var(--to-text-primary);
+  background:
+    radial-gradient(ellipse 70% 60% at 10% 95%, rgb(236 0 140 / 32%), transparent 70%),
+    linear-gradient(150deg, #002536 0%, #00567f 55%, #0076ae 100%);
   overflow: hidden;
 
   @include u.respond-to(tablet) {
@@ -29,7 +36,7 @@
 .to-login__brand-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgb(255 255 255 / 8%) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgb(255 255 255 / 10%) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: radial-gradient(ellipse at 30% 40%, black, transparent 75%);
   pointer-events: none;
@@ -41,17 +48,12 @@
   z-index: 1;
 }
 
+// The star runs orange → lime → grass → sky → magenta at full saturation, and every one
+// of those hues clears the deep-blue ground on its own — so it needs no plate, no tile
+// and no inversion here. Large, because this is the one screen with room for it.
 .to-login__brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: t.$to-radius-card;
-  background: var(--to-accent);
-  color: #fff;
-  font-size: t.$to-font-size-sm;
-  font-weight: var(--to-font-weight-medium);
+  width: 72px;
+  height: 72px;
   margin-bottom: t.$to-space-8;
 }
 
@@ -83,6 +85,8 @@
     font-size: t.$to-font-size-sm;
     color: rgb(255 255 255 / 85%);
 
+    // Together green — the palette's brightest hue, the only thing on this panel that
+    // out-reads the white text. Used at 5px, three times, and nowhere else.
     &::before {
       content: '';
       position: absolute;
@@ -91,7 +95,7 @@
       width: 5px;
       height: 5px;
       border-radius: t.$to-radius-pill;
-      background: var(--to-accent);
+      background: var(--to-brand-lime);
     }
   }
 }
@@ -104,7 +108,8 @@
   justify-content: center;
   gap: t.$to-space-8;
   padding: t.$to-space-8;
-  background: var(--to-bg-1);
+  background-color: var(--to-bg-1);
+  background-image: var(--to-canvas-page);
 }
 
 .to-login__card {
@@ -116,21 +121,32 @@
   text-align: center;
 }
 
-.to-login__card-mark {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: t.$to-radius-card;
-  background: var(--to-accent);
-  color: #fff;
-  font-size: t.$to-font-size-xs;
-  font-weight: var(--to-font-weight-medium);
-  margin-bottom: t.$to-space-6;
+// Same keeper treatment as the shell brand block. The supplied PNG has a white
+// background rather than alpha, so on any surface that is not pure white it renders as
+// a hard white rectangle — which is what the pastel panel made visible. The plate is
+// unconditional now: light mode needs it too, and one treatment beats a theme fork.
+.to-login__logo {
+  width: 212px;
+  height: auto;
+  padding: t.$to-space-3 t.$to-space-4;
+  margin-bottom: t.$to-space-8;
+  background: #fff;
+  border: 1px solid var(--to-border-canvas);
+  border-radius: t.$to-radius-modal;
+  box-shadow: var(--to-shadow-sm);
+  box-sizing: content-box;
+  @include u.enter(to-login-logo-in, var(--to-motion-enter-slow));
+}
 
-  @include u.respond-to(tablet) {
-    display: flex;
+@keyframes to-login-logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -155,7 +171,7 @@
   width: 100%;
   height: var(--to-field-height);
   padding: 0 t.$to-space-4;
-  background: var(--to-accent);
+  background: var(--to-accent-strong);
   color: #fff;
   border: none;
   border-radius: t.$to-radius-control;
@@ -217,4 +233,98 @@
   font-size: t.$to-font-size-2xs;
   color: var(--to-text-muted);
   margin: 0;
+}
+
+// ─── Credential form ──────────────────────────────────────────────────────────
+// Added when the contract turned out to require username/password (`login_old`) rather
+// than the SSO-only flow CLAUDE.md §3 assumed. The split-panel design is unchanged; this
+// is the panel's contents.
+
+.to-login__modes {
+  display: flex;
+  gap: t.$to-space-1;
+  width: 100%;
+  padding: 3px;
+  margin-bottom: t.$to-space-4;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-login__mode {
+  flex: 1;
+  padding: t.$to-space-2;
+  border: none;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  font-family: inherit;
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--active {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  width: 100%;
+}
+
+.to-login__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  text-align: left;
+}
+
+.to-login__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-login__field input,
+.to-login__field :is(.to-login__password) input {
+  width: 100%;
+}
+
+// PrimeNG's password wraps its input in a span; without this the field is narrower than
+// the username field beside it and the form reads misaligned.
+.to-login__field :is(p-password, .p-password) {
+  width: 100%;
+  display: block;
+}
+
+.to-login__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+// Inline, not only a toast: a failed sign-in has to stay on screen next to the field the
+// user is correcting, and a toast that vanishes in six seconds does not.
+.to-login__alert {
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-danger);
+  border-left-width: 3px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  text-align: left;
 }

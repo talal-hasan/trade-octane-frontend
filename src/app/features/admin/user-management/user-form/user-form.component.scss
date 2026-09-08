@@ -1,0 +1,650 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+  padding: t.$to-space-6;
+}
+
+// Two columns: the work on the left, the consequence on the right. The summary is
+// sticky so the admin never loses sight of what they are about to grant — the single
+// most useful thing a provisioning screen can show, and the thing Entra buries behind
+// a Review tab.
+.to-uf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: t.$to-space-6;
+  margin-top: t.$to-space-6;
+  align-items: start;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-uf__main {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  min-width: 0;
+}
+
+// ─── Steps ──────────────────────────────────────────────────
+// Only one step is in the DOM at a time (the template uses @if), so the entrance
+// animation replays naturally on every transition without any state tracking.
+.to-uf__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  padding: t.$to-space-6;
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+  @include u.pastel-card;
+  @include u.enter(to-uf-step-in);
+
+  // Spectrum rail across the top, as on the dashboard hero and the claim form. The
+  // step card is the one washed surface here — the summary panel opposite keeps its
+  // flat ground and its single Sky Blue cap.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--to-gradient-spectrum);
+  }
+}
+
+@keyframes to-uf-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.to-uf__step-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.to-uf__step-title {
+  margin: 0;
+  font-size: t.$to-font-size-lg;
+  font-weight: var(--to-font-weight-medium);
+  letter-spacing: var(--to-tracking-tight);
+  color: var(--to-text-primary);
+}
+
+.to-uf__step-hint {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// ─── Step navigation ────────────────────────────────────────
+.to-uf__nav {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding-top: t.$to-space-1;
+}
+
+.to-uf__nav-spacer {
+  flex: 1;
+}
+
+// ─── Success receipt ────────────────────────────────────────
+// A plain summary of what was actually granted, shown once. Provisioning hands someone
+// access to financial approvals, so the confirmation states it rather than implying it.
+.to-uf__receipt {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+  text-align: left;
+}
+
+.to-uf__receipt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  strong {
+    font-weight: var(--to-font-weight-medium);
+    color: var(--to-text-primary);
+    @include u.truncate;
+  }
+}
+
+.to-uf__receipt-status {
+  text-transform: capitalize;
+  color: var(--to-success);
+}
+
+// ─── User type selector ─────────────────────────────────────
+.to-uf__types {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--to-bg-2);
+  border-radius: t.$to-radius-control;
+  align-self: flex-start;
+}
+
+.to-uf__type {
+  padding: t.$to-space-2 t.$to-space-4;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(background-color, color, box-shadow);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+
+  &--active {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    font-weight: var(--to-font-weight-medium);
+    box-shadow: var(--to-shadow-sm), inset 0 2px 0 0 var(--to-accent);
+  }
+}
+
+// ─── Search + results ───────────────────────────────────────
+.to-uf__search {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  height: var(--to-field-height);
+  padding: 0 t.$to-space-3;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  @include u.motion(border-color, box-shadow);
+
+  &:focus-within {
+    border-color: var(--to-accent);
+    box-shadow: var(--to-focus-ring);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    outline: none;
+    font-family: inherit;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+
+    &::placeholder {
+      color: var(--to-text-muted);
+    }
+  }
+}
+
+.to-uf__search-icon {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
+}
+
+.to-uf__search-status {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-uf__results {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.to-uf__result {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  width: 100%;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  text-align: left;
+  cursor: pointer;
+  @include u.motion(border-color, background-color, box-shadow);
+
+  &:hover {
+    border-color: var(--to-accent);
+    background: var(--to-accent-subtle);
+    box-shadow: var(--to-glow-accent-sm);
+
+    .to-uf__result-chevron {
+      color: var(--to-accent);
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+    border-color: var(--to-accent);
+  }
+}
+
+.to-uf__result-avatar,
+.to-uf__picked-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-gradient-accent);
+  color: #fff;
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-uf__result-body,
+.to-uf__picked-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.to-uf__result-name,
+.to-uf__picked-name {
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+  @include u.truncate;
+}
+
+.to-uf__result-meta,
+.to-uf__picked-meta {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+  @include u.truncate;
+}
+
+.to-uf__result-chevron {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
+  @include u.motion(color);
+}
+
+.to-uf__picked {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1)) 0%,
+    var(--to-accent-subtle) 100%
+  );
+  border: 1px solid var(--to-accent-muted);
+  border-radius: t.$to-radius-control;
+}
+
+.to-uf__picked-clear {
+  flex-shrink: 0;
+  display: flex;
+  padding: t.$to-space-1;
+  background: none;
+  border: none;
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    background: var(--to-bg-1);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+}
+
+// ─── Plain fields ───────────────────────────────────────────
+.to-uf__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: t.$to-space-4;
+}
+
+.to-uf__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  min-width: 0;
+
+  input,
+  select {
+    height: var(--to-field-height);
+    padding: 0 t.$to-space-3;
+    background: var(--to-bg-1);
+    border: 1px solid var(--to-border);
+    border-radius: t.$to-radius-control;
+    font-family: inherit;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+    @include u.motion(border-color, box-shadow);
+
+    &:focus {
+      outline: none;
+      border-color: var(--to-accent);
+      box-shadow: var(--to-focus-ring);
+    }
+
+    &:disabled {
+      background: var(--to-bg-2);
+      color: var(--to-text-muted);
+      cursor: not-allowed;
+    }
+  }
+}
+
+.to-uf__field--wide {
+  grid-column: 1 / -1;
+}
+
+.to-uf__input-row {
+  display: flex;
+  gap: t.$to-space-2;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.to-uf__label {
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-text-secondary);
+}
+
+.to-uf__help {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-uf__ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: 0 t.$to-space-3;
+  height: var(--to-field-height);
+  background: none;
+  border: 1px solid var(--to-border-strong);
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(border-color, color);
+
+  &:hover {
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+}
+
+.to-uf__scope-head .to-uf__ghost-btn {
+  height: auto;
+  padding: 2px t.$to-space-2;
+  border: none;
+  text-decoration: underline;
+}
+
+// ─── Access templates ───────────────────────────────────────
+.to-uf__templates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: t.$to-space-3;
+}
+
+.to-uf__template {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  padding: t.$to-space-3 t.$to-space-3 t.$to-space-3 t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  @include u.motion(border-color, background-color, box-shadow);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+    border-color: var(--to-accent);
+  }
+
+  &--active {
+    border-color: var(--to-accent);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1)) 0%,
+      var(--to-accent-subtle) 62%,
+      var(--to-bg-1) 100%
+    );
+    box-shadow: var(--to-glow-accent-sm);
+
+    .to-uf__template-rail {
+      width: 6px;
+    }
+
+    .to-uf__template-name {
+      color: var(--to-accent-text);
+    }
+  }
+}
+
+.to-uf__template-rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--to-accent-rail);
+  background: var(--to-gradient-accent);
+  @include u.motion(width);
+}
+
+.to-uf__template-head {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  color: var(--to-text-secondary);
+}
+
+.to-uf__template-name {
+  flex: 1;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+  @include u.truncate;
+}
+
+.to-uf__template-check {
+  flex-shrink: 0;
+  color: var(--to-accent);
+}
+
+.to-uf__template-desc {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-uf__template-count {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Clone from existing user ───────────────────────────────
+.to-uf__clone {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding-top: t.$to-space-3;
+  border-top: 1px dashed var(--to-border);
+}
+
+.to-uf__clone-label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-uf__clone-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-uf__clone-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-1 t.$to-space-3;
+  background: var(--to-bg-2);
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-pill;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(border-color, background-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+
+  &--active {
+    background: var(--to-accent-subtle);
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+}
+
+// ─── Chips (roles, regions, brands) ─────────────────────────
+.to-uf__roles,
+.to-uf__scope-group {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+}
+
+.to-uf__scope-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+}
+
+.to-uf__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-uf__chip {
+  padding: t.$to-space-1 t.$to-space-3;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border-strong);
+  border-radius: t.$to-radius-pill;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(border-color, background-color, color, box-shadow);
+
+  &:hover {
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+
+  // Selected chips fill with Sky Blue. This is the densest concentration of brand
+  // colour in the product outside the login panel, and it is deliberate: the whole
+  // point of this screen is seeing at a glance what is switched on.
+  &--active {
+    background: var(--to-gradient-accent);
+    border-color: transparent;
+    color: #fff;
+    font-weight: var(--to-font-weight-medium);
+    box-shadow: var(--to-glow-accent-sm);
+
+    &:hover {
+      background: var(--to-gradient-accent-vivid);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: var(--to-glow-accent);
+    }
+  }
+}
+
+// ─── Summary panel ──────────────────────────────────────────
+// Layout only — the panel's own presentation lives in to-access-summary.
+.to-uf__summary {
+  position: sticky;
+  top: t.$to-space-6;
+
+  @include u.respond-to(tablet) {
+    position: static;
+  }
+}

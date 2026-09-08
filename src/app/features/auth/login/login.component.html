@@ -1,7 +1,17 @@
 <div class="to-login">
   <div class="to-login__brand">
     <div class="to-login__brand-content">
-      <div class="to-login__brand-mark">TO</div>
+      <!-- The brandmark star, isolated from the lockup with a real alpha channel, so it
+           sits straight on the deep-blue ground. It replaces a "TO" monogram placeholder —
+           an invented mark next to a real one is the fastest way to look unfinished. -->
+      <img
+        src="assets/logo-mark.png"
+        alt=""
+        aria-hidden="true"
+        class="to-login__brand-mark"
+        width="256"
+        height="256"
+      />
       <h1 class="to-login__brand-title">Trade Octane</h1>
       <p class="to-login__brand-tagline">Trade marketing, unified — budgets, schemes, claims and distribution in one place.</p>
 
@@ -16,19 +26,103 @@
 
   <div class="to-login__panel">
     <div class="to-login__card">
-      <div class="to-login__card-mark">TO</div>
+      <!-- The full lockup sits on the white panel, not the blue one: the wordmark is
+           sky blue and would sink into the brand panel behind it. -->
+      <img
+        src="assets/logo.png"
+        alt="FrieslandCampina"
+        class="to-login__logo"
+        width="212"
+        height="78"
+      />
       <h2 class="to-login__title">Welcome back</h2>
       <p class="to-login__subtitle">Sign in to continue to Trade Octane.</p>
 
-      <button type="button" pButton class="to-login__signin-btn" (click)="signIn()">
-        <span class="to-login__signin-icon">FC</span>
-        Sign in with Friesland Campina
-      </button>
+      <!-- The mode switch renders only where there is a genuine choice. SSO availability
+           is a per-deployment answer from the server, so on a deployment without it the
+           user is never shown a door that does not open. -->
+      @if (ssoAvailable()) {
+        <div class="to-login__modes" role="tablist" aria-label="Sign-in method">
+          <button
+            type="button"
+            role="tab"
+            class="to-login__mode"
+            [class.to-login__mode--active]="mode() === 'password'"
+            [attr.aria-selected]="mode() === 'password'"
+            (click)="setMode('password')"
+          >
+            Trade Octane account
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="to-login__mode"
+            [class.to-login__mode--active]="mode() === 'sso'"
+            [attr.aria-selected]="mode() === 'sso'"
+            (click)="setMode('sso')"
+          >
+            FCEPL domain
+          </button>
+        </div>
+      }
+
+      <form class="to-login__form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="to-login__field">
+          <label class="to-login__label" for="userName">
+            {{ mode() === 'sso' ? 'Domain username' : 'Username' }}
+          </label>
+          <input
+            pInputText
+            id="userName"
+            type="text"
+            formControlName="userName"
+            autocomplete="username"
+            [attr.aria-invalid]="form.controls.userName.touched && form.controls.userName.invalid"
+            [placeholder]="mode() === 'sso' ? 'FCEPL\\your.name' : 'your.name'"
+          />
+          @if (form.controls.userName.touched && form.controls.userName.invalid) {
+            <span class="to-login__error">Enter your username.</span>
+          }
+        </div>
+
+        <div class="to-login__field">
+          <label class="to-login__label" for="password">Password</label>
+          <p-password
+            inputId="password"
+            formControlName="password"
+            [feedback]="false"
+            [toggleMask]="true"
+            styleClass="to-login__password"
+            autocomplete="current-password"
+          />
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <span class="to-login__error">Enter your password.</span>
+          }
+        </div>
+
+        @if (errorMessage(); as message) {
+          <div class="to-login__alert" role="alert">{{ message }}</div>
+        }
+
+        <button
+          type="submit"
+          pButton
+          class="to-login__signin-btn"
+          [disabled]="submitting()"
+          [attr.aria-busy]="submitting()"
+        >
+          @if (mode() === 'sso') {
+            <span class="to-login__signin-icon">FC</span>
+          }
+          {{ submitting() ? 'Signing in…' : mode() === 'sso' ? 'Sign in with Friesland Campina' : 'Sign in' }}
+        </button>
+      </form>
 
       @if (useMocks) {
         <div class="to-login__mock-note">
           <span class="to-login__mock-dot"></span>
-          Mock authentication — role can be switched from the dev panel after sign-in.
+          Mock authentication — any credentials are accepted, and the role can be switched
+          from the dev panel after sign-in.
         </div>
       }
     </div>

@@ -1,0 +1,460 @@
+@if (loading()) {
+  <div class="to-ud__loading" aria-busy="true" aria-label="Loading user">
+    <to-skeleton width="220px" height="20px" />
+    <to-skeleton width="380px" height="13px" />
+    <to-skeleton width="100%" height="240px" />
+  </div>
+} @else if (failed() || !user()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load this user"
+    description="They may have been removed, or the directory did not respond."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (user(); as currentUser) {
+  <to-page-header
+    [title]="currentUser.fullName || currentUser.userId"
+    [subtitle]="currentUser.email || 'No email recorded'"
+    [breadcrumbs]="[
+      { label: 'Administration' },
+      { label: 'Users', route: '/admin/users' },
+      { label: currentUser.fullName || currentUser.userId },
+    ]"
+  >
+    <div actions class="to-ud__header-actions">
+      @if (currentUser.isLocked) {
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-outlined"
+          [disabled]="headerBusy()"
+          (click)="unlock()"
+        >
+          <tabler-icon [icon]="icons['lock-open']" [size]="15" />
+          Unlock
+        </button>
+      }
+      @if (currentUser.isActive) {
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-outlined p-button-danger"
+          [disabled]="headerBusy()"
+          (click)="confirmingDeactivate.set(true)"
+        >
+          Deactivate
+        </button>
+      } @else {
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-outlined"
+          [disabled]="headerBusy()"
+          (click)="activate()"
+        >
+          Activate
+        </button>
+      }
+    </div>
+  </to-page-header>
+
+  <!-- Identity strip. The login name is shown as prominently as the display name: every
+       API path segment and every audit row keys on it, so it is the identifier an admin
+       actually needs when cross-referencing anything. -->
+  <div class="to-ud__identity">
+    <span class="to-ud__avatar" aria-hidden="true">{{ initialsOf(currentUser) }}</span>
+    <dl class="to-ud__facts">
+      <div class="to-ud__fact">
+        <dt>Login</dt>
+        <dd class="to-ud__mono">{{ currentUser.userId }}</dd>
+      </div>
+      <div class="to-ud__fact">
+        <dt>Domain ID</dt>
+        <dd class="to-ud__mono">{{ currentUser.domainId || '—' }}</dd>
+      </div>
+      <div class="to-ud__fact">
+        <dt>Status</dt>
+        <dd>
+          <to-status-pill [status]="statusPill[status()]" [label]="statusLabels[status()]" />
+        </dd>
+      </div>
+      @if (currentUser.resignationDate) {
+        <div class="to-ud__fact">
+          <dt>Resigned</dt>
+          <dd>{{ currentUser.resignationDate }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+
+  @if (availableTabs().length === 0) {
+    <to-empty-state
+      icon="lock"
+      heading="No sections available"
+      description="You can reach this user, but none of the sections on this screen are granted to you."
+    />
+  } @else {
+    <!-- Each tab is a legacy menu row. Only the rows this admin holds are rendered, so
+         consolidating six menu items into one screen did not widen anyone's access. -->
+    <div class="to-ud__tabs" role="tablist" aria-label="User sections">
+      @for (tab of availableTabs(); track tab) {
+        <button
+          type="button"
+          role="tab"
+          class="to-ud__tab"
+          [class.to-ud__tab--active]="activeTab() === tab"
+          [attr.aria-selected]="activeTab() === tab"
+          (click)="selectTab(tab)"
+        >
+          {{ tabLabels[tab] }}
+        </button>
+      }
+    </div>
+
+    <div class="to-ud__panel">
+      @switch (activeTab()) {
+        <!-- ── Profile ──────────────────────────────────────────────────────── -->
+        @case ('profile') {
+          <section class="to-ud__section">
+            <h2 class="to-ud__section-title">Details</h2>
+            <form class="to-ud__form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+              <div class="to-ud__field">
+                <label class="to-ud__label" for="fullName">Full name</label>
+                <input pInputText id="fullName" type="text" formControlName="fullName" />
+                @if (profileForm.controls.fullName.touched && profileForm.controls.fullName.invalid) {
+                  <span class="to-ud__error">A full name is required.</span>
+                }
+              </div>
+              <div class="to-ud__field">
+                <label class="to-ud__label" for="email">Email</label>
+                <input pInputText id="email" type="email" formControlName="email" />
+                @if (profileForm.controls.email.touched && profileForm.controls.email.invalid) {
+                  <span class="to-ud__error">Enter a valid email address.</span>
+                }
+              </div>
+              <div class="to-ud__form-actions">
+                <button
+                  type="submit"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="savingProfile() || profileForm.pristine || profileForm.invalid"
+                >
+                  {{ savingProfile() ? 'Saving…' : 'Save details' }}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section class="to-ud__section">
+            <h2 class="to-ud__section-title">Password</h2>
+            <p class="to-ud__section-note">
+              Setting a password here does not notify the user. Tell them out of band.
+            </p>
+            <form class="to-ud__form" [formGroup]="passwordForm" (ngSubmit)="setPassword()">
+              <div class="to-ud__field">
+                <label class="to-ud__label" for="newPassword">New password</label>
+                <p-password
+                  inputId="newPassword"
+                  formControlName="newPassword"
+                  [toggleMask]="true"
+                  [feedback]="true"
+                  autocomplete="new-password"
+                />
+                @if (passwordForm.controls.newPassword.touched && passwordForm.controls.newPassword.invalid) {
+                  <span class="to-ud__error">Use at least 8 characters.</span>
+                }
+              </div>
+
+              <label class="to-ud__checkbox-row">
+                <input
+                  type="checkbox"
+                  class="to-ud__checkbox"
+                  [checked]="forceChange()"
+                  (change)="toggleForceChange()"
+                />
+                <span>Require a change at next sign-in</span>
+              </label>
+
+              <div class="to-ud__form-actions">
+                <button
+                  type="submit"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="savingPassword() || passwordForm.invalid"
+                >
+                  {{ savingPassword() ? 'Saving…' : 'Set password' }}
+                </button>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="savingPassword()"
+                  (click)="confirmingReset.set(true)"
+                >
+                  Reset to default
+                </button>
+              </div>
+            </form>
+          </section>
+        }
+
+        <!-- ── Roles ────────────────────────────────────────────────────────── -->
+        @case ('roles') {
+          @if (rolesLoading()) {
+            <to-skeleton width="100%" height="180px" />
+          } @else if (allRoles().length === 0) {
+            <to-empty-state icon="shield-lock" heading="No roles in the catalogue" />
+          } @else {
+            <section class="to-ud__section">
+              <div class="to-ud__section-head">
+                <div>
+                  <h2 class="to-ud__section-title">Roles</h2>
+                  <p class="to-ud__section-note">
+                    Roles carry menu access. Changing them changes what this person can
+                    reach, which is shown on the Access tab.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="!rolesDirty() || savingRoles()"
+                  (click)="saveRoles()"
+                >
+                  {{ savingRoles() ? 'Saving…' : 'Save roles' }}
+                </button>
+              </div>
+
+              <ul class="to-ud__list">
+                @for (role of allRoles(); track role.roleId) {
+                  <li class="to-ud__list-row" [class.to-ud__list-row--retired]="!role.isActive">
+                    <input
+                      type="checkbox"
+                      class="to-ud__checkbox"
+                      [id]="'role-' + role.roleId"
+                      [checked]="roleSelection().has(+role.roleId)"
+                      (change)="toggleRole(+role.roleId)"
+                    />
+                    <label class="to-ud__list-label" [for]="'role-' + role.roleId">
+                      <span class="to-ud__list-name">{{ role.roleName }}</span>
+                      @if (role.roleDescription) {
+                        <span class="to-ud__list-desc">{{ role.roleDescription }}</span>
+                      }
+                    </label>
+                    <span class="to-ud__list-meta">
+                      @if (!role.isActive) {
+                        <span class="to-ud__tag to-ud__tag--warn">inactive</span>
+                      }
+                      <span class="to-numeric">{{ role.assignedUserCount }} users</span>
+                    </span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        }
+
+        <!-- ── Regions ──────────────────────────────────────────────────────── -->
+        @case ('regions') {
+          @if (regionsLoading()) {
+            <to-skeleton width="100%" height="180px" />
+          } @else {
+            <section class="to-ud__section">
+              <div class="to-ud__section-head">
+                <div>
+                  <h2 class="to-ud__section-title">Regions</h2>
+                  <p class="to-ud__section-note">
+                    Which regions this person's data is scoped to.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="!regionsDirty() || savingRegions()"
+                  (click)="saveRegions()"
+                >
+                  {{ savingRegions() ? 'Saving…' : 'Save regions' }}
+                </button>
+              </div>
+
+              <div class="to-ud__chips">
+                @for (region of allRegions(); track region.code) {
+                  <button
+                    type="button"
+                    class="to-ud__chip"
+                    [class.to-ud__chip--on]="regionSelection().has(region.code)"
+                    [class.to-ud__chip--retired]="!region.isActive"
+                    (click)="toggleRegion(region.code)"
+                    [attr.aria-pressed]="regionSelection().has(region.code)"
+                  >
+                    {{ region.name }}
+                    @if (!region.isActive) {
+                      <span class="to-ud__chip-note">retired</span>
+                    }
+                  </button>
+                } @empty {
+                  <p class="to-ud__section-note">No regions in the catalogue.</p>
+                }
+              </div>
+            </section>
+          }
+        }
+
+        <!-- ── Brands ───────────────────────────────────────────────────────── -->
+        @case ('brands') {
+          @if (brandsLoading()) {
+            <to-skeleton width="100%" height="180px" />
+          } @else {
+            <section class="to-ud__section">
+              <div class="to-ud__section-head">
+                <div>
+                  <h2 class="to-ud__section-title">Brands</h2>
+                  <p class="to-ud__section-note">
+                    Brands come from the SAP master list. A brand without a master SKU is
+                    still assignable — it just carries no products yet.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="!brandsDirty() || savingBrands()"
+                  (click)="saveBrands()"
+                >
+                  {{ savingBrands() ? 'Saving…' : 'Save brands' }}
+                </button>
+              </div>
+
+              <div class="to-ud__chips">
+                @for (brand of allBrands(); track brand.code) {
+                  <button
+                    type="button"
+                    class="to-ud__chip"
+                    [class.to-ud__chip--on]="brandSelection().has(brand.code)"
+                    [class.to-ud__chip--retired]="!brand.isActive"
+                    (click)="toggleBrand(brand.code)"
+                    [attr.aria-pressed]="brandSelection().has(brand.code)"
+                  >
+                    {{ brand.name }}
+                    @if (!brand.hasMasterSku) {
+                      <span class="to-ud__chip-note">no SKU</span>
+                    }
+                  </button>
+                } @empty {
+                  <p class="to-ud__section-note">No brands in the catalogue.</p>
+                }
+              </div>
+            </section>
+          }
+        }
+
+        <!-- ── Access ───────────────────────────────────────────────────────── -->
+        @case ('access') {
+          @if (accessLoading()) {
+            <to-skeleton width="100%" height="320px" />
+          } @else if (access(); as accessState) {
+            <section class="to-ud__section">
+              <div class="to-ud__section-head">
+                <div>
+                  <h2 class="to-ud__section-title">Menu access</h2>
+                  <p class="to-ud__section-note">
+                    Ticking a row grants it <strong>directly</strong>. Rows a role already
+                    grants are locked — remove the role to revoke those.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="!accessDirty() || savingAccess()"
+                  (click)="saveAccess()"
+                >
+                  {{ savingAccess() ? 'Saving…' : 'Save access' }}
+                </button>
+              </div>
+
+              <!-- The three sets, stated. They are not interchangeable, and an admin who
+                   assumes they are will misread this screen. -->
+              <div class="to-ud__counters">
+                <span class="to-ud__counter">
+                  <span class="to-numeric">{{ directSelection().size }}</span> direct
+                </span>
+                <span class="to-ud__counter">
+                  <span class="to-numeric">{{ roleMenuIds().size }}</span> via roles
+                </span>
+                <span class="to-ud__counter to-ud__counter--strong">
+                  <span class="to-numeric">{{ accessState.effectiveMenuIds.length }}</span>
+                  effective
+                </span>
+                @if (accessState.orphanedMenuIds.length > 0) {
+                  <span class="to-ud__counter to-ud__counter--warn">
+                    <tabler-icon [icon]="icons['alert-triangle']" [size]="13" />
+                    <span class="to-numeric">{{ accessState.orphanedMenuIds.length }}</span>
+                    orphaned
+                  </span>
+                }
+              </div>
+
+              <div class="to-ud__filter">
+                <tabler-icon [icon]="icons['search']" [size]="15" />
+                <input
+                  pInputText
+                  type="search"
+                  [formControl]="accessFilterControl"
+                  (input)="onAccessFilter(accessFilterControl.value)"
+                  placeholder="Filter menu items"
+                  aria-label="Filter menu items"
+                />
+              </div>
+
+              <to-access-tree
+                [tree]="accessState.tree"
+                [selected]="directSelection()"
+                [inherited]="roleMenuIds()"
+                [filter]="accessFilter()"
+                [disabled]="savingAccess()"
+                (toggled)="onAccessToggled($event)"
+              />
+            </section>
+          }
+        }
+
+        <!-- ── Resignation ──────────────────────────────────────────────────── -->
+        @case ('resignation') {
+          <to-empty-state
+            icon="external-link"
+            heading="Resignation is still in the legacy portal"
+            description="The endpoints exist, but this screen has not been built yet. Record resignations in the legacy system for now."
+          />
+        }
+      }
+    </div>
+  }
+
+  <to-confirm-dialog
+    [visible]="confirmingDeactivate()"
+    (visibleChange)="confirmingDeactivate.set(false)"
+    variant="danger"
+    title="Deactivate this account?"
+    message="They will not be able to sign in, and their cached access grants will be dropped. Roles and mappings are kept, so reactivating restores them."
+    confirmLabel="Deactivate"
+    (confirmed)="confirmDeactivate()"
+    (cancelled)="confirmingDeactivate.set(false)"
+  />
+
+  <to-confirm-dialog
+    [visible]="confirmingReset()"
+    (visibleChange)="confirmingReset.set(false)"
+    variant="danger"
+    title="Reset this password?"
+    message="Their password will be set to the system default. They are not notified — you will need to tell them."
+    confirmLabel="Reset password"
+    (confirmed)="confirmReset()"
+    (cancelled)="confirmingReset.set(false)"
+  />
+}

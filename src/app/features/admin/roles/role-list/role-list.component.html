@@ -1,0 +1,87 @@
+<to-page-header
+  title="Roles"
+  subtitle="What each role can reach, and how many people that affects."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Roles' }]"
+/>
+
+<div class="to-roles">
+  <div class="to-roles__toolbar">
+    <div class="to-roles__tabs" role="tablist" aria-label="Filter by status">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-roles__tab"
+          [class.to-roles__tab--active]="status() === tab.key"
+          [attr.aria-selected]="status() === tab.key"
+          (click)="setStatus(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="to-roles__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" class="to-roles__search-icon" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (input)="onSearch()"
+        placeholder="Search roles"
+        aria-label="Search roles"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-roles__grid" aria-busy="true" aria-label="Loading roles">
+      @for (row of skeletonRows; track row) {
+        <to-skeleton width="100%" height="84px" />
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load roles"
+      description="The catalogue did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (filtered().length === 0) {
+    <to-empty-state
+      icon="shield-lock"
+      heading="No roles match"
+      description="Try a different status, or clear the search."
+    />
+  } @else {
+    <ul class="to-roles__grid">
+      @for (role of filtered(); track role.roleId) {
+        <li>
+          <a class="to-roles__card" [routerLink]="['/admin/roles', roleId(role)]">
+            <span class="to-roles__card-head">
+              <span class="to-roles__name">{{ role.roleName }}</span>
+              @if (!role.isActive) {
+                <span class="to-roles__tag">inactive</span>
+              }
+            </span>
+
+            @if (role.roleDescription) {
+              <span class="to-roles__desc">{{ role.roleDescription }}</span>
+            }
+
+            <!-- The blast radius, in front of the decision rather than after it. -->
+            <span class="to-roles__meta">
+              <tabler-icon [icon]="icons['users-group']" [size]="14" />
+              <span class="to-numeric">{{ role.assignedUserCount }}</span>
+              {{ +role.assignedUserCount === 1 ? 'user holds this' : 'users hold this' }}
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</div>

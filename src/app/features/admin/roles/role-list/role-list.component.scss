@@ -1,0 +1,134 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-roles {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-roles__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-roles__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-roles__tab {
+  padding: t.$to-space-1 t.$to-space-3;
+  border: none;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--active {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-roles__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 240px;
+
+  input {
+    width: 100%;
+    padding-left: t.$to-space-8;
+  }
+}
+
+.to-roles__search-icon {
+  position: absolute;
+  left: t.$to-space-3;
+  color: var(--to-text-muted);
+  pointer-events: none;
+}
+
+// Cards rather than a table: a role has four facts, one of which (the user count) is the
+// thing being scanned for. A table row would bury it in a column.
+.to-roles__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-roles__card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  height: 100%;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  text-decoration: none;
+  color: inherit;
+  @include u.lift-on-hover;
+}
+
+.to-roles__card-head {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-roles__name {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-roles__tag {
+  padding: 0 t.$to-space-1;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-warning-subtle);
+  color: var(--to-warning);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+}
+
+.to-roles__desc {
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+.to-roles__meta {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin-top: auto;
+  padding-top: t.$to-space-2;
+  border-top: 1px solid var(--to-border);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}

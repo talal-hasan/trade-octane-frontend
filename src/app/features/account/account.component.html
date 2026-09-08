@@ -1,0 +1,143 @@
+@if (loading()) {
+  <div class="to-acct__loading" aria-busy="true" aria-label="Loading account">
+    <to-skeleton width="200px" height="20px" />
+    <to-skeleton width="100%" height="280px" />
+  </div>
+} @else if (failed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load your account"
+    description="This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (account(); as acct) {
+  <to-page-header
+    [title]="forced() ? 'Change your password' : 'My account'"
+    [subtitle]="
+      forced()
+        ? 'Your password must be changed before you can continue.'
+        : 'Your sign-in details and password.'
+    "
+    [breadcrumbs]="forced() ? [] : [{ label: 'My account' }]"
+  />
+
+  <!-- In forced mode the page says so plainly. A blocking state that looks like an
+       ordinary settings page reads as a bug when navigation quietly refuses to work. -->
+  @if (forced()) {
+    <div class="to-acct__gate" role="alert">
+      <tabler-icon [icon]="icons['lock']" [size]="16" />
+      <span>
+        You cannot use Trade Octane until this password is changed. Everything else stays
+        locked until you do.
+      </span>
+    </div>
+  }
+
+  <div class="to-acct">
+    <section class="to-acct__section">
+      <h2 class="to-acct__title">You</h2>
+      <dl class="to-acct__facts">
+        <div class="to-acct__fact">
+          <dt>Login</dt>
+          <dd class="to-acct__mono">{{ acct.loginName }}</dd>
+        </div>
+        <div class="to-acct__fact">
+          <dt>Domain ID</dt>
+          <dd class="to-acct__mono">{{ acct.domainId || '—' }}</dd>
+        </div>
+        <div class="to-acct__fact">
+          <dt>Roles</dt>
+          <dd>{{ roles().length ? roles().join(', ') : 'None' }}</dd>
+        </div>
+        @if (passwordAgeDays() !== null) {
+          <div class="to-acct__fact">
+            <dt>Password age</dt>
+            <dd class="to-numeric">{{ passwordAgeDays() }} days</dd>
+          </div>
+        }
+      </dl>
+
+      @if (acct.passwordHistoryMissing) {
+        <p class="to-acct__note">
+          No password history is recorded for this account, so age-based expiry cannot be
+          calculated for you.
+        </p>
+      }
+    </section>
+
+    <section class="to-acct__section">
+      <h2 class="to-acct__title">Change password</h2>
+      <p class="to-acct__note">
+        Your name and email are saved with the same request, so you can correct them here
+        too.
+      </p>
+
+      <form class="to-acct__form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="to-acct__field">
+          <label class="to-acct__label" for="fullName">Full name</label>
+          <input pInputText id="fullName" type="text" formControlName="fullName" />
+        </div>
+
+        <div class="to-acct__field">
+          <label class="to-acct__label" for="email">Email</label>
+          <input pInputText id="email" type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="to-acct__error">Enter a valid email address.</span>
+          }
+        </div>
+
+        <div class="to-acct__field">
+          <label class="to-acct__label" for="currentPassword">Current password</label>
+          <p-password
+            inputId="currentPassword"
+            formControlName="currentPassword"
+            [feedback]="false"
+            [toggleMask]="true"
+            autocomplete="current-password"
+          />
+          @if (form.controls.currentPassword.touched && form.controls.currentPassword.invalid) {
+            <span class="to-acct__error">Enter your current password.</span>
+          }
+        </div>
+
+        <div class="to-acct__field">
+          <label class="to-acct__label" for="newPassword">New password</label>
+          <p-password
+            inputId="newPassword"
+            formControlName="newPassword"
+            [feedback]="true"
+            [toggleMask]="true"
+            autocomplete="new-password"
+          />
+          @if (form.controls.newPassword.touched && form.controls.newPassword.invalid) {
+            <span class="to-acct__error">Use at least 8 characters.</span>
+          }
+        </div>
+
+        <div class="to-acct__field">
+          <label class="to-acct__label" for="confirmPassword">Confirm new password</label>
+          <p-password
+            inputId="confirmPassword"
+            formControlName="confirmPassword"
+            [feedback]="false"
+            [toggleMask]="true"
+            autocomplete="new-password"
+          />
+          @if (form.errors?.['passwordMismatch'] && form.controls.confirmPassword.touched) {
+            <span class="to-acct__error">The two passwords do not match.</span>
+          }
+        </div>
+
+        <div class="to-acct__actions">
+          <button type="submit" pButton class="p-button-sm" [disabled]="saving() || form.invalid">
+            {{ saving() ? 'Saving…' : 'Change password' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

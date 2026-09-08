@@ -1,0 +1,395 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-ud__loading {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-ud__header-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// ─── Identity strip ───────────────────────────────────────────────────────────
+
+.to-ud__identity {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-4;
+  padding: t.$to-space-4;
+  margin-bottom: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-ud__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-md;
+}
+
+.to-ud__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-6;
+  margin: 0;
+}
+
+.to-ud__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-ud__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+// Underline tabs rather than a segmented control: the count varies per admin (one tab to
+// six, depending on their grants), and a segmented control that sometimes holds a single
+// item reads as a broken toggle.
+
+.to-ud__tabs {
+  display: flex;
+  gap: t.$to-space-1;
+  border-bottom: 1px solid var(--to-border);
+  margin-bottom: t.$to-space-4;
+  overflow-x: auto;
+}
+
+.to-ud__tab {
+  position: relative;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: none;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(color);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: t.$to-space-2;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: transparent;
+    @include u.motion(background-color);
+  }
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--active {
+    color: var(--to-accent-text);
+
+    &::after {
+      background: var(--to-accent);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+    border-radius: t.$to-radius-control;
+  }
+}
+
+// ─── Panels & sections ────────────────────────────────────────────────────────
+
+.to-ud__panel {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-ud__section {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-ud__section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-ud__section-title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-ud__section-note {
+  margin: t.$to-space-1 0 0;
+  max-width: 62ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// ─── Forms ────────────────────────────────────────────────────────────────────
+
+.to-ud__form {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  max-width: 420px;
+}
+
+.to-ud__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+
+  input {
+    width: 100%;
+  }
+
+  :is(p-password, .p-password) {
+    display: block;
+    width: 100%;
+  }
+}
+
+.to-ud__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ud__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+.to-ud__form-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-top: t.$to-space-1;
+}
+
+.to-ud__checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+  cursor: pointer;
+}
+
+.to-ud__checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+// ─── Role list ────────────────────────────────────────────────────────────────
+
+.to-ud__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+}
+
+.to-ud__list-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  // A retired role a user still holds stays visible and removable — hiding it would
+  // conceal a live mapping.
+  &--retired .to-ud__list-name {
+    color: var(--to-text-secondary);
+  }
+}
+
+.to-ud__list-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.to-ud__list-name {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ud__list-desc {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ud__list-meta {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ud__tag {
+  padding: 0 t.$to-space-1;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+
+  &--warn {
+    border: 1px solid var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+}
+
+// ─── Region / brand chips ─────────────────────────────────────────────────────
+
+.to-ud__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-ud__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-1 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    border-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 12%, var(--to-bg-1));
+    color: var(--to-accent-text);
+  }
+
+  &--retired {
+    border-style: dashed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-ud__chip-note {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Access counters & filter ─────────────────────────────────────────────────
+
+.to-ud__counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-2);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ud__counter {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+
+  // "Effective" is the one that actually authorises requests, so it is the one that reads
+  // as the answer; direct and via-roles are its inputs.
+  &--strong {
+    color: var(--to-text-primary);
+  }
+
+  &--warn {
+    color: var(--to-warning);
+  }
+}
+
+.to-ud__filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+  color: var(--to-text-muted);
+
+  input {
+    flex: 1;
+  }
+}

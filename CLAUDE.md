@@ -45,9 +45,9 @@ Every item below is final. Do not propose alternatives unless Talal explicitly a
 
 ### Styling
 - **SCSS** throughout. No plain CSS files, no inline styles, no Tailwind.
-- All design tokens defined as CSS custom properties in `src/styles/_tokens.scss` and as SCSS variables. Components reference tokens only — never hardcoded values.
+- All design tokens defined as CSS custom properties in `src/styles/_theme.scss` and as SCSS variables in `src/styles/_tokens.scss`. Components reference tokens only — never hardcoded values. See §5 Stylesheet split for why the two are separate files.
 - Component stylesheets use `@use '../../../styles/tokens' as t`.
-- Dark mode via `[data-theme="dark"]` on `<html>`. Token overrides in `_tokens.scss` under that selector. Zero component-level dark mode logic.
+- Dark mode via `[data-theme="dark"]` on `<html>`. Token overrides in `_theme.scss` under that selector. Zero component-level dark mode logic.
 - BEM naming for custom component classes: `.to-approval-chain__step--active`.
 - `ViewEncapsulation.None` only on layout/shell components. Feature components use default encapsulation.
 
@@ -73,7 +73,11 @@ Every item below is final. Do not propose alternatives unless Talal explicitly a
 ### Auth
 - Auth is currently mocked. Real implementation will be OIDC (Keycloak or Microsoft EntraID — TBD by client).
 - Use `angular-auth-oidc-client` when real auth lands — it covers both.
-- Login screen: branded split-panel with "Sign in with Friesland Campina" button. No username/password form.
+- Login screen: branded split-panel. **Revised 2026-09-07** — the contract requires a
+  username/password form (`login_old`), and `GET /identity/login/sso` reports whether SSO is
+  configured *on this deployment*, so the SSO button is conditional and cannot be assumed.
+  Sign-in has three outcomes, not two: `Authenticated`, `PasswordChangeRequired` (hard gate
+  → `/account?force=1`) and `PasswordExpiryWarning` (the server's own notice, then through).
 - **Role switcher in mock auth** — critical for POC client vetting. Talal must be able to switch roles (RSM, Admin, Head of Sales, Distributor, MIS, Trade Category) without logging out. Implement as a floating dev panel visible only when `environment.useMocks = true`.
 
 ### Routing
@@ -86,6 +90,72 @@ Every item below is final. Do not propose alternatives unless Talal explicitly a
 ## 4. RBAC — Role-Based Access Control
 
 This is the most complex part of the system. Get it right from the start.
+
+> **SUPERSEDED IN PART (2026-09-07).** The permission-string model below (`BUDGET_VIEW`,
+> `ACCESS_TEMPLATES`, `*toHasPermission`, `PermissionGuard`) was designed from KT notes
+> before the API contract existed. **The contract has no permission concept at all.** The
+> server authorises on menu grants — `GET /admin/users/{id}/access` states that
+> `effectiveMenuIds` "is what actually authorizes requests":
+>
+> ```
+> user → roles → menu grants  ∪  user → direct menu grants  =  effectiveMenuIds
+> ```
+>
+> The real model lives in `core/services/menu-access.service.ts`, gated by `MenuGuard` and
+> `*toHasMenu`. **New screens use it.** The permission model survives only for the POC
+> screens (budget, schemes, claims) until each moves onto its real contract; the split is
+> commented in `app.routes.ts`. See §4.1 and `tasks.md` (2026-09-07).
+
+### 4.1 Menu-driven navigation (added 2026-09-07)
+
+`GET /identity/menu` returns the legacy tree as Administration 1.0 renders it — 95 nodes,
+20 root modules, exactly two levels, **one entry per action**. Rendering it as-is would put
+fifteen siblings under Administration, seven of which are facets of a single noun.
+
+The API is already shaped the other way (`/admin/users/{id}/roles`, `/regions`, `/brands`,
+`/access`, `/password`). The blueprint lets the navigation catch up with the contract:
+**95 granted rows fold to 28 destinations**, Administration's 15 to 6, with Users absorbing
+7 rows as 6 tabs. Verified against a captured real payload; 0 unmapped, 0 near-misses.
+
+| File | Role |
+|---|---|
+| `core/menu/menu-blueprint.ts` | `menuId → { route, tab, navLabel, group }`. The map. |
+| `core/menu/menu-transform.ts` | The fold. Pure — no Angular, no signals. |
+| `core/menu/menu-transform.spec.ts` | 12 specs against real menuIds. |
+| `core/services/menu-access.service.ts` | State, gating, nav sections, ⌘K aliases. |
+
+**The join key is `menuId`.** Not the name — "Perfect Store" is both menuId 76 and 85. Not
+`catalog`, which is `"1"`/`"2"`, the Octane discriminator, as a string. There is no page
+path in the payload.
+
+Four rules keep the blueprint safe to be incomplete:
+
+1. **An unmapped row is never dropped.** It renders under "More" pointing at the legacy
+   placeholder, and is reported by `MenuAccessService.unmapped()` in dev.
+2. **Access stays server-truth.** A tab renders only if its menuId was granted. Folding the
+   navigation did not widen anyone's access — someone holding only "User Brand Mapping"
+   gets the Users screen with exactly one tab.
+3. **Sidebar absence must be explicit** (`hidden: true`). A destination can be group-less by
+   accident when the row that names it is not granted; hiding it then would lose a screen
+   the user legitimately holds.
+4. **Legacy names stay findable.** Every folded label becomes a ⌘K alias, so a UAT user
+   trained on "Re-Route Scheme" still lands in the right place.
+
+### 4.2 Wire integers are `number | string` (added 2026-09-07)
+
+The contract declares integer fields as `["integer","string"]`, and `/dashboard/tiles`
+returns every count as a string. Typing them as `number` compiles and then fails at runtime
+the first time the server sends `"42"`: `Set<number>.has("42")` is false, and an access
+check that silently returns false is the worst failure mode in this module. Every wire
+integer is `ApiInt`, and every read goes through `int()` / `intSet()` (`core/api/api.types.ts`).
+
+### 4.3 Administration grids are cursor-paginated (added 2026-09-07)
+
+A cursor is valid only for the filters, sort and direction that issued it, and cannot be
+computed for an arbitrary page. So the Administration grids use **Prev / Next over a
+remembered cursor stack** (`core/api/cursor-pager.ts`) and reset on every filter change.
+**`to-data-table` is deliberately not used on them** — it paginates by page number, which a
+keyset API cannot honour without fetching every intervening page.
 
 ### Roles
 `RSM` | `RMC` | `HEAD_OF_SALES` | `ADMIN` | `MIS` | `TRADE_CATEGORY` | `DISTRIBUTOR`
@@ -121,6 +191,55 @@ interface UserContext {
 ### Screen-Level Access
 Access is enforced at the individual screen level, not just module level. Every route definition includes `requiredPermission`. The nav/menu is generated dynamically from what the current user can access — never hardcoded.
 
+### User Provisioning (Admin only, added 2026-08-18)
+
+`/admin/user-management` — gated on `ADMIN_USER_MANAGE`. Three user types, matching the
+legacy system (KT Meeting 2 §3): **AD** (identity from Active Directory), **Distributor**
+(credentials in the Trade Octane DB, identity from the SAP master list), **Temporary**
+(naming convention + mandatory end date, nightly auto-disable).
+
+**Design brief was "fewest clicks possible".** Researched against how enterprise IAM
+products actually do it, then took the two good ideas and dropped the wizard:
+
+| Product | Pattern | Verdict |
+|---|---|---|
+| Microsoft Entra ID | Tabbed wizard: Basics → Properties → Assignments → Review + create | Rejected — a click per tab, and you never see the whole grant until the end |
+| Okta | Add Person, then assign groups, then assign admin role | Rejected — three screens for one mental task |
+| AWS IAM Identity Center | **Permission sets** — a named reusable access bundle attached in one action | **Adopted** as `ACCESS_TEMPLATES` |
+| ServiceNow / SAP GRC | **Copy roles from user** / reference-user derivation | **Adopted** as "mirror an existing user" |
+
+Resulting shape — **a three-step wizard with a live summary** (`to-wizard-steps`):
+
+1. **Identity** — AD directory search; pick a person and name, email and home region fill
+   themselves. Distributor picks from the SAP list. Temporary generates its username.
+2. **Access** — one-click access template (roles + permissions + default scope), or mirror a
+   peer. `to-permission-matrix` is collapsed behind "fine-tune" for the exceptions.
+3. **Scope** — region and brand chips. Empty brands = all brands.
+
+**Auto-advance is what makes the wizard free.** A wizard normally costs a click per step,
+which is the opposite of the requirement. So any choice that can only mean "and continue"
+advances by itself and does **not** increment the click counter: picking a person completes
+Identity, applying a template or mirroring a user completes Access. `Continue` is the
+fallback for genuinely incomplete steps (typing a temporary username, hand-picking roles).
+Picking a *distributor* deliberately does not auto-advance — a city is still required on
+that step, and skipping past it would hide a mandatory field.
+
+Measured end-to-end for a company user on a standard template: **one search + 3 clicks**
+(pick person → pick template → Create) — identical to the single-page version it replaced.
+
+`to-access-summary` stays visible at every step — the plain-English grant, the counts,
+where the access came from, and a **live click counter**. The counter is not decoration: it
+is the client's stated acceptance criterion, kept on screen so it cannot quietly regress.
+**If a change pushes that number up, the change is wrong.**
+
+Templates are a starting point, never a lock — every field stays editable, and the summary
+flags "· edited" once the admin drifts from the template they applied.
+
+Creation lands on `to-success-panel` (drawn checkmark, receipt of what was granted, and
+"Add another user" / "Back to user list") rather than redirecting. Onboarding happens in
+batches, and handing someone financial-approval rights deserves more acknowledgement than
+a toast that vanishes in four seconds.
+
 ---
 
 ## 5. Design System
@@ -141,52 +260,82 @@ Modern enterprise. Reference: Linear, Vercel dashboard, Stripe dashboard. High c
   Applied automatically to: currency columns, quantity inputs, percentage displays, budget headroom bars.
 
 ### Color Tokens
-```scss
-// ─── Light mode ────────────────────────────────────────
---to-bg-0:          #f6f7f9;   // page wash — very slightly cool grey
---to-bg-1:          #ffffff;   // cards, panels, modals
---to-bg-2:          #f0f2f5;   // table row fill, input backgrounds
---to-border:        #e2e5ea;   // hairline separators
---to-border-strong: #c8cdd6;   // hover borders, dividers
 
---to-text-primary:   #141922;  // headings, data values
---to-text-secondary: #4a5568;  // body, descriptions
---to-text-muted:     #8a96a8;  // placeholders, timestamps, helper text
+**Source of truth: FrieslandCampina Corporate Identity Guidelines §3 "our colours".**
+The provisional slate-blue palette was replaced on 2026-08-18 once the guidelines PDF
+arrived (this resolves §14 pending item #1). `src/styles/_theme.scss` carries the full
+set and the per-token contrast notes; the summary is:
 
-// Accent — slate blue, professional without being generic corporate
---to-accent:         #3b6fd4;
---to-accent-hover:   #2f5ab8;
---to-accent-subtle:  #edf1fb;
---to-accent-text:    #1e3f8a;
+| Brand colour | Hex | Reference | Role in the product |
+|---|---|---|---|
+| Milk white | `#ffffff` | — | Card/panel surfaces, white space |
+| **Sky blue** | `#0094d9` | pms 3005 / ral 5015 | **Primary accent** — rails, fills, focus, charts |
+| Cool grey | `#6e6f72` | pms Cool Grey 10c | Body copy (`--to-text-secondary`), consumed bars |
+| Magical magenta | `#ec008c` | pms magenta | Escalation / overdue, second chart series |
+| Passion red | `#ed1c24` | pms 485 | Danger, budget overrun |
+| Vibrant orange | `#f7931e` | pms 144 | Warning, pending, SLA amber |
+| Together green | `#d7df23` | pms 584 | Login accent, sixth chart series |
+| Grass green | `#39b54a` | pms 362 | Success, active status |
 
-// Semantic
---to-success:        #1e7a4a;
---to-success-subtle: #e8f5ee;
---to-warning:        #8a6000;
---to-warning-subtle: #fef8e0;
---to-danger:         #b83232;
---to-danger-subtle:  #fceaea;
---to-info:           #2563a8;
---to-info-subtle:    #e8f0fc;
+**The split-token rule.** Every brand hex is kept unmodified where it is *seen* as colour
+and darkened only where it must be *read* as text:
 
-// ─── Dark mode — [data-theme="dark"] ───────────────────
---to-bg-0:          #0f1117;
---to-bg-1:          #181c25;
---to-bg-2:          #1f2433;
---to-border:        #2a3042;
---to-border-strong: #374155;
+- `--to-accent` (`#0094d9`) — the brand hex. Rails, fills, icons, focus rings, chart marks.
+  3.4:1 on white: fine for UI, **never** for small text.
+- `--to-accent-strong` (`#0076ae`) — button fill; white label reads 5.0:1.
+- `--to-accent-text` (`#00567f`) — links and active labels, 7.9:1.
 
---to-text-primary:   #e8ecf4;
---to-text-secondary: #9aa3b8;
---to-text-muted:     #5a6478;
+The same pattern applies to every semantic pair: `--to-success` (text, AA) /
+`--to-success-solid` (brand hex, marks) / `--to-success-subtle` (tint).
 
---to-accent:         #5b8dee;
---to-accent-hover:   #7aa3f5;
---to-accent-subtle:  #1a2540;
---to-accent-text:    #a8c4ff;
+**Do not** hand-pick a brand hex for body text. Use the `-solid` token for a mark and the
+bare token for text; that is the whole point of the split.
 
-// Dark mode overrides under [data-theme="dark"] in _tokens.scss
-```
+**Data visualisation** uses `--to-viz-1…6` in that order (Sky blue leads).
+
+The print guidelines say support colours are used "never more than one at a time", which
+initially looked like it forbade multi-series charts. **The supplied logo settles it:** the
+FrieslandCampina star runs orange → lime → grass green → sky blue → magenta *simultaneously*.
+The palette is designed to be seen together; the one-at-a-time rule governs support colour
+as a decorative accent on print collateral, not categorical encoding. `--to-gradient-spectrum`
+reproduces the star's sequence deliberately.
+
+**Logo assets** live in `public/assets/`:
+
+- `logo.png` — the supplied full lockup, **untouched**. Solid white background, **not
+  alpha**, so on *any* surface that is not pure white it needs a white keeper plate
+  (padding + radius + hairline). Since the pastel canvas landed that means everywhere:
+  the sidebar brand block and the login card both plate it, in **both** themes. Never
+  filter or recolour the mark to work around this.
+- `logo-mark.png` — the star alone, 256px, **with a real alpha channel**. Derived from the
+  lockup by isolating the largest 8-connected non-white component and un-premultiplying it
+  against white; composited back over white it is pixel-exact. This is asset preparation,
+  not recolouring. Use wherever the lockup will not fit: the collapsed icon rail, the login
+  brand panel, favicons.
+- `public/favicon.ico` (16/32/48), `favicon-192.png`, `favicon-512.png`,
+  `apple-touch-icon.png` — all the star, wired up in `index.html`.
+
+Regenerate the derived assets only from `logo.png`; never from a screenshot or a resized copy.
+
+Dark mode overrides live under `[data-theme="dark"]` in `_theme.scss` (see §5 Stylesheet split).
+
+### Stylesheet split — `_tokens.scss` vs `_theme.scss` (2026-08-24)
+
+**Sass emits a copy of every real CSS rule into each compilation unit that `@use`s it, and
+every Angular component stylesheet is its own compilation unit.** So a partial that
+contains `:root { --to-*: … }` gets stamped, in full, into every component that imports it.
+It was costing ~8 kB per component across ~60 components and it broke the production
+per-component style budget.
+
+| Partial | Contains | Who imports it |
+|---|---|---|
+| `_tokens.scss` | SCSS `$to-*` variables only. **Emits nothing.** | Every component: `@use '…/styles/tokens' as t;` |
+| `_theme.scss` | The `:root`, `[data-theme='dark']` and `[data-density='compact']` custom-property blocks. **Emits CSS.** | `main.scss`, once, and nothing else |
+| `_utilities.scss` | Mixins only. Emits nothing. | Any component |
+
+**No component may ever `@use 'theme'`.** Components consume the runtime values through
+`var(--to-*)`, which needs no import. The same rule applies to any future partial that
+contains real rules rather than variables or mixins.
 
 ### Spacing
 4px base unit. Use only: 4 / 8 / 12 / 16 / 24 / 32 / 48px. No arbitrary values.
@@ -198,9 +347,68 @@ Modern enterprise. Reference: Linear, Vercel dashboard, Stripe dashboard. High c
 - 9999px — pills / tags only
 
 ### Motion
-- 150ms ease-out for all transitions. No decorative animation.
-- Transitions on: opacity, transform, background-color, border-color only.
-- Respect `prefers-reduced-motion` — wrap all transitions in the mixin in `_utilities.scss`.
+- **150ms ease-out** remains the default for *state changes* — hover, focus, colour, width.
+  Use the `motion()` mixin. Transitions on opacity, transform, background-color,
+  border-color only.
+- **Entrances** (added 2026-08-20) use `enter()` with `--to-motion-enter` (320ms) or
+  `--to-motion-enter-slow` (520ms) and `--to-ease-out-quint`. Scoped to: wizard step
+  transitions, the provisioning success mark, chart draw-on, dashboard tile arrival.
+  This is a deliberate relaxation of the old "no decorative animation" rule — motion here
+  shows continuity between steps and confirms completed actions. It is not licence to
+  animate idle surfaces.
+- **One looping animation exists** in the whole product: the "live" dot on the dashboard
+  scope chip. Adding a second needs a reason as good.
+- Respect `prefers-reduced-motion` — `motion()` shortens to 0ms, `enter()` removes the
+  animation entirely. When suppressing a `stroke-dashoffset` draw, reset the offset too,
+  or the mark stays invisible.
+
+### Brand colour techniques (2026-08-20)
+
+Beyond flat tokens, these are the sanctioned ways colour enters the UI. All are token-driven.
+
+| Technique | Token | Where |
+|---|---|---|
+| **Tinted shadow / glow** | `--to-glow-accent`, `-sm`, `-success/warning/danger/critical` | Primary buttons, hovered cards, current wizard step, chart readout. The element glows in its own hue instead of casting grey. **Interactive/elevated things only** — never a resting surface. |
+| **Gradient fill** | `--to-gradient-accent`, `-vivid` | Primary buttons, step markers, wizard progress fill |
+| **Spectrum hairline** | `--to-gradient-spectrum` | 2px accents only. Runs orange→lime→green→sky→magenta, matching the star in the brandmark. Used on the shell top bar and the dashboard hero. |
+| **Pastel canvas** | `--to-canvas-page`, `-rail`, `-topbar`, `-card`, `-hero` | The application chrome — page, sidebar, top bar, hero card. See below. |
+| **Surface wash** | `--to-gradient-surface` | Legacy single-hue wash; prefer `--to-canvas-*` |
+| **Derived tint** | `color-mix(in srgb, <hue> N%, var(--to-bg-1))` | Icon chips, table header, row hover, delta chips. Tracks light/dark automatically — one declaration, both themes. Prefer this over a second hardcoded hex. |
+| **Table header** | `table-head()` mixin | Every table. Brand tint + 2px Sky Blue underline. |
+| **Hover lift** | `lift-on-hover()` mixin | Stat tiles and other clickable cards |
+
+### Pastel canvas (2026-08-24)
+
+The chrome of the application is a **mesh** of the brandmark's own five hues held at 3–13%
+alpha (roughly double that in dark mode) over a tinted near-white ground. Four soft radial
+pools sit outside the viewport corners in the star's own order — sky top-left, magenta
+top-right, lime bottom-right, grass bottom-left — so the surface never resolves into a
+nameable shape or a gradient "panel", but the page is unmistakably coloured.
+
+| Token | Surface |
+|---|---|
+| `--to-canvas-page` | The scrolling content area. `background-attachment: fixed` so the pools stay in their corners while content scrolls past. |
+| `--to-canvas-rail` | Sidebar. Vertical run sky → lime → magenta. |
+| `--to-canvas-topbar` | Top bar. Horizontal sky → magenta. |
+| `--to-canvas-card` | The reference card wash — light pooling top-left, gone by mid-card. Opt in via the `pastel-card()` mixin. |
+| `--to-canvas-hero` | Identity moments only: the dashboard hero, success states. |
+| `--to-border-canvas` | Hairline between pastel surfaces. Cooler than `--to-border` so the seam doesn't read grey. |
+
+**Two rules keep it from becoming soup:**
+
+1. **Pastel goes on chrome, never on data.** Tables, forms, charts and every card that
+   holds a figure stay on flat `--to-bg-1`. Tinting the surface under a status pill or a
+   currency column changes what its colour *means*.
+2. **One hero per page.** `pastel-card()` is opt-in. A page where every card is washed is
+   just a tinted page, and there is no hero left.
+
+**The restraint that makes it work:** white cards float on a coloured field. Colour still
+appears on *interaction*, on *severity*, and at *identity moments* (login panel, top rail,
+hero). If every card glowed, none would.
+
+**Rails are the app's shared "state" language** — a 3px left/top bar in a semantic hue.
+Used on sidebar active items, stat tiles, attention rows, toasts, access templates, the
+expiry notice, and the summary panel. Reuse it rather than inventing a new indicator.
 
 ### Density
 Two density modes, toggled by `[data-density="compact"]` on `<html>`:
@@ -229,37 +437,57 @@ All status indicators use the subtle background pattern — never saturated fill
 ## 6. Application Shell
 
 ### Layout
-**Left sidebar + top utility bar.** Not top nav. Sidebar collapses to icon rail on toggle, persisted to `localStorage`.
+**Full-height left sidebar + top utility bar.** Not top nav. Sidebar collapses to icon rail
+on toggle, persisted to `localStorage`.
+
+Revised 2026-08-24: the sidebar now runs the **full height** of the application, with the
+top bar and content stacked to its right (Linear / Vercel / Stripe). The top bar previously
+spanned the full width and carried the brand. It was moved because the FrieslandCampina
+lockup is 2.18:1 — inside a 48px bar it capped at 61px wide and rendered the wordmark ~8px
+tall, effectively illegible. A 200px-wide block at the top of the sidebar takes it to
+~156px with the wordmark readable.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  [≡] Trade Octane    [⌘K Search]         [🔔][👤]  │  ← Top bar (48px)
-├──────────┬──────────────────────────────────────────┤
-│          │  Breadcrumb                               │
-│  Icon    │  Page title              [Actions]        │
-│  Rail    │──────────────────────────────────────────│
-│  or      │                                           │
-│  Full    │  Content area                             │
-│  Sidebar │                                           │
-│          │                                           │
-│  [«]     │                                           │
-└──────────┴──────────────────────────────────────────┘
+┌────────────┬────────────────────────────────────────┐
+│ ▓▓ spectrum hairline (3px, full width) ▓▓▓▓▓▓▓▓▓▓▓▓ │
+├────────────┼────────────────────────────────────────┤
+│ ┌────────┐ │  [≡]      [⌘K Search]      [🔔][🌙][👤]│  ← Top bar (48px)
+│ │  LOGO  │ │────────────────────────────────────────│
+│ └────────┘ │  Breadcrumb                            │
+│            │  Page title             [Actions]      │
+│  Nav       │────────────────────────────────────────│
+│  items     │                                        │
+│            │  Content area (pastel canvas)          │
+│            │                                        │
+│  [«]       │                                        │
+└────────────┴────────────────────────────────────────┘
 ```
 
 ### Top Bar (48px fixed)
-- Left: sidebar toggle `[≡]` + logo/product name
+- Left: sidebar toggle `[≡]`. **No brand and no product wordmark** — the brand lives in the
+  sidebar, and "Trade Octane" as a text label was removed 2026-08-24 at the client's request.
 - Centre: global command palette trigger `[⌘K Search]` — keyboard shortcut `Ctrl+K` / `Cmd+K`
 - Right: environment badge (visible when mocks active) + notifications bell + dark/light toggle + user avatar/initials
+- Painted from `--to-canvas-topbar`.
+
+### Spectrum hairline (3px, above everything)
+The brandmark's own colour sequence pinned across the full application width. It is the one
+piece of FrieslandCampina identity on screen at every moment.
 
 ### Sidebar — Full Mode (200px)
+- Brand block at top: the lockup on a Milk White keeper plate, hairline beneath
 - Module nav items with icons (Tabler icons)
+- Active item: filled Sky Blue gradient, white label, tinted glow, Together-green rail
 - Pending-count badges on Claims and Approvals items
 - Section dividers between module groups
 - Collapse button `[«]` at bottom
+- Painted from `--to-canvas-rail`.
 
 ### Sidebar — Icon Rail (48px)
+- Brand block shows the star alone (`logo-mark.png`) at 26px — the wordmark is unreadable
+  at this width, and dropping it beats shrinking it
 - Icons only, tooltip on hover
-- Badges visible on icon
+- Badges collapse to a magenta dot on the icon's top-right corner
 - Expand button `[»]`
 
 ### Content Area
@@ -315,6 +543,30 @@ Confirmed priority based on kickoff sessions:
 16. Reports — Gross profit
 17. User access / role management
 18. Notifications centre
+
+### Dashboard vs Workspace (added 2026-08-18)
+
+Two distinct landing surfaces. Do not merge them.
+
+| | **Dashboard** (`/dashboard`) | **My Workspace** (`/workspace`) |
+|---|---|---|
+| Purpose | Read-only overview — what is pending, what is off-track | The approvals desk — where decisions are made |
+| Mode | Analysis | Queue |
+| Content | Tiles, charts, "needs attention" cards | Split pane: list left, detail right |
+| Actions | None. Every tile drills into a workspace | Approve / reject inline |
+| Route | App landing page (`''` redirects here) | Deep-linkable per tab: `/workspace?tab=claim` |
+
+Rules that keep the pair honest:
+
+1. **Everything on the Dashboard is permission-filtered.** Tiles carry `requiredAnyOf: string[]`
+   ("any of" — an approvals tile must not be gated on a single module's permission, or it
+   vanishes for someone who approves a different module). Charts are gated on the permission
+   that owns their subject. Chart aggregates are scoped to the user's regions/brands.
+2. **Counts come from the live feature stores**, never a parallel summary endpoint. Approving
+   in the workspace decrements the Dashboard tile and the sidebar badge with no refetch.
+   A dashboard that disagrees with the screen it links to is worse than no dashboard.
+3. **Labels must be true for the reader.** The desk tile reads "Awaiting my approval" for an
+   approver and "My open items" for someone who cannot approve, and counts accordingly.
 
 ### Three Interaction Modes
 Every screen in the app fits one of three modes. Design and layout must match the mode, not a one-size-fits-all template:
@@ -383,6 +635,23 @@ Build these before touching any feature screen. They are the building blocks eve
 | Skeleton loader | `to-skeleton` | Matches the layout of the content it is loading. |
 | Activity timeline | `to-activity-timeline` | Audit trail. Used on approval detail screens for remarks history. |
 | Number display | `to-number` | Applies tabular-nums, PKR formatting, sign colouring for +/- values. |
+| Bar chart | `to-bar-chart` | Horizontal bars. `unit`: pkr / litres / count. `categorical` colours each bar from the viz series; a bar over its `total` always renders in Passion red. |
+| Donut chart | `to-donut-chart` | Inline-SVG arcs + legend with centre total. Designed for 2–5 slices. |
+| Trend chart | `to-trend-chart` | Area + smooth line over time, hover readout. Y axis is floored at zero, never at the series minimum. |
+| Segmented meter | `to-segmented-meter` | One bar split into brand-coloured composition segments |
+| Stat tile | `to-stat-tile` | Compact KPI (~84px): icon chip, figure, delta chip, full-width label |
+| Wizard steps | `to-wizard-steps` | Stepper header. Backwards always allowed; forwards gated on `furthestReached`. |
+| Success panel | `to-success-panel` | Drawn checkmark + projected body/actions, for completed multi-step flows |
+
+**Charts are hand-built, not library-backed.** No chart.js, no ngx-charts. Three reasons:
+no new dependency on a locked stack; the marks read `--to-viz-*` directly so a palette
+change propagates with zero chart config; and at 3–6 categorical marks a library is pure
+weight. Revisit only if a chart genuinely needs axes, zoom, or time series.
+
+**Dashboard density rule.** Every figure carries a `Delta` — a bare number is close to
+useless without a comparison. `Delta.good` is separate from `Delta.direction` on purpose:
+rising volume is good, rising SLA breaches is not, and colour must follow the *meaning*,
+never the arrow direction.
 
 ---
 
@@ -428,7 +697,20 @@ src/
     features/
       auth/
         login/
-      dashboard/
+      dashboard/                ← landing page: tiles + charts, read-only
+        models/dashboard.model.ts
+        services/{dashboard,mock-dashboard}.service.ts
+      workspace/                ← the approvals desk (was features/dashboard pre-2026-08-18)
+        models/approval-item.model.ts
+        services/{approvals,mock-approvals}.service.ts
+      admin/
+        user-management/
+          user-list/            ← who can sign in, revoke/restore
+          user-form/            ← provisioning: identity → access → scope
+          access-summary/       ← live grant summary panel
+          permission-matrix/    ← module × action grid (reusable)
+          models/admin-user.model.ts
+          services/{admin-users,mock-admin-users}.service.ts
       budget/
         budget-list/
         budget-initiation/
@@ -467,7 +749,9 @@ src/
         master-data/
     style-guide/                ← Visible in mock mode only
   styles/
-    _tokens.scss                ← ALL CSS custom properties and SCSS variables
+    _tokens.scss                ← SCSS variables only. Emits no CSS. Components @use this.
+    _theme.scss                 ← ALL --to-* custom properties (light/dark/density).
+                                   EMITS CSS — imported by main.scss and nothing else.
     _typography.scss            ← Font face, type scale utilities
     _primeng-overrides.scss     ← PrimeNG theme overrides
     _utilities.scss             ← Mixins: respond-to, motion, truncate
@@ -486,7 +770,7 @@ Execute in this sequence. Do not skip ahead — each phase unblocks the next.
 
 **Phase 0 — Foundation (do before any feature screen)**
 1. Angular 21 project scaffold with zoneless, strict TS, standalone
-2. `_tokens.scss` — full token set (light + dark)
+2. `_theme.scss` — full token set (light + dark); `_tokens.scss` — compile-time SCSS vars
 3. `_primeng-overrides.scss` — theme aligned to design tokens
 4. Shell layout component (sidebar + top bar + router-outlet)
 5. Mock auth service + role switcher dev panel
@@ -546,12 +830,17 @@ Items marked `[PENDING]` need resolution before the relevant screens can be buil
 
 | # | Item | Owner | Needed for |
 |---|---|---|---|
-| 1 | Friesland brand accent hex | Adil Saeed | Full design token finalisation |
+| ~~1~~ | ~~Friesland brand accent hex~~ | ~~Adil Saeed~~ | **RESOLVED 2026-08-18** — Sky Blue `#0094d9` (pms 3005), from the Corporate Identity Guidelines PDF. See §5 Color Tokens. |
 | 2 | Responsive scope (desktop-only or tablet too?) | Adil Saeed | Every component |
 | 3 | Browser support matrix | Adil Saeed / Friesland IT | CSS/JS feature decisions |
 | 4 | Final POC screen list (20–30) | Adil Saeed | Phase 1 build order |
 | 5 | API base URL + auth header format for test env | Zeeshan Aameer | Mock-to-real service swap |
 | 6 | PrimeNG licensing status for client deliverable | Adil Saeed | Library decision confirmation |
+| 7 | Typeface: guidelines name **Verdana** as the digital typeface; we ship **Inter**. Confirm the substitution or budget for the swap. | Adil Saeed / Noor Wasti | §5 Typography |
+| ~~8~~ | ~~Multi-series charts use several support colours at once~~ | — | **RESOLVED 2026-08-20** — the supplied logo is polychrome (the star combines five support colours), so the palette is designed to co-occur. See §5 Color Tokens. |
+| 9 | "Aggressive" visual register is currently delivered via colour, rails and density — type weight is still capped at 500 per §5. Confirm whether weight 600 may be unlocked for KPI figures. | Adil Saeed | Dashboard / KPI tiles |
+| 10 | Access-template catalogue (`ACCESS_TEMPLATES`) is seeded from the KT role list. Needs business sign-off on the exact permission bundle per role. | Saima Aslam / Sufyan | Admin user provisioning |
+| 11 | Approval-hierarchy designer (drag-and-drop, business-type × group × request-type) is not built — provisioning covers *user → role → permission* only. | Adil Saeed | Admin 2.0 scope |
 
 ---
 
@@ -568,5 +857,5 @@ Planned additions:
 
 ---
 
-*Last updated: August 2026 — Talal, Frontend Lead*
+*Last updated: 7 September 2026 — Administration 1.0 wired to the real API contract.*
 *This file is the single source of truth for all frontend decisions on Trade Octane.*

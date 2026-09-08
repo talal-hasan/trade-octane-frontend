@@ -1,0 +1,228 @@
+<to-page-header
+  title="Users"
+  subtitle="Everyone who can sign in to Trade Octane, and what they can reach."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Users' }]"
+>
+  <div actions class="to-users__header-actions">
+    <button
+      type="button"
+      pButton
+      class="p-button-outlined p-button-sm"
+      (click)="exportCsv()"
+      [disabled]="exporting() || loading()"
+    >
+      <tabler-icon [icon]="icons['download']" [size]="15" />
+      {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+    </button>
+
+    @if (canCreate()) {
+      <a pButton routerLink="/admin/users/new" class="p-button-sm">
+        <tabler-icon [icon]="icons['user-plus']" [size]="15" />
+        New user
+      </a>
+    }
+  </div>
+</to-page-header>
+
+<div class="to-users">
+  <!-- Filters. Status is a tab strip rather than a dropdown: five mutually exclusive
+       values that an admin switches between constantly, where a dropdown would hide the
+       current one behind a click. -->
+  <div class="to-users__toolbar">
+    <div class="to-users__tabs" role="tablist" aria-label="Filter by status">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-users__tab"
+          [class.to-users__tab--active]="status() === tab.key"
+          [attr.aria-selected]="status() === tab.key"
+          (click)="setStatus(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="to-users__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" class="to-users__search-icon" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="onSearch()"
+        (keyup.enter)="onSearch()"
+        placeholder="Search name, login or email"
+        aria-label="Search users"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-users__table-wrap" aria-busy="true" aria-label="Loading users">
+      @for (row of skeletonRows; track row) {
+        <div class="to-users__skeleton-row">
+          <to-skeleton variant="circle" width="32px" height="32px" />
+          <to-skeleton width="30%" height="12px" />
+          <to-skeleton width="22%" height="12px" />
+          <to-skeleton width="12%" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load users"
+      description="The directory did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (rows().length === 0) {
+    <to-empty-state
+      icon="users-group"
+      heading="No users match these filters"
+      description="Try a different status, or clear the search."
+    />
+  } @else {
+    <div class="to-users__table-wrap">
+      <table class="to-users__table">
+        <thead>
+          <tr>
+            <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('FullName')">
+              Name
+              @if (sort() === 'FullName') {
+                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+              }
+            </th>
+            <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('UserId')">
+              Login
+              @if (sort() === 'UserId') {
+                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+              }
+            </th>
+            <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('Email')">
+              Email
+              @if (sort() === 'Email') {
+                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+              }
+            </th>
+            <th scope="col" class="to-users__th">Status</th>
+            <th scope="col" class="to-users__th">Password set</th>
+            <th scope="col" class="to-users__th to-users__th--actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of rows(); track user.userId) {
+            <tr class="to-users__row" [class.to-users__row--busy]="busyUserId() === user.userId">
+              <td class="to-users__td">
+                <a class="to-users__identity" [routerLink]="['/admin/users', user.userId]">
+                  <span class="to-users__avatar" aria-hidden="true">{{ initialsOf(user) }}</span>
+                  <span class="to-users__identity-text">
+                    <span class="to-users__name">{{ user.fullName || user.userId }}</span>
+                    @if (user.isAdmin) {
+                      <span class="to-users__admin-tag">Admin</span>
+                    }
+                  </span>
+                </a>
+              </td>
+              <td class="to-users__td to-users__td--mono">{{ user.userId }}</td>
+              <td class="to-users__td to-users__td--muted">{{ user.email || '—' }}</td>
+              <td class="to-users__td">
+                <to-status-pill
+                  [status]="statusPill[statusOf(user)]"
+                  [label]="statusLabels[statusOf(user)]"
+                />
+              </td>
+              <td class="to-users__td to-users__td--muted to-numeric">
+                {{ formatDate(user.passwordSetAtUtc) }}
+              </td>
+              <td class="to-users__td to-users__td--actions">
+                @if (user.isLocked) {
+                  <button
+                    type="button"
+                    class="to-users__action"
+                    pTooltip="Clear the failed-sign-in lock"
+                    tooltipPosition="left"
+                    [disabled]="busyUserId() === user.userId"
+                    (click)="unlock(user)"
+                  >
+                    <tabler-icon [icon]="icons['lock-open']" [size]="15" />
+                    <span class="to-users__action-label">Unlock</span>
+                  </button>
+                }
+                @if (user.isActive) {
+                  <button
+                    type="button"
+                    class="to-users__action to-users__action--danger"
+                    [disabled]="busyUserId() === user.userId"
+                    (click)="requestDeactivate(user)"
+                  >
+                    <tabler-icon [icon]="icons['circle-x']" [size]="15" />
+                    <span class="to-users__action-label">Deactivate</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="to-users__action"
+                    [disabled]="busyUserId() === user.userId"
+                    (click)="activate(user)"
+                  >
+                    <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                    <span class="to-users__action-label">Activate</span>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Prev / Next rather than numbered pages. The API is keyset-paginated: a cursor is
+         only valid for the filters it was issued under and cannot be computed for an
+         arbitrary page, so a numbered paginator would have to fetch every intervening
+         page to honour one click. See CursorPager. -->
+    <div class="to-users__pager">
+      <span class="to-users__pager-range to-numeric">{{ totalLabel() }}</span>
+      <div class="to-users__pager-buttons">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasPrevious"
+          (click)="previousPage()"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+          Previous
+        </button>
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!pagerState().hasNext"
+          (click)="nextPage()"
+        >
+          Next
+          <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+        </button>
+      </div>
+    </div>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="pendingDeactivation() !== null"
+  (visibleChange)="pendingDeactivation.set(null)"
+  variant="danger"
+  title="Deactivate this account?"
+  [message]="
+    (pendingDeactivation()?.fullName ?? 'This user') +
+    ' will not be able to sign in, and their cached access grants will be dropped. Their roles and mappings are kept, so reactivating restores them.'
+  "
+  confirmLabel="Deactivate"
+  (confirmed)="confirmDeactivate()"
+  (cancelled)="pendingDeactivation.set(null)"
+/>

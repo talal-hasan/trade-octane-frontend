@@ -1,6 +1,33 @@
 <nav class="to-sidebar" [class.to-sidebar--collapsed]="collapsed()">
+  <!-- Brand block. The lockup gets a Milk White keeper plate — the guidelines' own
+       treatment for placing the fixed-colour mark on a coloured or dark ground, and it
+       doubles as the reason the mark reads as "the company" rather than "an icon in the
+       nav". Collapsed, the rail shows the star alone; the wordmark is unreadable at
+       48px and dropping it is better than shrinking it. -->
+  <a routerLink="/" class="to-sidebar__brand" aria-label="FrieslandCampina — Trade Octane">
+    <span class="to-sidebar__brand-plate">
+      @if (collapsed()) {
+        <img
+          src="assets/logo-mark.png"
+          alt="FrieslandCampina"
+          class="to-sidebar__brand-mark"
+          width="256"
+          height="256"
+        />
+      } @else {
+        <img
+          src="assets/logo.png"
+          alt="FrieslandCampina"
+          class="to-sidebar__brand-lockup"
+          width="421"
+          height="193"
+        />
+      }
+    </span>
+  </a>
+
   <div class="to-sidebar__sections">
-    @for (section of sections(); track section.label ?? $index; let first = $first) {
+    @for (section of sections(); track section.label; let first = $first) {
       <div class="to-sidebar__section" [class.to-sidebar__section--divided]="!first">
         @if (section.label && !collapsed()) {
           <div class="to-sidebar__section-label">{{ section.label }}</div>
@@ -10,13 +37,26 @@
             class="to-sidebar__item"
             [routerLink]="item.route"
             routerLinkActive="to-sidebar__item--active"
-            [pTooltip]="collapsed() ? item.label : undefined"
+            [pTooltip]="tooltipFor(item)"
             tooltipPosition="right"
+            [class.to-sidebar__item--pending]="item.pending"
           >
             <span class="to-sidebar__item-indicator"></span>
-            <tabler-icon [icon]="icons[item.icon]" [size]="18" class="to-sidebar__item-icon" />
+            <tabler-icon [icon]="icons[iconFor(item)]" [size]="18" class="to-sidebar__item-icon" />
             @if (!collapsed()) {
               <span class="to-sidebar__item-label">{{ item.label }}</span>
+              @if (item.pending) {
+                <!-- Not yet ported. Saying so beats a nav item that silently goes nowhere. -->
+                <span class="to-sidebar__legacy" aria-label="Opens in the legacy portal">legacy</span>
+              }
+            }
+            @if (badgeFor(item); as count) {
+              <span
+                class="to-sidebar__badge"
+                [class.to-sidebar__badge--rail]="collapsed()"
+                [attr.aria-label]="count + ' pending'"
+                >{{ count }}</span
+              >
             }
           </a>
         }
