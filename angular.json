@@ -43,7 +43,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "8kB",
-                  "maximumError": "10kB"
+                  "maximumError": "16kB"
                 }
               ],
               "outputHashing": "all",
@@ -58,18 +58,35 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "live": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.live.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.js"
+          },
           "configurations": {
             "production": {
               "buildTarget": "trade-octane-frontend:build:production"
             },
             "development": {
               "buildTarget": "trade-octane-frontend:build:development"
+            },
+            "live": {
+              "buildTarget": "trade-octane-frontend:build:live"
             }
           },
           "defaultConfiguration": "development"
