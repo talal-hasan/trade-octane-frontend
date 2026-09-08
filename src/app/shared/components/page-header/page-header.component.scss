@@ -47,13 +47,28 @@
   margin: 0 t.$to-space-1;
 }
 
+// The rule under every page title carries a short Sky Blue segment at its left end.
+// It is the cheapest possible brand beat — one element, no colour blocking — and it
+// repeats on every screen, which is what makes the identity feel systematic rather
+// than decorative.
 .to-page-header__row {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: t.$to-space-4;
   padding-bottom: t.$to-space-4;
   border-bottom: 1px solid var(--to-border);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 48px;
+    height: 2px;
+    background: var(--to-accent);
+  }
 }
 
 .to-page-header__titles {
@@ -65,6 +80,7 @@
   font-size: t.$to-font-size-xl;
   font-weight: var(--to-font-weight-medium);
   line-height: var(--to-line-height-heading);
+  letter-spacing: var(--to-tracking-tight);
   color: var(--to-text-primary);
   @include u.truncate;
 }

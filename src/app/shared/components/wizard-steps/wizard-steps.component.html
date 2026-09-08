@@ -1,0 +1,32 @@
+<nav class="to-wiz" aria-label="Progress">
+  <!-- Track sits behind the markers; the fill animates as the user advances. -->
+  <div class="to-wiz__track" aria-hidden="true">
+    <span class="to-wiz__track-fill" [style.width.%]="progress()"></span>
+  </div>
+
+  <ol class="to-wiz__list">
+    @for (step of rendered(); track step.key) {
+      <li class="to-wiz__item">
+        <button
+          type="button"
+          class="to-wiz__button to-wiz__button--{{ step.state }}"
+          [disabled]="!step.reachable"
+          [attr.aria-current]="step.state === 'current' ? 'step' : null"
+          (click)="select(step)"
+        >
+          <span class="to-wiz__marker">
+            @if (step.state === 'done') {
+              <tabler-icon [icon]="icons['check']" [size]="14" />
+            } @else {
+              <span class="to-numeric">{{ step.index + 1 }}</span>
+            }
+          </span>
+          <span class="to-wiz__text">
+            <span class="to-wiz__label">{{ step.label }}</span>
+            <span class="to-wiz__hint">{{ step.hint }}</span>
+          </span>
+        </button>
+      </li>
+    }
+  </ol>
+</nav>

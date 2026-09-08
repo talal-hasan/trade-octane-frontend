@@ -14,14 +14,41 @@
   margin-top: t.$to-space-4;
 }
 
+// The form card is this page's hero — it is the only surface here — so it carries the
+// same treatment the dashboard gives its one utilisation panel: the pastel bloom
+// pooling into the top-left corner, a cool brand hairline instead of grey, and the
+// spectrum rail across the top that echoes the brandmark's star. The wash is gone by
+// mid-card, so no label or input ever sits on tinted ground.
 .to-claim-form__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: t.$to-space-4;
   padding: t.$to-space-6;
-  background: var(--to-bg-1);
-  border: 1px solid var(--to-border);
   border-radius: t.$to-radius-card;
+  overflow: hidden;
+  @include u.pastel-card;
+  @include u.enter(to-claim-form-card-in);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--to-gradient-spectrum);
+  }
+}
+
+@keyframes to-claim-form-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .to-claim-form__field {
@@ -81,7 +108,7 @@
   &:focus {
     outline: none;
     border-color: var(--to-accent);
-    box-shadow: 0 0 0 3px var(--to-accent-subtle);
+    box-shadow: var(--to-focus-ring);
   }
 }
 
@@ -124,8 +151,16 @@
   @include u.motion(background-color, border-color, color);
 
   &:hover {
-    border-color: var(--to-border-strong);
-    color: var(--to-text-primary);
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+    background: color-mix(in srgb, var(--to-accent) 8%, var(--to-bg-1));
+    box-shadow: var(--to-glow-accent-sm);
+  }
+
+  &:focus-within {
+    outline: none;
+    border-color: var(--to-accent);
+    box-shadow: var(--to-focus-ring);
   }
 }
 
@@ -136,7 +171,12 @@
   align-self: flex-start;
   max-width: 100%;
   padding: t.$to-space-1 t.$to-space-1 t.$to-space-1 t.$to-space-3;
-  background: var(--to-accent-subtle);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1)) 0%,
+    var(--to-accent-subtle) 100%
+  );
+  border: 1px solid var(--to-accent-muted);
   border-radius: t.$to-radius-control;
   color: var(--to-accent-text);
   font-size: t.$to-font-size-sm;

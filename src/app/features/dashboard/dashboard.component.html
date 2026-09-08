@@ -1,161 +1,212 @@
-<to-page-header
-  title="Approvals Inbox"
-  subtitle="Pending budget, scheme and claim decisions awaiting your action."
-  [breadcrumbs]="[{ label: 'Dashboard' }]"
-/>
-
-<div class="to-inbox">
-  <div class="to-inbox__tabs" role="tablist">
-    @for (tab of tabs; track tab.key) {
-      <button
-        type="button"
-        role="tab"
-        class="to-inbox__tab"
-        [class.to-inbox__tab--active]="activeTab() === tab.key"
-        [attr.aria-selected]="activeTab() === tab.key"
-        (click)="selectTab(tab.key)"
-      >
-        {{ tab.label }}
-        <span class="to-inbox__tab-count to-numeric">{{ countFor(tab.key) }}</span>
-      </button>
-    }
+<to-page-header [title]="'Welcome back, ' + userName()" [subtitle]="scopeSummary()">
+  <div actions class="to-dash__scope">
+    <span class="to-dash__scope-dot"></span>
+    Live · your scope only
   </div>
+</to-page-header>
 
-  <div class="to-inbox__body">
-    <!-- ─── List pane ─────────────────────────────────────── -->
-    <div class="to-inbox__list" role="tablist" aria-label="Pending approvals">
+@if (error()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Couldn't load your overview"
+    description="The dashboard aggregates didn't come back. Your workspaces are unaffected."
+  >
+    <button actions type="button" pButton severity="secondary" (click)="retry()">Try again</button>
+  </to-empty-state>
+} @else {
+  <!-- ═══ Row 1 — compact stats beside the utilisation hero ═══════════════ -->
+  <section class="to-dash__row to-dash__row--split" aria-label="Pending overview">
+    <div class="to-dash__stats">
       @if (loading()) {
-        @for (row of skeletonRows; track row) {
-          <div class="to-inbox__card to-inbox__card--skeleton">
-            <to-skeleton variant="circle" width="32px" />
-            <div class="to-inbox__card-skeleton-lines">
-              <to-skeleton variant="text" width="70%" />
-              <to-skeleton variant="text" width="45%" />
-            </div>
+        @for (tile of skeletonTiles; track tile) {
+          <div class="to-dash__stat-skeleton">
+            <to-skeleton variant="circle" width="30px" />
+            <to-skeleton width="70%" height="22px" />
           </div>
         }
-      } @else if (error()) {
-        <to-empty-state
-          icon="alert-triangle"
-          heading="Couldn't load your inbox"
-          description="Something went wrong fetching pending approvals."
-        >
-          <button type="button" pButton actions (click)="retry()">Retry</button>
-        </to-empty-state>
-      } @else if (filteredItems().length === 0) {
-        <to-empty-state
-          icon="circle-check"
-          heading="You're all caught up"
-          description="No pending approvals in this view."
-        />
       } @else {
-        @for (item of filteredItems(); track item.id) {
-          <button
-            type="button"
-            class="to-inbox__card"
-            [class.to-inbox__card--active]="item.id === selectedId()"
-            (click)="selectItem(item.id)"
+        @for (tile of tiles(); track tile.key) {
+          <a
+            class="to-dash__stat-link"
+            [routerLink]="tile.route"
+            [queryParams]="tile.queryParams ?? null"
           >
-            <span class="to-inbox__card-icon to-inbox__card-icon--{{ item.type }}">
-              <tabler-icon [icon]="icons[typeMeta[item.type].icon]" [size]="16" />
-            </span>
-            <span class="to-inbox__card-main">
-              <span class="to-inbox__card-top">
-                <span class="to-inbox__card-ref">{{ item.reference }}</span>
-                <to-number class="to-inbox__card-amount" [value]="item.amount" format="pkr" />
-              </span>
-              <span class="to-inbox__card-title">{{ item.title }}</span>
-              <span class="to-inbox__card-meta">
-                {{ item.requestedBy }} · {{ item.requestedAt | relativeDate }}
-              </span>
-            </span>
-          </button>
+            <to-stat-tile
+              [label]="tile.label"
+              [value]="tile.value"
+              [icon]="tile.icon"
+              [tone]="tile.tone"
+              [delta]="tile.delta"
+            />
+          </a>
         }
       }
     </div>
 
-    <!-- ─── Detail pane ───────────────────────────────────── -->
-    <div class="to-inbox__detail">
-      @if (selectedItem(); as item) {
-        <div class="to-inbox__detail-inner">
-          <div class="to-inbox__detail-header">
-            <span class="to-inbox__type-tag to-inbox__type-tag--{{ item.type }}">
-              <tabler-icon [icon]="icons[typeMeta[item.type].icon]" [size]="14" />
-              {{ typeMeta[item.type].label }}
+    @if (utilisation(); as panel) {
+      <article class="to-dash__card to-dash__hero">
+        <header class="to-dash__hero-head">
+          <div>
+            <h2 class="to-dash__card-title">Committed trade spend</h2>
+            <span class="to-dash__card-hint">Against approved allocation in your scope</span>
+          </div>
+          <a routerLink="/budget" class="to-dash__card-link">
+            Budgets
+            <tabler-icon [icon]="icons['chevron-right']" [size]="14" />
+          </a>
+        </header>
+
+        @if (loading()) {
+          <to-skeleton width="100%" height="140px" />
+        } @else {
+          <div class="to-dash__hero-figure">
+            <span class="to-dash__hero-value to-numeric">{{ utilisationHeadline() }}</span>
+            <span
+              class="to-dash__delta to-dash__delta--{{
+                deltaClassFor(panel.delta.good, panel.delta.direction)
+              }}"
+            >
+              <tabler-icon [icon]="deltaIconFor(panel.delta.direction)" [size]="12" />
+              <span class="to-numeric">{{ panel.delta.percent }}%</span>
             </span>
-            <span class="to-inbox__detail-ref">{{ item.reference }}</span>
+            <span class="to-dash__hero-meta">
+              {{ utilisationPercent() }} of {{ utilisationAllocated() }}
+              @if (isOverrun()) {
+                <span class="to-dash__overrun">· over allocation</span>
+              }
+            </span>
           </div>
 
-          <h2 class="to-inbox__detail-title">{{ item.title }}</h2>
-          <p class="to-inbox__detail-summary">{{ item.summary }}</p>
+          <to-segmented-meter [rows]="panel.rows" />
 
-          <dl class="to-inbox__facts">
-            <div class="to-inbox__fact">
-              <dt>Requested by</dt>
-              <dd>{{ item.requestedBy }}</dd>
-            </div>
-            <div class="to-inbox__fact">
-              <dt>Region</dt>
-              <dd>{{ item.region }}</dd>
-            </div>
-            @if (item.brand) {
-              <div class="to-inbox__fact">
-                <dt>Brand</dt>
-                <dd>{{ item.brand }}</dd>
-              </div>
+          <ul class="to-dash__breakdown">
+            @for (row of panel.rows; track row.label; let i = $index) {
+              <li class="to-dash__breakdown-row">
+                <span
+                  class="to-dash__breakdown-dot"
+                  [style.background]="'var(--to-viz-' + ((i % 6) + 1) + ')'"
+                ></span>
+                <span class="to-dash__breakdown-label">{{ row.label }}</span>
+                <span class="to-dash__breakdown-value to-numeric">{{ formatPkr(row.value) }}</span>
+                @if (row.delta; as d) {
+                  <span
+                    class="to-dash__breakdown-delta to-dash__delta--{{
+                      deltaClassFor(d.good, d.direction)
+                    }}"
+                  >
+                    <tabler-icon [icon]="deltaIconFor(d.direction)" [size]="11" />
+                    <span class="to-numeric">{{ d.percent }}%</span>
+                  </span>
+                }
+              </li>
             }
-            <div class="to-inbox__fact">
-              <dt>Amount</dt>
-              <dd><to-number [value]="item.amount" format="pkr" /></dd>
-            </div>
-          </dl>
+          </ul>
+        }
+      </article>
+    }
+  </section>
 
-          @if (item.headroom; as headroom) {
-            <section class="to-inbox__section">
-              <h3 class="to-inbox__section-title">Budget headroom</h3>
-              <to-headroom-bar
-                [total]="headroom.total"
-                [consumed]="headroom.consumed"
-                [pending]="headroom.pending"
-              />
-            </section>
+  @if (isEmpty() && !loading()) {
+    <to-empty-state
+      icon="inbox"
+      heading="Nothing assigned to you yet"
+      description="Your role doesn't currently grant access to any tracked module. Contact an administrator if you expect to see work here."
+    />
+  }
+
+  <!-- ═══ Row 2 — trend beside the scheme mix ═════════════════════════════ -->
+  <section class="to-dash__row to-dash__row--split-reverse" aria-label="Trends">
+    <article class="to-dash__card">
+      <header class="to-dash__card-head">
+        <h2 class="to-dash__card-title">Approvals cleared</h2>
+        <span class="to-dash__card-hint">Decisions completed per month in your scope</span>
+      </header>
+      @if (loading()) {
+        <to-skeleton width="100%" height="160px" />
+      } @else {
+        <to-trend-chart [data]="approvalsCleared()" unit="approvals" />
+      }
+    </article>
+
+    <div class="to-dash__side">
+      @if (schemeMix(); as mixData) {
+        <article class="to-dash__card">
+          <header class="to-dash__card-head">
+            <h2 class="to-dash__card-title">Active scheme mix</h2>
+          </header>
+          @if (loading()) {
+            <to-skeleton width="100%" height="116px" />
+          } @else {
+            <to-donut-chart [data]="mixData" caption="schemes" />
           }
+        </article>
+      }
 
-          @if (item.pipelineStages && item.currentStageIndex !== undefined) {
-            <section class="to-inbox__section">
-              <h3 class="to-inbox__section-title">Claim pipeline</h3>
-              <to-pipeline-stage
-                [stages]="item.pipelineStages"
-                [currentStageIndex]="item.currentStageIndex"
-                variant="horizontal"
-              />
-            </section>
+      @if (volumeByBrand(); as volumeData) {
+        <article class="to-dash__card">
+          <header class="to-dash__card-head">
+            <h2 class="to-dash__card-title">Activated volume</h2>
+            <span class="to-dash__card-hint">Litres under active schemes</span>
+          </header>
+          @if (loading()) {
+            <to-skeleton width="100%" height="90px" />
+          } @else {
+            <to-bar-chart [data]="volumeData" unit="litres" [categorical]="true" />
           }
-
-          <section class="to-inbox__section">
-            <h3 class="to-inbox__section-title">Approval chain</h3>
-            <to-approval-chain
-              [steps]="item.steps"
-              [currentStepIndex]="item.currentStepIndex"
-              [canApprove]="canApproveSelected()"
-              (approve)="onApprove($event)"
-              (reject)="onReject($event)"
-            />
-            @if (!canApproveSelected()) {
-              <p class="to-inbox__readonly-note">
-                <tabler-icon [icon]="icons['alert-triangle']" [size]="14" />
-                You have view access to this item but can't action it with your current role.
-              </p>
-            }
-          </section>
-        </div>
-      } @else if (!loading()) {
-        <to-empty-state
-          icon="inbox"
-          heading="Nothing selected"
-          description="Pick an item from the list to review its details and approval chain."
-        />
+        </article>
       }
     </div>
-  </div>
-</div>
+  </section>
+
+  <!-- ═══ Row 3 — exceptions as a table, not stacked cards ════════════════ -->
+  @if (attention().length) {
+    <section class="to-dash__card to-dash__attention" aria-label="Needs attention">
+      <header class="to-dash__card-head to-dash__card-head--padded">
+        <h2 class="to-dash__card-title">Needs attention</h2>
+        <span class="to-dash__card-hint">
+          Exceptions in your scope — routine pending work is above
+        </span>
+      </header>
+
+      <div class="to-dash__table-scroll">
+        <table class="to-dash__table">
+          <thead>
+            <tr>
+              <th scope="col">Reference</th>
+              <th scope="col">Type</th>
+              <th scope="col">What's wrong</th>
+              <th scope="col">Age</th>
+              <th scope="col" class="to-dash__table-action"><span class="to-sr-only">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of attention(); track item.id) {
+              <tr class="to-dash__table-row to-dash__table-row--{{ item.tone }}">
+                <td>
+                  <a class="to-dash__table-ref to-numeric" [routerLink]="item.route">
+                    {{ item.reference }}
+                  </a>
+                </td>
+                <td class="to-dash__table-module">{{ item.module }}</td>
+                <td>
+                  <span class="to-dash__table-title">{{ item.title }}</span>
+                  <span class="to-dash__table-reason">{{ item.reason }}</span>
+                </td>
+                <td class="to-dash__table-age to-numeric">{{ item.age }}</td>
+                <td class="to-dash__table-action">
+                  <a
+                    class="to-dash__table-open"
+                    [routerLink]="item.route"
+                    [attr.aria-label]="'Open ' + item.reference"
+                  >
+                    <tabler-icon [icon]="icons['chevron-right']" [size]="16" />
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+}

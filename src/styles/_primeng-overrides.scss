@@ -39,3 +39,167 @@
 .p-badge {
   border-radius: t.$to-radius-pill;
 }
+
+// ─── Brand expression (2026-08-20) ───────────────────────────────────────────
+// Applied here rather than per-component so every button and table in the app picks
+// the treatment up, including PrimeNG-rendered ones we don't author templates for.
+
+// Buttons that carry a fill get a brand gradient and a shadow cast in their own hue.
+// The tinted shadow is what makes the button read as the page's one hot element
+// without enlarging it or adding a border.
+//
+// `color` is not cosmetic here, it is a bug fix. PrimeNG ships its component CSS
+// inside a cascade layer, and a layered rule loses to an unlayered one at ANY
+// specificity. `_reset.scss` sets an unlayered `a { color: inherit }`, so every button
+// authored as an anchor (`<a pButton>` — "New Claim", "Add user", "Back to claims",
+// "Back to dashboard") inherited near-black body text over its blue fill while the
+// `<button pButton>` sitting beside it rendered white. Declaring the label colour here,
+// unlayered and next to the fill, makes the two render identically.
+//
+// `:enabled` is not used for the interactive states: it only ever matches form
+// elements, so it silently drops every anchor. `:not(:disabled)` is true for anchors
+// and false for a disabled <button>, which is the behaviour both need.
+@mixin to-filled-button($fill, $fill-hover, $glow-rest, $glow-hover) {
+  background: $fill;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: $glow-rest;
+  @include u.motion(background-color, box-shadow, transform, filter);
+
+  &:not(:disabled, .p-disabled):hover {
+    background: $fill-hover;
+    border-color: transparent;
+    color: #fff;
+    box-shadow: $glow-hover;
+  }
+
+  &:not(:disabled, .p-disabled):active {
+    transform: translateY(1px);
+    box-shadow: $glow-rest;
+  }
+
+  // A disabled control must not glow — the glow is the affordance.
+  &:disabled,
+  &.p-disabled {
+    background: var(--to-bg-2);
+    color: var(--to-text-muted);
+    box-shadow: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:not(:disabled, .p-disabled):active {
+      transform: none;
+    }
+  }
+}
+
+// Variants with no fill of their own, plus the severities — all excluded from the
+// primary ramp below. The severities are handled separately so an Approve button stays
+// green and a Reject button stays red; before this they were swept into the same
+// `:not()` as everything else and both came out Sky Blue.
+//
+// The exclusions are CHAINED rather than written as one `:not(a, b, c)` list, and that
+// is load-bearing. A selector list contributes only its heaviest branch, so the tidy
+// form scores (0,2,0) — low enough that any component stylesheet setting a background
+// on its own button class (`.to-role-switcher__fab`, `.to-login__signin-btn`) would win
+// and lose the gradient. Chaining stacks one class-weight per `:not()`, which keeps this
+// rule above component styles exactly as the original four-`:not()` version was.
+$to-button-unfilled: ':not(.p-button-secondary):not(.p-button-text):not(.p-button-outlined):not(.p-button-link)';
+$to-button-severity: ':not(.p-button-success):not(.p-button-danger):not(.p-button-warn):not(.p-button-info):not(.p-button-help):not(.p-button-contrast)';
+
+.p-button#{$to-button-unfilled}#{$to-button-severity} {
+  @include to-filled-button(
+    var(--to-gradient-accent),
+    var(--to-gradient-accent-vivid),
+    var(--to-glow-accent-sm),
+    var(--to-glow-accent)
+  );
+}
+
+.p-button-success#{$to-button-unfilled} {
+  @include to-filled-button(
+    var(--to-gradient-success),
+    var(--to-gradient-success-vivid),
+    var(--to-glow-success-sm),
+    var(--to-glow-success)
+  );
+}
+
+.p-button-danger#{$to-button-unfilled} {
+  @include to-filled-button(
+    var(--to-gradient-danger),
+    var(--to-gradient-danger-vivid),
+    var(--to-glow-danger-sm),
+    var(--to-glow-danger)
+  );
+}
+
+.p-button-warn#{$to-button-unfilled} {
+  @include to-filled-button(
+    var(--to-gradient-warning),
+    var(--to-gradient-warning-vivid),
+    var(--to-glow-warning-sm),
+    var(--to-glow-warning)
+  );
+}
+
+// The unfilled variants need the label colour spelled out for the same layering reason
+// — they just resolve to ink rather than white.
+a.p-button-secondary {
+  color: var(--to-text-primary);
+}
+
+a.p-button-text,
+a.p-button-outlined,
+a.p-button-link {
+  color: var(--to-accent-text);
+}
+
+a.p-button-secondary.p-button-text,
+a.p-button-secondary.p-button-outlined {
+  color: var(--to-text-secondary);
+}
+
+a.p-button-danger.p-button-text,
+a.p-button-danger.p-button-outlined {
+  color: var(--to-danger);
+}
+
+a.p-button-success.p-button-text,
+a.p-button-success.p-button-outlined {
+  color: var(--to-success);
+}
+
+// Table headers: brand tint plus a Sky Blue hairline. Subtle enough to sit under dense
+// data all day, strong enough that the header row never gets lost when the body scrolls.
+.p-datatable .p-datatable-thead > tr > th {
+  @include u.table-head;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-text-secondary);
+}
+
+.p-datatable .p-datatable-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+}
+
+// Toasts get a rail in their severity's brand hue, matching the rail language used on
+// tiles, sidebar items and attention cards.
+.p-toast-message {
+  border-left: var(--to-accent-rail) solid var(--to-accent);
+  box-shadow: var(--to-shadow-lg);
+}
+
+.p-toast-message-success {
+  border-left-color: var(--to-success-solid);
+}
+
+.p-toast-message-warn {
+  border-left-color: var(--to-warning-solid);
+}
+
+.p-toast-message-error {
+  border-left-color: var(--to-danger-solid);
+}

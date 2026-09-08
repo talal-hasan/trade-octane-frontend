@@ -1,0 +1,125 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Two rows: [icon] [value] [delta] on top, label spanning the full width beneath.
+//
+// The first attempt put the label beside the value on one row, which truncated every
+// label to "AWAITING M…" once four tiles sat in a narrow column. Giving the label its
+// own full-width row means it reads in full at any tile size, and wraps to a second
+// line rather than clipping if it still doesn't fit.
+:host {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: t.$to-space-1 t.$to-space-3;
+  padding: t.$to-space-3 t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  text-decoration: none;
+  @include u.lift-on-hover;
+}
+
+:host(:focus-visible) {
+  outline: none;
+  box-shadow: var(--to-focus-ring);
+  border-color: var(--to-accent);
+}
+
+// Tinted square, not a filled one. `color-mix` derives the wash from the tone's own
+// brand hex so it tracks light/dark automatically — one declaration, both themes.
+.to-stat__icon {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: t.$to-radius-control;
+  flex-shrink: 0;
+}
+
+.to-stat__icon--accent {
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+}
+
+.to-stat__icon--success {
+  background: color-mix(in srgb, var(--to-success-solid) 14%, var(--to-bg-1));
+  color: var(--to-success);
+}
+
+.to-stat__icon--warning {
+  background: color-mix(in srgb, var(--to-warning-solid) 16%, var(--to-bg-1));
+  color: var(--to-warning);
+}
+
+.to-stat__icon--critical {
+  background: color-mix(in srgb, var(--to-critical-solid) 14%, var(--to-bg-1));
+  color: var(--to-critical);
+}
+
+.to-stat__icon--neutral {
+  background: color-mix(in srgb, var(--to-brand-grey) 14%, var(--to-bg-1));
+  color: var(--to-text-secondary);
+}
+
+.to-stat__value {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  font-size: t.$to-font-size-xl;
+  font-weight: var(--to-font-weight-medium);
+  line-height: 1.15;
+  letter-spacing: var(--to-tracking-tight);
+  color: var(--to-text-primary);
+}
+
+// Spans from under the icon to the right edge, so it gets the whole tile width. Wraps
+// to two lines at most; clipping a label is worse than a slightly taller tile.
+.to-stat__label {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Colour follows whether the movement is *good*, never which way the arrow points.
+.to-stat__delta {
+  grid-column: 3;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  line-height: 1.4;
+}
+
+.to-stat__delta--good {
+  background: color-mix(in srgb, var(--to-success-solid) 14%, var(--to-bg-1));
+  color: var(--to-success);
+}
+
+.to-stat__delta--bad {
+  background: color-mix(in srgb, var(--to-danger-solid) 13%, var(--to-bg-1));
+  color: var(--to-danger);
+}
+
+.to-stat__delta--flat {
+  background: var(--to-bg-2);
+  color: var(--to-text-muted);
+}

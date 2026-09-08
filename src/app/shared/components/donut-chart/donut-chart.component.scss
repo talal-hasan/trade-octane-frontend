@@ -1,0 +1,105 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-donut {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-6;
+}
+
+.to-donut__ring {
+  position: relative;
+  flex-shrink: 0;
+  width: 116px;
+  height: 116px;
+}
+
+.to-donut__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.to-donut__arc {
+  // Butt caps, not round. Same reasoning as the bar chart's square ends — the hard
+  // termination is what keeps the mark reading as technical rather than friendly.
+  stroke-linecap: butt;
+}
+
+.to-donut__centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.to-donut__total {
+  font-size: t.$to-font-size-xl;
+  font-weight: var(--to-font-weight-medium);
+  line-height: var(--to-line-height-data);
+  letter-spacing: var(--to-tracking-tight);
+  color: var(--to-text-primary);
+}
+
+.to-donut__caption {
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-text-muted);
+}
+
+.to-donut__legend {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-donut__legend-item {
+  display: grid;
+  grid-template-columns: 8px 1fr auto auto;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+}
+
+.to-donut__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.to-donut__legend-label {
+  color: var(--to-text-secondary);
+  @include u.truncate;
+}
+
+.to-donut__legend-value {
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-donut__legend-percent {
+  min-width: 42px;
+  text-align: right;
+  color: var(--to-text-muted);
+}
+
+.to-donut__empty {
+  margin: 0;
+  padding: t.$to-space-4 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}

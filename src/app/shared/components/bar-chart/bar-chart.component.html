@@ -1,0 +1,37 @@
+@if (bars().length === 0) {
+  <p class="to-bar-chart__empty">No data in your scope.</p>
+} @else {
+  <ul class="to-bar-chart">
+    @for (bar of bars(); track bar.label; let i = $index) {
+      <li class="to-bar-chart__row to-bar-chart__row--{{ bar.tone }}">
+        <div class="to-bar-chart__head">
+          <span class="to-bar-chart__label">{{ bar.label }}</span>
+          <span class="to-bar-chart__value to-numeric">
+            {{ bar.valueLabel }}
+            @if (bar.totalLabel) {
+              <span class="to-bar-chart__total">/ {{ bar.totalLabel }}</span>
+            }
+          </span>
+        </div>
+        <div
+          class="to-bar-chart__track"
+          role="img"
+          [attr.aria-label]="
+            bar.label +
+            ': ' +
+            bar.valueLabel +
+            (bar.totalLabel ? ' of ' + bar.totalLabel : '') +
+            (bar.overrun ? ' — over allocation' : '')
+          "
+        >
+          <span
+            class="to-bar-chart__fill"
+            [class.to-bar-chart__fill--overrun]="bar.overrun"
+            [style.width.%]="bar.percent"
+            [style.background]="categorical() && !bar.overrun ? seriesVar(i) : null"
+          ></span>
+        </div>
+      </li>
+    }
+  </ul>
+}

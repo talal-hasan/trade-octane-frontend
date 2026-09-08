@@ -5,7 +5,16 @@
     <title>Trade Octane</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- FrieslandCampina brandmark. The star is isolated from the supplied lockup and
+         carries a real alpha channel, so it reads on a light or dark browser chrome
+         without a white plate. The .ico keeps legacy /favicon.ico requests happy. -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" href="favicon-192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="favicon-512.png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180" />
+
+    <meta name="theme-color" content="#0094d9" />
   </head>
   <body>
     <to-root></to-root>

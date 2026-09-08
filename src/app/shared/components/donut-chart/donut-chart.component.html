@@ -1,0 +1,43 @@
+@if (slices().length === 0) {
+  <p class="to-donut__empty">No data in your scope.</p>
+} @else {
+  <div class="to-donut">
+    <div class="to-donut__ring">
+      <svg viewBox="0 0 100 100" class="to-donut__svg" aria-hidden="true">
+        <!-- Rotated so the first slice starts at 12 o'clock rather than 3 o'clock. -->
+        <g transform="rotate(-90 50 50)">
+          @for (slice of slices(); track slice.label) {
+            <circle
+              class="to-donut__arc"
+              cx="50"
+              cy="50"
+              [attr.r]="radius"
+              fill="none"
+              [attr.stroke]="slice.colour"
+              stroke-width="12"
+              [attr.stroke-dasharray]="slice.dashArray"
+              [attr.stroke-dashoffset]="slice.dashOffset"
+            />
+          }
+        </g>
+      </svg>
+      <div class="to-donut__centre">
+        <span class="to-donut__total to-numeric">{{ totalLabel() }}</span>
+        @if (caption()) {
+          <span class="to-donut__caption">{{ caption() }}</span>
+        }
+      </div>
+    </div>
+
+    <ul class="to-donut__legend">
+      @for (slice of slices(); track slice.label) {
+        <li class="to-donut__legend-item">
+          <span class="to-donut__legend-dot" [style.background]="slice.colour"></span>
+          <span class="to-donut__legend-label">{{ slice.label }}</span>
+          <span class="to-donut__legend-value to-numeric">{{ slice.value }}</span>
+          <span class="to-donut__legend-percent to-numeric">{{ slice.percentLabel }}</span>
+        </li>
+      }
+    </ul>
+  </div>
+}

@@ -1,6 +1,8 @@
 <span class="to-status-pill to-status to-status--{{ status() }}">
   @if (status() === 'needs-attention') {
     <tabler-icon [icon]="icon" [size]="12" class="to-status-pill__icon" />
+  } @else {
+    <span class="to-status-pill__dot" aria-hidden="true"></span>
   }
   {{ resolvedLabel() }}
 </span>

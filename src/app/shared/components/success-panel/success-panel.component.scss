@@ -1,0 +1,139 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: t.$to-space-12 t.$to-space-6;
+  @include u.enter(to-success-in, var(--to-motion-enter), var(--to-ease-out-quint));
+}
+
+@keyframes to-success-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.to-success__mark {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin-bottom: t.$to-space-6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.to-success__svg {
+  width: 76px;
+  height: 76px;
+  position: relative;
+  z-index: 1;
+}
+
+// Circle sweeps first (0–520ms), then the tick draws on top (starting at 380ms so the
+// two overlap slightly and read as one gesture rather than two queued animations).
+.to-success__circle {
+  stroke: var(--to-success-solid);
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: to-success-draw-circle 520ms var(--to-ease-out-quint) forwards;
+}
+
+.to-success__check {
+  stroke: var(--to-success-solid);
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: to-success-draw-check 340ms var(--to-ease-out-quint) 380ms forwards;
+}
+
+// Single expanding halo, fired once as the tick completes.
+.to-success__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-success-solid);
+  opacity: 0;
+  animation: to-success-ring 700ms ease-out 560ms forwards;
+}
+
+@keyframes to-success-draw-circle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes to-success-draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes to-success-ring {
+  0% {
+    opacity: 0.28;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+// Reduced motion: the mark still appears, fully drawn, with no drawing or pulsing.
+// Suppressing the animation without resetting stroke-dashoffset would leave an
+// invisible checkmark, so both are cleared explicitly.
+@media (prefers-reduced-motion: reduce) {
+  .to-success__circle,
+  .to-success__check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .to-success__ring {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.to-success__heading {
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-xl;
+  font-weight: var(--to-font-weight-medium);
+  letter-spacing: var(--to-tracking-tight);
+  color: var(--to-text-primary);
+}
+
+.to-success__description {
+  margin: 0 0 t.$to-space-6;
+  max-width: 46ch;
+  font-size: t.$to-font-size-sm;
+  line-height: var(--to-line-height-body);
+  color: var(--to-text-secondary);
+}
+
+.to-success__body {
+  width: 100%;
+  max-width: 420px;
+}
+
+.to-success__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: t.$to-space-3;
+  margin-top: t.$to-space-6;
+}

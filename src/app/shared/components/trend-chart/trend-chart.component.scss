@@ -1,0 +1,117 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-trend {
+  position: relative;
+}
+
+.to-trend__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+// Keeps the stroke a true 2px however wide the container gets — without this the line
+// stretches with the viewBox and thickens into a wedge on a wide screen.
+.to-trend__line {
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  @include u.enter(to-trend-draw, var(--to-motion-enter-slow), ease-out);
+}
+
+// Draws the line on from left to right on first paint. 1400 comfortably exceeds the
+// path length at this viewBox, so the dash fully covers it before animating away.
+@keyframes to-trend-draw {
+  from {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+  }
+
+  to {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 0;
+  }
+}
+
+.to-trend__baseline {
+  stroke: var(--to-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.to-trend__guide {
+  stroke: var(--to-accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.5;
+}
+
+.to-trend__dot {
+  fill: var(--to-bg-1);
+  stroke: var(--to-accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  @include u.motion(r, fill);
+}
+
+.to-trend__dot--active {
+  fill: var(--to-accent);
+}
+
+.to-trend__hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.to-trend__tick {
+  fill: var(--to-text-muted);
+  font-size: 11px;
+  font-family: var(--to-font-family);
+}
+
+// Reserves its own height so the card doesn't reflow as the readout appears and
+// disappears on hover.
+.to-trend__readout {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: t.$to-space-1 t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  box-shadow: var(--to-glow-accent-sm);
+  opacity: 0;
+  pointer-events: none;
+  @include u.motion(opacity);
+}
+
+.to-trend__readout--visible {
+  opacity: 1;
+}
+
+.to-trend__readout-value {
+  font-size: t.$to-font-size-md;
+  font-weight: var(--to-font-weight-medium);
+  line-height: 1.2;
+  color: var(--to-text-primary);
+}
+
+.to-trend__readout-meta {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-trend__empty {
+  margin: 0;
+  padding: t.$to-space-4 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}

@@ -1,0 +1,29 @@
+<div class="to-success" role="status" aria-live="polite">
+  <div class="to-success__mark">
+    <span class="to-success__ring" aria-hidden="true"></span>
+    <svg viewBox="0 0 52 52" class="to-success__svg" aria-hidden="true">
+      <circle class="to-success__circle" cx="26" cy="26" r="24" fill="none" stroke-width="2" />
+      <path
+        class="to-success__check"
+        fill="none"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M15 27 L23 34 L38 19"
+      />
+    </svg>
+  </div>
+
+  <h2 class="to-success__heading">{{ heading() }}</h2>
+  @if (description()) {
+    <p class="to-success__description">{{ description() }}</p>
+  }
+
+  <div class="to-success__body">
+    <ng-content select="[body]" />
+  </div>
+
+  <div class="to-success__actions">
+    <ng-content select="[actions]" />
+  </div>
+</div>

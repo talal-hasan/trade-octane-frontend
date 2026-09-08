@@ -1,6 +1,9 @@
 // Trade Octane — Global stylesheet entry point. Imports all partials. No rules here.
 
 @use 'reset';
+// `theme` emits the --to-* custom properties and must be imported here and only here;
+// `tokens` is compile-time SCSS variables and emits nothing (see _tokens.scss).
+@use 'theme';
 @use 'tokens';
 @use 'typography';
 @use 'primeng-overrides';

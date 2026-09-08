@@ -1,0 +1,10 @@
+<div class="to-meter" role="img" aria-label="Composition by share">
+  @for (segment of segments(); track segment.label) {
+    <span
+      class="to-meter__segment"
+      [style.width.%]="segment.width"
+      [style.background]="segment.colour"
+      [attr.title]="segment.label"
+    ></span>
+  }
+</div>

@@ -6,11 +6,29 @@
   padding: t.$to-space-6;
 }
 
+// The table is the only surface on this page, so it gets the card shell the dashboard
+// gives its "Needs attention" table — hairline border, card radius, and the spectrum
+// rail across the top. The surface itself stays flat --to-bg-1: a tint behind tabulated
+// numbers and status pills changes how they read, which the pastel wash must never do.
 .to-claims-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: t.$to-space-4;
   margin-top: t.$to-space-4;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border-canvas);
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--to-gradient-spectrum);
+  }
 }
 
 // Claim-type tag — subtle background pattern, aligned with the status-pill treatment.
@@ -25,17 +43,20 @@
 
   &--normal {
     color: var(--to-info);
-    background: var(--to-info-subtle);
+    background: color-mix(in srgb, var(--to-info-solid) 13%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-info-solid) 26%, transparent);
   }
 
   &--delay {
     color: var(--to-warning);
-    background: var(--to-warning-subtle);
+    background: color-mix(in srgb, var(--to-warning-solid) 15%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-warning-solid) 28%, transparent);
   }
 
   &--damage {
     color: var(--to-danger);
-    background: var(--to-danger-subtle);
+    background: color-mix(in srgb, var(--to-danger-solid) 13%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-danger-solid) 26%, transparent);
   }
 }
 
@@ -50,15 +71,16 @@
   border-radius: t.$to-radius-control;
   color: var(--to-text-muted);
   cursor: pointer;
-  @include u.motion(background-color, color);
+  @include u.motion(background-color, color, box-shadow);
 
   &:hover {
-    background: var(--to-bg-2);
+    background: var(--to-accent-subtle);
     color: var(--to-accent);
+    box-shadow: var(--to-glow-accent-sm);
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+    box-shadow: var(--to-focus-ring);
   }
 }

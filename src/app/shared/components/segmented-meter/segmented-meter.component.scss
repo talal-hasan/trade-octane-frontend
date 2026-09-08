@@ -1,0 +1,37 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-meter {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 8px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+// Segments grow from zero on first paint, left to right. Staggering is deliberately
+// avoided — they share one track, so they must arrive together or the bar looks like
+// it is mid-load.
+.to-meter__segment {
+  height: 100%;
+  border-radius: 2px;
+  min-width: 3px;
+  transform-origin: left center;
+  @include u.motion(width);
+  @include u.enter(to-meter-grow, var(--to-motion-enter), var(--to-ease-out-quint));
+}
+
+@keyframes to-meter-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}

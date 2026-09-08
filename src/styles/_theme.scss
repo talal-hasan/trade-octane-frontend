@@ -1,0 +1,400 @@
+// Trade Octane — Runtime theme (CSS custom properties)
+//
+// IMPORTANT: this partial EMITS CSS. It is imported by `main.scss` and by nothing else.
+// Sass emits a copy of every real rule into each compilation unit that `@use`s it, and
+// every Angular component stylesheet is its own compilation unit — so `@use`ing this
+// from a component would stamp the whole :root block (~8 kB) into that component's CSS.
+// That is exactly what used to happen via `_tokens.scss` and it blew the per-component
+// style budgets. Components must `@use 'tokens'`, which now emits nothing.
+//
+//
+// ─── Brand source of truth ────────────────────────────────────────────────────
+// FrieslandCampina Corporate Identity Guidelines, §3 "our colours".
+//
+//   PRIMARY    Milk white   #ffffff
+//              Sky blue     #0094d9   c:100 m:20   pms 3005        ral 5015
+//              Cool grey    #6e6f72   k:70         pms Cool Grey 10c  ral 7015
+//
+//   SUPPORT    Magical magenta #ec008c   m:100              pms magenta  ral 4010
+//              Passion red     #ed1c24   m:100 y:100        pms 485      ral 3020
+//              Vibrant orange  #f7931e   m:50 y:100         pms 144      ral 2011
+//              Together green  #d7df23   c:20 y:100         pms 584      ral 1016
+//              Grass green     #39b54a   c:75 y:100         pms 362      ral 6018
+//
+// The guidelines set these for *print*, where colour arrives through photography and
+// support colours are used one at a time. On screen we hold the same identity but split
+// each hue into a "surface" value (the true brand hex — fills, rails, indicators, chart
+// marks) and a darkened "text" value that clears WCAG AA 4.5:1 on our backgrounds. The
+// brand hex is never altered where it is seen as colour; it is only darkened where it
+// has to be read as text. Contrast ratios are noted per token.
+// ──────────────────────────────────────────────────────────────────────────────
+
+:root {
+  // ─── Brand — raw identity values, unmodified ────────────
+  // Use these for anything perceived as brand colour: logo mark, accent rails,
+  // chart series, gradients. Never for small text on a light surface.
+  --to-brand-sky: #0094d9;
+  --to-brand-grey: #6e6f72;
+  --to-brand-magenta: #ec008c;
+  --to-brand-red: #ed1c24;
+  --to-brand-orange: #f7931e;
+  --to-brand-lime: #d7df23; // "Together green"
+  --to-brand-green: #39b54a; // "Grass green"
+
+  // ─── Light mode ────────────────────────────────────────
+  --to-bg-0: #f4f6f8; // page wash — cool, derived from Cool Grey
+  --to-bg-1: #ffffff; // "Milk white" — cards, panels, modals
+  --to-bg-2: #eef1f4; // table row fill, input backgrounds
+  --to-border: #dfe4e9; // hairline separators
+  --to-border-strong: #c3c9d1; // hover borders, dividers
+
+  --to-text-primary: #16181b; // 16.9:1 — headings, data values
+  --to-text-secondary: #6e6f72; // 5.03:1 — brand Cool Grey, exactly as specified
+  --to-text-muted: #8b9096; // 3.5:1 — placeholders, timestamps (non-essential text only)
+
+  // ─── Accent — Sky Blue #0094d9 ──────────────────────────
+  // `--to-accent` IS the brand hex and carries the identity. `--to-accent-strong`
+  // and `--to-accent-text` are darkened only so white-on-blue and blue-on-white
+  // text pass AA; they read as the same blue.
+  --to-accent: #0094d9; // brand — fills, rails, focus rings, icons (3.4:1 vs white)
+  --to-accent-strong: #0076ae; // button background, white label reads 5.0:1
+  --to-accent-hover: #005f8c; // button hover / pressed
+  --to-accent-text: #00567f; // 7.9:1 — links, active nav labels
+  --to-accent-subtle: #e6f4fb; // tinted background wash
+  --to-accent-muted: #b8e0f4; // tinted border on subtle surfaces
+
+  // ─── Semantic — mapped onto the brand support palette ───
+  // Each pair: `-subtle` background + brand hex `-solid` mark + AA-safe text.
+  --to-success: #226d2c; // 6.4:1 — darkened Grass green
+  --to-success-solid: #39b54a; // brand Grass green — dots, bars, fills
+  --to-success-subtle: #e8f6ea;
+
+  --to-warning: #965400; // 5.9:1 — darkened Vibrant orange
+  --to-warning-solid: #f7931e; // brand Vibrant orange
+  --to-warning-subtle: #fef2e2;
+
+  --to-danger: #a61419; // 7.7:1 — darkened Passion red
+  --to-danger-solid: #ed1c24; // brand Passion red
+  --to-danger-subtle: #fdeaeb;
+
+  --to-critical: #b1006a; // 6.6:1 — darkened Magical magenta
+  --to-critical-solid: #ec008c; // brand Magical magenta — overdue / escalated only
+  --to-critical-subtle: #fde8f4;
+
+  --to-info: #00567f; // 7.9:1 — Sky blue family
+  --to-info-solid: #0094d9;
+  --to-info-subtle: #e6f4fb;
+
+  // ─── Data visualisation series ──────────────────────────
+  // Categorical order. Sky blue leads (it is the primary), then support colours in
+  // descending distinctness. See the note in §Brand: multi-series charts are the one
+  // place several support colours legitimately co-occur, because colour is carrying
+  // categorical meaning rather than decoration.
+  --to-viz-1: #0094d9; // Sky blue
+  --to-viz-2: #ec008c; // Magical magenta
+  --to-viz-3: #f7931e; // Vibrant orange
+  --to-viz-4: #39b54a; // Grass green
+  --to-viz-5: #6e6f72; // Cool grey
+  --to-viz-6: #d7df23; // Together green
+  --to-viz-track: #eef1f4; // unfilled bar / gauge track
+
+  // ─── Brand expression ───────────────────────────────────
+  // Reserved for identity moments: login panel, brand mark, hero rails. Not for
+  // routine surfaces — the guidelines are explicit that white space carries the brand.
+  --to-brand-gradient: linear-gradient(135deg, #0094d9 0%, #00567f 100%);
+  --to-brand-gradient-vivid: linear-gradient(135deg, #0094d9 0%, #ec008c 100%);
+  --to-accent-rail: 3px; // width of the active-state accent bar
+
+  // ─── Elevation ──────────────────────────────────────────
+  // Hairline-first. Neutral shadows stay near-invisible; separation comes from borders.
+  --to-shadow-sm: 0 1px 2px rgb(22 24 27 / 5%);
+  --to-shadow-md: 0 2px 4px rgb(22 24 27 / 6%), 0 1px 2px rgb(22 24 27 / 4%);
+  --to-shadow-lg: 0 8px 24px rgb(22 24 27 / 10%), 0 2px 6px rgb(22 24 27 / 5%);
+  --to-focus-ring: 0 0 0 3px rgb(0 148 217 / 28%);
+
+  // ─── Tinted elevation ───────────────────────────────────
+  // A shadow cast in the element's own hue rather than neutral grey. It reads as the
+  // object glowing rather than sitting above a surface, which is how brand colour gets
+  // into the interface without another block of fill. Reserved for interactive and
+  // elevated things — primary buttons, hovered cards, the active step — never as the
+  // resting state of every surface, or the page turns to soup.
+  --to-glow-accent: 0 4px 14px -4px rgb(0 148 217 / 45%), 0 2px 6px -2px rgb(0 148 217 / 25%);
+  --to-glow-accent-sm: 0 2px 8px -3px rgb(0 148 217 / 40%);
+  --to-glow-success: 0 4px 14px -4px rgb(57 181 74 / 45%);
+  --to-glow-success-sm: 0 2px 8px -3px rgb(57 181 74 / 40%);
+  --to-glow-warning: 0 4px 14px -4px rgb(247 147 30 / 45%);
+  --to-glow-warning-sm: 0 2px 8px -3px rgb(247 147 30 / 40%);
+  --to-glow-danger: 0 4px 14px -4px rgb(237 28 36 / 45%);
+  --to-glow-danger-sm: 0 2px 8px -3px rgb(237 28 36 / 40%);
+  --to-glow-critical: 0 4px 14px -4px rgb(236 0 140 / 45%);
+
+  // ─── Brand gradients ────────────────────────────────────
+  // The star in the FrieslandCampina brandmark runs orange → lime → green → sky →
+  // magenta, so the palette is *designed* to be seen together. `--to-gradient-spectrum`
+  // is that sequence, used for hairline accents (2px rails, segmented meters) where it
+  // reads as the brandmark rather than as decoration.
+  --to-gradient-accent: linear-gradient(135deg, #0094d9 0%, #0076ae 100%);
+  --to-gradient-accent-vivid: linear-gradient(135deg, #29aae6 0%, #0076ae 55%, #00567f 100%);
+
+  // The same two-stop ramp — brand hex into its AA-safe darkened partner — built for
+  // each support hue, so a filled Approve / Reject button gets the identical gradient
+  // *language* as a primary one without borrowing the primary *colour*. A green action
+  // that renders Sky Blue tells the user the wrong thing.
+  --to-gradient-success: linear-gradient(135deg, #39b54a 0%, #226d2c 100%);
+  --to-gradient-success-vivid: linear-gradient(135deg, #4ec460 0%, #226d2c 55%, #17501f 100%);
+  --to-gradient-danger: linear-gradient(135deg, #ed1c24 0%, #a61419 100%);
+  --to-gradient-danger-vivid: linear-gradient(135deg, #f5424a 0%, #a61419 55%, #7c0e12 100%);
+  --to-gradient-warning: linear-gradient(135deg, #f7931e 0%, #965400 100%);
+  --to-gradient-warning-vivid: linear-gradient(135deg, #ffa63d 0%, #965400 55%, #6d3d00 100%);
+  --to-gradient-spectrum: linear-gradient(
+    90deg,
+    #f7931e 0%,
+    #d7df23 22%,
+    #39b54a 45%,
+    #0094d9 72%,
+    #ec008c 100%
+  );
+  --to-gradient-surface: linear-gradient(180deg, rgb(0 148 217 / 4%) 0%, transparent 100%);
+
+  // ─── Pastel canvas ──────────────────────────────────────
+  // The chrome of the application — page, rail, top bar, cards — is no longer flat
+  // grey. Each is a *mesh* of the brandmark's own five hues held at 3–13% alpha over a
+  // near-white ground. At that strength no single hue is nameable; what reads is a
+  // coloured light source, which is exactly the effect in the reference screenshot.
+  //
+  // Why a mesh and not one linear gradient: a two-stop blue ramp reads as "a blue
+  // panel" and immediately dates. Four soft radial pools placed at the corners never
+  // resolve into a shape, so the surface stays quiet at 100% zoom and still carries
+  // colour. The pools are ordered to echo the star — sky at top-left, magenta top-right,
+  // lime bottom-right, grass bottom-left.
+  //
+  // These are *chrome* surfaces. Data surfaces (tables, forms, charts) stay on flat
+  // --to-bg-1 so nothing tints a number or a status pill.
+  --to-canvas-page: radial-gradient(1100px 620px at 4% -14%, rgb(0 148 217 / 14%), transparent 62%),
+    radial-gradient(880px 540px at 99% -8%, rgb(236 0 140 / 8%), transparent 58%),
+    radial-gradient(780px 660px at 86% 106%, rgb(215 223 35 / 12%), transparent 62%),
+    radial-gradient(700px 540px at 16% 104%, rgb(57 181 74 / 9%), transparent 60%),
+    linear-gradient(168deg, #eff5fb 0%, #e8eef6 58%, #eaf1f4 100%);
+
+  --to-canvas-rail: linear-gradient(
+      180deg,
+      rgb(0 148 217 / 11%) 0%,
+      rgb(0 148 217 / 3%) 34%,
+      rgb(215 223 35 / 7%) 76%,
+      rgb(236 0 140 / 7%) 100%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #f6fafc 100%);
+
+  --to-canvas-topbar: linear-gradient(
+      90deg,
+      rgb(0 148 217 / 8%) 0%,
+      rgb(0 148 217 / 2%) 44%,
+      rgb(236 0 140 / 5%) 100%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fafcfe 100%);
+
+  // The card wash from the reference: light pooling into the top-left corner, falling
+  // away to plain surface by mid-card so body copy never sits on tinted ground.
+  --to-canvas-card: linear-gradient(
+      135deg,
+      rgb(0 148 217 / 9%) 0%,
+      rgb(0 148 217 / 2%) 40%,
+      rgb(255 255 255 / 0%) 68%,
+      rgb(236 0 140 / 5%) 100%
+    ),
+    var(--to-bg-1);
+
+  // Identity moments only — hero panels, success states, the login split.
+  --to-canvas-hero: radial-gradient(900px 420px at 0% 0%, rgb(0 148 217 / 20%), transparent 64%),
+    radial-gradient(700px 380px at 100% 8%, rgb(236 0 140 / 11%), transparent 60%),
+    radial-gradient(620px 420px at 74% 118%, rgb(215 223 35 / 14%), transparent 62%),
+    var(--to-bg-1);
+
+  // Hairline that separates a pastel surface from its neighbour. Slightly cooler than
+  // --to-border so the seam does not read as grey against tinted ground.
+  --to-border-canvas: rgb(0 148 217 / 14%);
+
+  // ─── Spacing — 4px base unit ────────────────────────────
+  --to-space-1: 4px;
+  --to-space-2: 8px;
+  --to-space-3: 12px;
+  --to-space-4: 16px;
+  --to-space-6: 24px;
+  --to-space-8: 32px;
+  --to-space-12: 48px;
+
+  // ─── Border radius ──────────────────────────────────────
+  --to-radius-control: 6px; // inputs, buttons, badges
+  --to-radius-card: 8px; // cards, panels, dropdowns
+  --to-radius-modal: 12px; // modals, large surface containers
+  --to-radius-pill: 9999px; // pills / tags only
+
+  // ─── Typography ─────────────────────────────────────────
+  // Brand guideline §4 names Verdana as the digital typeface and Precious Sans for
+  // professionally-designed headlines. Inter is retained per CLAUDE.md §5 (locked):
+  // it is the same humanist-grotesque genre as Precious Sans, hits the data density
+  // this application needs, and ships self-hosted. Flagged to Talal for client sign-off.
+  --to-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --to-font-size-2xs: 0.6875rem; // 11px
+  --to-font-size-xs: 0.75rem; // 12px
+  --to-font-size-sm: 0.8125rem; // 13px
+  --to-font-size-md: 0.9375rem; // 15px
+  --to-font-size-lg: 1.125rem; // 18px
+  --to-font-size-xl: 1.5rem; // 24px
+  --to-font-size-2xl: 2rem; // 32px — KPI figures on the dashboard only
+
+  --to-font-weight-regular: 400;
+  --to-font-weight-medium: 500;
+
+  --to-line-height-body: 1.5;
+  --to-line-height-heading: 1.3;
+  --to-line-height-data: 1;
+
+  // Wide-tracked uppercase micro-label. Carries the "aggressive/technical" register
+  // without reaching for a heavier weight (CLAUDE.md §5 caps weight at 500).
+  --to-tracking-label: 0.08em;
+  --to-tracking-tight: -0.01em;
+
+  // ─── Motion ──────────────────────────────────────────────
+  // 150ms ease-out remains the default for state changes (hover, focus, colour).
+  // Added 2026-08-20: a longer duration and a spring-ish curve for *entrances* —
+  // step transitions and the provisioning success state. This is a deliberate,
+  // scoped relaxation of CLAUDE.md §5 "no decorative animation": motion is used to
+  // show continuity between wizard steps and to confirm a completed action, not to
+  // decorate idle surfaces. Everything still collapses under prefers-reduced-motion.
+  --to-motion-duration: 150ms;
+  --to-motion-easing: ease-out;
+  --to-motion-enter: 320ms;
+  --to-motion-enter-slow: 520ms;
+  --to-ease-out-back: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --to-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  // ─── Density — [data-density="compact"] overrides below ──
+  --to-row-height: 48px;
+  --to-field-height: 40px;
+}
+
+// ─── Dark mode ─────────────────────────────────────────────
+// Near-black cool surfaces let the Sky Blue and support hues run at full brand
+// saturation — this is where the palette reads hardest. Text values swing lighter
+// than their light-mode counterparts to hold AA against the dark ground.
+:root[data-theme='dark'] {
+  --to-bg-0: #0b0d10;
+  --to-bg-1: #14171c;
+  --to-bg-2: #1c2027;
+  --to-border: #272c34;
+  --to-border-strong: #3a414c;
+
+  --to-text-primary: #eef1f4;
+  --to-text-secondary: #a2a7ae;
+  --to-text-muted: #6e737b;
+
+  --to-accent: #29aae6; // Sky blue lifted for dark-ground legibility
+  --to-accent-strong: #0094d9; // brand hex works as a fill here
+  --to-accent-hover: #4dbcee;
+  --to-accent-text: #7ccff2; // 8.1:1 on --to-bg-1
+  --to-accent-subtle: #08283a;
+  --to-accent-muted: #0f4a68;
+
+  --to-success: #5fcc6e;
+  --to-success-solid: #39b54a;
+  --to-success-subtle: #102a15;
+
+  --to-warning: #ffab3d;
+  --to-warning-solid: #f7931e;
+  --to-warning-subtle: #2e1e07;
+
+  --to-danger: #ff5a60;
+  --to-danger-solid: #ed1c24;
+  --to-danger-subtle: #2e0e10;
+
+  --to-critical: #ff4fb0;
+  --to-critical-solid: #ec008c;
+  --to-critical-subtle: #2e0620;
+
+  --to-info: #7ccff2;
+  --to-info-solid: #0094d9;
+  --to-info-subtle: #08283a;
+
+  --to-viz-track: #1c2027;
+
+  --to-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --to-shadow-md: 0 2px 4px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 30%);
+  --to-shadow-lg: 0 8px 24px rgb(0 0 0 / 55%), 0 2px 6px rgb(0 0 0 / 35%);
+  --to-focus-ring: 0 0 0 3px rgb(41 170 230 / 35%);
+
+  // Glows run hotter on a dark ground — a 45% tint that reads as a halo on white
+  // disappears against #0b0d10, so the alphas roughly double.
+  --to-glow-accent: 0 4px 18px -4px rgb(41 170 230 / 60%), 0 2px 8px -2px rgb(41 170 230 / 35%);
+  --to-glow-accent-sm: 0 2px 10px -3px rgb(41 170 230 / 55%);
+  --to-glow-success: 0 4px 18px -4px rgb(57 181 74 / 55%);
+  --to-glow-success-sm: 0 2px 10px -3px rgb(57 181 74 / 50%);
+  --to-glow-warning: 0 4px 18px -4px rgb(247 147 30 / 55%);
+  --to-glow-warning-sm: 0 2px 10px -3px rgb(247 147 30 / 50%);
+  --to-glow-danger: 0 4px 18px -4px rgb(237 28 36 / 55%);
+  --to-glow-danger-sm: 0 2px 10px -3px rgb(237 28 36 / 50%);
+  --to-glow-critical: 0 4px 18px -4px rgb(236 0 140 / 55%);
+
+  --to-gradient-surface: linear-gradient(180deg, rgb(41 170 230 / 8%) 0%, transparent 100%);
+
+  // On a dark ground the darkened AA-safe partner is the *unreadable* end, so the
+  // severity ramps invert: they run from the brand hex up into its lifted tint, which
+  // is the same direction --to-accent takes between the two schemes.
+  --to-gradient-success: linear-gradient(135deg, #39b54a 0%, #2b8b38 100%);
+  --to-gradient-success-vivid: linear-gradient(135deg, #5fcc6e 0%, #39b54a 55%, #2b8b38 100%);
+  --to-gradient-danger: linear-gradient(135deg, #ed1c24 0%, #b6161c 100%);
+  --to-gradient-danger-vivid: linear-gradient(135deg, #ff5a60 0%, #ed1c24 55%, #b6161c 100%);
+  --to-gradient-warning: linear-gradient(135deg, #f7931e 0%, #c06f10 100%);
+  --to-gradient-warning-vivid: linear-gradient(135deg, #ffab3d 0%, #f7931e 55%, #c06f10 100%);
+
+  // Pastel canvas, dark ground. The same four pools in the same corners, but the alphas
+  // roughly double: a 14% tint that reads as coloured light on #f9fbfd is invisible on
+  // #0b0d10. The ground itself also shifts off neutral (#0b0d10 → #0d1117 blue-black)
+  // so the mesh has something to sit against rather than pure black.
+  --to-canvas-page: radial-gradient(1100px 620px at 4% -14%, rgb(0 148 217 / 22%), transparent 62%),
+    radial-gradient(880px 540px at 99% -8%, rgb(236 0 140 / 13%), transparent 58%),
+    radial-gradient(780px 660px at 86% 106%, rgb(215 223 35 / 9%), transparent 62%),
+    radial-gradient(700px 540px at 16% 104%, rgb(57 181 74 / 10%), transparent 60%),
+    linear-gradient(168deg, #0d1117 0%, #090b0f 100%);
+
+  --to-canvas-rail: linear-gradient(
+      180deg,
+      rgb(0 148 217 / 18%) 0%,
+      rgb(0 148 217 / 6%) 34%,
+      rgb(215 223 35 / 5%) 76%,
+      rgb(236 0 140 / 9%) 100%
+    ),
+    linear-gradient(180deg, #171b22 0%, #12151a 100%);
+
+  --to-canvas-topbar: linear-gradient(
+      90deg,
+      rgb(0 148 217 / 14%) 0%,
+      rgb(0 148 217 / 4%) 44%,
+      rgb(236 0 140 / 9%) 100%
+    ),
+    linear-gradient(180deg, #171b22 0%, #14171c 100%);
+
+  --to-canvas-card: linear-gradient(
+      135deg,
+      rgb(41 170 230 / 14%) 0%,
+      rgb(41 170 230 / 4%) 40%,
+      rgb(255 255 255 / 0%) 68%,
+      rgb(236 0 140 / 9%) 100%
+    ),
+    var(--to-bg-1);
+
+  --to-canvas-hero: radial-gradient(900px 420px at 0% 0%, rgb(0 148 217 / 30%), transparent 64%),
+    radial-gradient(700px 380px at 100% 8%, rgb(236 0 140 / 18%), transparent 60%),
+    radial-gradient(620px 420px at 74% 118%, rgb(215 223 35 / 12%), transparent 62%),
+    var(--to-bg-1);
+
+  --to-border-canvas: rgb(41 170 230 / 20%);
+}
+
+// ─── Density — compact mode ─────────────────────────────────
+:root[data-density='compact'] {
+  --to-row-height: 36px;
+  --to-field-height: 32px;
+}
+

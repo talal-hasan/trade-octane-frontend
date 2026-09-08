@@ -16,7 +16,18 @@ export interface NavSection {
 // per role (CLAUDE.md §4 Screen-Level Access).
 export const NAV_SECTIONS: NavSection[] = [
   {
-    items: [{ label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' }],
+    items: [
+      // Dashboard = read-only overview landing page. Workspace = the approvals desk where
+      // the work actually happens. They sit together at the top because they are the two
+      // screens a user starts their day on.
+      { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
+      {
+        label: 'My Workspace',
+        icon: 'inbox',
+        route: '/workspace',
+        badgeKey: 'approvals',
+      },
+    ],
   },
   {
     label: 'Trade Marketing',

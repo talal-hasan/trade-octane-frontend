@@ -1,0 +1,137 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-wiz {
+  position: relative;
+  padding: t.$to-space-4 0;
+}
+
+// Track is inset by half a marker at each end so the fill starts and stops under the
+// marker centres rather than running past them.
+.to-wiz__track {
+  position: absolute;
+  top: calc(#{t.$to-space-4} + 14px);
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--to-border);
+  border-radius: t.$to-radius-pill;
+  overflow: hidden;
+}
+
+.to-wiz__track-fill {
+  display: block;
+  height: 100%;
+  background: var(--to-gradient-accent);
+  transition: width var(--to-motion-enter) var(--to-ease-out-quint);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.to-wiz__list {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-wiz__item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.to-wiz__button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$to-space-2;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: center;
+  cursor: pointer;
+  @include u.motion(color);
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    .to-wiz__marker {
+      box-shadow: var(--to-focus-ring);
+    }
+  }
+}
+
+.to-wiz__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: t.$to-radius-pill;
+  border: 2px solid var(--to-border);
+  background: var(--to-bg-1);
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  @include u.motion(background-color, border-color, color, box-shadow, transform);
+}
+
+.to-wiz__button--done .to-wiz__marker {
+  background: var(--to-gradient-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+// The current marker carries the page's only resting glow — it is the single thing the
+// user should be looking at, so it gets the strongest brand signal on screen.
+.to-wiz__button--current .to-wiz__marker {
+  background: var(--to-bg-1);
+  border-color: var(--to-accent);
+  color: var(--to-accent-text);
+  box-shadow: var(--to-glow-accent-sm);
+  transform: scale(1.08);
+}
+
+.to-wiz__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.to-wiz__label {
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-secondary);
+  @include u.truncate;
+}
+
+.to-wiz__button--current .to-wiz__label {
+  color: var(--to-text-primary);
+}
+
+.to-wiz__hint {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+  @include u.truncate;
+
+  // The hint is context for the step you are on; on a narrow viewport it is the first
+  // thing worth dropping.
+  @include u.respond-to(tablet) {
+    display: none;
+  }
+}

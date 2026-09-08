@@ -1,270 +1,351 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 
-import { NotificationService } from '../../core/services/notification.service';
+import { FormatService } from '../../core/services/format.service';
 import { PermissionService } from '../../core/services/permission.service';
-import { ICON_REGISTRY } from '../../shared/icon-registry';
-import { ApprovalChainComponent } from '../../shared/components/approval-chain/approval-chain.component';
+import { BarChartComponent } from '../../shared/components/bar-chart/bar-chart.component';
+import { DonutChartComponent } from '../../shared/components/donut-chart/donut-chart.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
-import { HeadroomBarComponent } from '../../shared/components/headroom-bar/headroom-bar.component';
-import { NumberDisplayComponent } from '../../shared/components/number-display/number-display.component';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
-import { PipelineStageComponent } from '../../shared/components/pipeline-stage/pipeline-stage.component';
+import { SegmentedMeterComponent } from '../../shared/components/segmented-meter/segmented-meter.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
-import { CLAIM_PIPELINE_STAGES, ClaimRecord, ClaimType } from '../claims/models/claim.model';
+import { StatTileComponent } from '../../shared/components/stat-tile/stat-tile.component';
+import { TrendChartComponent } from '../../shared/components/trend-chart/trend-chart.component';
+import { ICON_REGISTRY } from '../../shared/icon-registry';
+import { BudgetService } from '../budget/services/budget.service';
+import { BudgetRecord } from '../budget/models/budget.model';
 import { ClaimsService } from '../claims/services/claims.service';
-import {
-  ApprovalDecision,
-  ApprovalInboxItem,
-  ApprovalItemType,
-} from './models/approval-item.model';
-import { ApprovalsService } from './services/approvals.service';
+import { SchemesService } from '../schemes/services/schemes.service';
+import { ApprovalsService } from '../workspace/services/approvals.service';
+import { ApprovalInboxItem } from '../workspace/models/approval-item.model';
+import { AttentionItem, DashboardCharts, DashboardTile } from './models/dashboard.model';
+import { DashboardService } from './services/dashboard.service';
 
-type InboxTab = 'all' | ApprovalItemType;
+/** Days a pending item may sit before it counts as breaching the internal SLA. */
+const SLA_DAYS = 5;
 
-const TYPE_META: Record<ApprovalItemType, { label: string; icon: string }> = {
-  budget: { label: 'Budget', icon: 'wallet' },
-  scheme: { label: 'Scheme', icon: 'discount-2' },
-  claim: { label: 'Claim', icon: 'file-invoice' },
-};
+/** Window, in days, within which an upcoming scheme expiry is worth surfacing. */
+const EXPIRY_WINDOW_DAYS = 7;
 
-const CLAIM_TYPE_LABELS: Record<ClaimType, string> = {
-  normal: 'Normal',
-  delay: 'Delay',
-  damage: 'Damage',
-};
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Maps a claim from the shared store into an inbox item. Only actionable (pending/overdue)
-// claims surface in the inbox; approving/rejecting routes back to the store so the /claims
-// list and detail update from the same source of truth.
-function claimToInboxItem(claim: ClaimRecord): ApprovalInboxItem {
-  const label = CLAIM_TYPE_LABELS[claim.type];
-  return {
-    id: claim.id,
-    type: 'claim',
-    reference: claim.id,
-    title: `${label} claim — ${claim.region}`,
-    summary: `${label} trade claim raised by ${claim.raisedBy}.`,
-    requestedBy: claim.raisedBy,
-    requestedAt: claim.createdAt,
-    region: claim.region,
-    amount: claim.amount,
-    requiredPermission: 'CLAIMS_APPROVE',
-    pipelineStages: [...CLAIM_PIPELINE_STAGES],
-    currentStageIndex: claim.currentStageIndex,
-    steps: claim.steps,
-    currentStepIndex: claim.currentStepIndex,
-  };
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS);
 }
 
-// Dashboard = the approvals inbox (CLAUDE.md §7 queue mode): a triage surface where the
-// user works pending Budget / Scheme / Claim decisions without leaving the list. Split
-// pane — list left, detail right — with inline approve/reject on the current chain step.
+function daysUntil(iso: string): number {
+  return Math.ceil((new Date(iso).getTime() - Date.now()) / DAY_MS);
+}
+
+// Dashboard = the landing page. Read-only overview: what is pending, what is off-track,
+// nothing else. Every tile and row drills into the workspace that owns the record —
+// the Dashboard never edits, approves or filters anything itself.
+//
+// Rebuilt 2026-08-20 against the client's reference mock. The first pass used four
+// full-width cards carrying one number and a caption each; that was most of the viewport
+// for four facts. This version is denser on every axis:
+//
+//   · Compact stat tiles (~84px) in a 2×2 block, each with a period-over-period delta —
+//     four now fit in less space than one old card, and each says more.
+//   · A utilisation hero: headline committed spend, a segmented composition meter, and a
+//     breakdown row per region with its own movement. Modelled on the mock's "Highlights".
+//   · A trend line, because "67 approvals cleared" only means something against the six
+//     months behind it.
+//   · Needs-attention as a proper table with a brand-tinted header, not stacked cards.
+//
+// Two rules still drive the whole screen:
+//
+//  1. It shows only what this user is allowed to see. Tiles, charts and attention rows
+//     are filtered on permission against PermissionService, and chart aggregates are
+//     scoped to the user's regions/brands (KT: "Reports & Dashboard — role-specific,
+//     users see only their hierarchy/region").
+//  2. Counts come from the same live stores the workspaces read, never a parallel summary
+//     endpoint. Approving a claim in the workspace decrements the tile here with no
+//     refetch. A dashboard that disagrees with the screen it links to is worse than none.
 @Component({
   selector: 'to-dashboard',
   standalone: true,
   imports: [
+    RouterLink,
     TablerIconComponent,
     ButtonModule,
     PageHeaderComponent,
-    ApprovalChainComponent,
-    HeadroomBarComponent,
-    PipelineStageComponent,
+    StatTileComponent,
+    TrendChartComponent,
+    SegmentedMeterComponent,
+    BarChartComponent,
+    DonutChartComponent,
     EmptyStateComponent,
     SkeletonComponent,
-    NumberDisplayComponent,
-    RelativeDatePipe,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {
+  private readonly dashboardService = inject(DashboardService);
   private readonly approvalsService = inject(ApprovalsService);
   private readonly claimsService = inject(ClaimsService);
+  private readonly schemesService = inject(SchemesService);
+  private readonly budgetService = inject(BudgetService);
   private readonly permissionService = inject(PermissionService);
-  private readonly notificationService = inject(NotificationService);
+  private readonly format = inject(FormatService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly icons = ICON_REGISTRY;
-  protected readonly typeMeta = TYPE_META;
 
-  // Budget + scheme items come from the approvals service; claim items come from the shared
-  // claims store, so a claim created or approved anywhere stays in sync here.
-  private readonly serviceItems = signal<ApprovalInboxItem[]>([]);
-  private readonly claimItems = computed<ApprovalInboxItem[]>(() =>
-    this.claimsService
-      .claims()
-      .filter((claim) => claim.status === 'pending' || claim.status === 'overdue')
-      .map(claimToInboxItem),
-  );
-  protected readonly items = computed<ApprovalInboxItem[]>(() =>
-    [...this.serviceItems(), ...this.claimItems()].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    ),
-  );
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
-  protected readonly deciding = signal(false);
-  protected readonly activeTab = signal<InboxTab>('all');
-  protected readonly selectedId = signal<string | null>(null);
+  protected readonly skeletonTiles = Array.from({ length: 4 }, (_, i) => i);
 
-  protected readonly tabs: { key: InboxTab; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'budget', label: 'Budgets' },
-    { key: 'scheme', label: 'Schemes' },
-    { key: 'claim', label: 'Claims' },
-  ];
+  private readonly charts = signal<DashboardCharts | null>(null);
+  private readonly attentionItems = signal<AttentionItem[]>([]);
+  private readonly approvalItems = signal<ApprovalInboxItem[]>([]);
+  private readonly budgets = signal<BudgetRecord[]>([]);
 
-  protected readonly skeletonRows = Array.from({ length: 5 }, (_, i) => i);
-
-  protected readonly filteredItems = computed(() => {
-    const tab = this.activeTab();
-    const items = this.items();
-    return tab === 'all' ? items : items.filter((item) => item.type === tab);
+  protected readonly userName = computed(() => this.permissionService.context().name);
+  protected readonly scopeSummary = computed(() => {
+    const context = this.permissionService.context();
+    const regions = context.regions.length;
+    const brands = context.brands.length;
+    const regionText = regions === 1 ? context.regions[0] : `${regions} regions`;
+    const brandText = brands === 1 ? context.brands[0] : `${brands} brands`;
+    return `${regionText} · ${brandText}`;
   });
 
-  protected readonly selectedItem = computed(
-    () => this.items().find((item) => item.id === this.selectedId()) ?? null,
+  // ─── Live counts, derived from the same stores the workspaces read ────────────
+  private readonly pendingClaims = computed(() =>
+    this.claimsService.claims().filter((claim) => claim.status === 'pending'),
   );
 
-  // canApprove drives the inline approve/reject controls inside to-approval-chain,
-  // gated on the current user's permission for this item's type (CLAUDE.md §4).
-  protected readonly canApproveSelected = computed(() => {
-    const item = this.selectedItem();
-    return item ? this.permissionService.canAccess(item.requiredPermission) : false;
+  private readonly overdueClaims = computed(() =>
+    this.claimsService
+      .claims()
+      .filter((claim) => claim.status === 'overdue' || daysSince(claim.createdAt) > SLA_DAYS),
+  );
+
+  private readonly expiringSchemes = computed(() =>
+    this.schemesService.schemes().filter((scheme) => {
+      if (scheme.status !== 'active') {
+        return false;
+      }
+      const remaining = daysUntil(scheme.expiryDate);
+      return remaining >= 0 && remaining <= EXPIRY_WINDOW_DAYS;
+    }),
+  );
+
+  private readonly pendingBudgets = computed(() =>
+    this.budgets().filter((budget) => budget.status === 'pending'),
+  );
+
+  /** True when this user can approve anything at all. */
+  private readonly isApprover = computed(() =>
+    ['BUDGET_APPROVE', 'SCHEME_APPROVE', 'CLAIMS_APPROVE'].some((permission) =>
+      this.permissionService.canAccess(permission),
+    ),
+  );
+
+  /**
+   * What is on this user's desk.
+   *
+   * For an approver this counts only items they can actually decide — an item they can
+   * see but not act on is not "awaiting their approval", and counting it would send them
+   * to the workspace to find nothing to do. For everyone else (a distributor, say, who
+   * raises claims but approves none) the same tile counts open items in their scope
+   * instead, and relabels accordingly.
+   */
+  private readonly deskCount = computed(() => {
+    const pendingClaims = this.pendingClaims().length;
+    if (!this.isApprover()) {
+      return pendingClaims;
+    }
+    const actionable = this.approvalItems().filter((item) =>
+      this.permissionService.canAccess(item.requiredPermission),
+    ).length;
+    const claims = this.permissionService.canAccess('CLAIMS_APPROVE') ? pendingClaims : 0;
+    return actionable + claims;
   });
+
+  // ─── Tiles ────────────────────────────────────────────────────────────────────
+  // Deltas are mock figures on the POC. When the real API lands they come from the same
+  // aggregate call as the charts — the shape is already in DashboardService.
+  private readonly allTiles = computed<DashboardTile[]>(() => {
+    const breaching = this.overdueClaims().length;
+    const expiring = this.expiringSchemes().length;
+
+    return [
+      {
+        key: 'approvals',
+        label: this.isApprover() ? 'Awaiting my approval' : 'My open items',
+        value: this.deskCount(),
+        icon: 'inbox',
+        tone: 'accent',
+        delta: { percent: 12, direction: 'down', comparedTo: 'vs last week', good: true },
+        requiredAnyOf: ['BUDGET_VIEW', 'SCHEME_VIEW', 'CLAIMS_VIEW'],
+        route: '/workspace',
+      },
+      {
+        key: 'budgets',
+        label: 'Budgets pending',
+        value: this.pendingBudgets().length,
+        icon: 'wallet',
+        tone: 'neutral',
+        delta: { percent: 8, direction: 'up', comparedTo: 'vs last week', good: false },
+        requiredAnyOf: ['BUDGET_VIEW'],
+        route: '/budget',
+      },
+      {
+        key: 'expiring',
+        label: 'Schemes expiring',
+        value: expiring,
+        icon: 'clock',
+        tone: expiring > 0 ? 'warning' : 'neutral',
+        delta: { percent: 0, direction: 'flat', comparedTo: 'vs last week', good: true },
+        requiredAnyOf: ['SCHEME_VIEW'],
+        route: '/schemes',
+      },
+      {
+        key: 'breaching',
+        label: 'Claims past SLA',
+        value: breaching,
+        icon: 'alert-triangle',
+        tone: breaching > 0 ? 'critical' : 'success',
+        delta: { percent: 33, direction: 'down', comparedTo: 'vs last week', good: true },
+        requiredAnyOf: ['CLAIMS_VIEW'],
+        route: '/claims',
+      },
+    ];
+  });
+
+  protected readonly tiles = computed(() =>
+    this.allTiles().filter((tile) =>
+      tile.requiredAnyOf.some((permission) => this.permissionService.canAccess(permission)),
+    ),
+  );
+
+  // ─── Utilisation hero ─────────────────────────────────────────────────────────
+  protected readonly utilisation = computed(() =>
+    this.permissionService.canAccess('BUDGET_VIEW') ? (this.charts()?.utilisation ?? null) : null,
+  );
+
+  protected readonly utilisationHeadline = computed(() => {
+    const panel = this.utilisation();
+    return panel ? this.format.formatPkrCompact(panel.committed) : '';
+  });
+
+  protected readonly utilisationAllocated = computed(() => {
+    const panel = this.utilisation();
+    return panel ? this.format.formatPkrCompact(panel.allocated) : '';
+  });
+
+  /** Percentage of allocation committed, for the "x% of allocation" caption. */
+  protected readonly utilisationPercent = computed(() => {
+    const panel = this.utilisation();
+    if (!panel || panel.allocated === 0) {
+      return '';
+    }
+    return this.format.formatPercent((panel.committed / panel.allocated) * 100);
+  });
+
+  /** True when committed spend has passed the approved allocation. */
+  protected readonly isOverrun = computed(() => {
+    const panel = this.utilisation();
+    return panel ? panel.committed > panel.allocated : false;
+  });
+
+  // ─── Charts, each gated on the permission that owns its subject ───────────────
+  protected readonly volumeByBrand = computed(() =>
+    this.permissionService.canAccess('SCHEME_VIEW') ? (this.charts()?.volumeByBrand ?? []) : null,
+  );
+
+  protected readonly schemeMix = computed(() =>
+    this.permissionService.canAccess('SCHEME_VIEW') ? (this.charts()?.schemeMix ?? []) : null,
+  );
+
+  protected readonly approvalsCleared = computed(() => this.charts()?.approvalsCleared ?? []);
+
+  protected readonly attention = computed(() =>
+    this.attentionItems().filter((item) =>
+      this.permissionService.canAccess(item.requiredPermission),
+    ),
+  );
+
+  /** True when this user's permissions leave nothing on the page worth rendering. */
+  protected readonly isEmpty = computed(
+    () => this.tiles().length === 0 && this.attention().length === 0,
+  );
 
   constructor() {
     this.load();
-  }
-
-  protected countFor(tab: InboxTab): number {
-    const items = this.items();
-    return tab === 'all' ? items.length : items.filter((item) => item.type === tab).length;
-  }
-
-  protected selectTab(tab: InboxTab): void {
-    this.activeTab.set(tab);
-    this.autoSelect();
-  }
-
-  protected selectItem(id: string): void {
-    this.selectedId.set(id);
   }
 
   protected retry(): void {
     this.load();
   }
 
-  protected onApprove(event: { stepIndex: number; remarks: string }): void {
-    this.resolve('approve', event.remarks);
+  protected formatPkr(value: number): string {
+    return this.format.formatPkrCompact(value);
   }
 
-  protected onReject(event: { stepIndex: number; remarks: string }): void {
-    this.resolve('reject', event.remarks);
+  protected deltaClassFor(good: boolean, direction: string): string {
+    if (direction === 'flat') {
+      return 'flat';
+    }
+    return good ? 'good' : 'bad';
+  }
+
+  protected deltaIconFor(direction: string) {
+    if (direction === 'flat') {
+      return ICON_REGISTRY['minus'];
+    }
+    return direction === 'up' ? ICON_REGISTRY['trending-up'] : ICON_REGISTRY['trending-down'];
   }
 
   private load(): void {
     this.loading.set(true);
     this.error.set(false);
-    this.approvalsService
-      .getInbox()
+
+    const context = this.permissionService.context();
+
+    // Fire everything in parallel and let each result land independently. A failure in
+    // one aggregate should degrade that card, not blank the whole landing page — so only
+    // the charts call flips the page-level error state.
+    this.dashboardService
+      .getCharts(context.regions, context.brands)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (items) => {
-          this.serviceItems.set(items);
+        next: (charts) => {
+          this.charts.set(charts);
           this.loading.set(false);
-          this.autoSelect();
         },
         error: () => {
           this.loading.set(false);
           this.error.set(true);
         },
       });
-  }
 
-  // Keeps a valid selection as items load, the tab changes, or an item is resolved:
-  // hold the current selection when it's still visible, otherwise fall to the first row.
-  private autoSelect(): void {
-    const visible = this.filteredItems();
-    const current = this.selectedId();
-    if (!current || !visible.some((item) => item.id === current)) {
-      this.selectedId.set(visible[0]?.id ?? null);
-    }
-  }
-
-  private resolve(decision: ApprovalDecision, remarks: string): void {
-    const item = this.selectedItem();
-    if (!item || this.deciding()) {
-      return;
-    }
-    this.deciding.set(true);
-    if (item.type === 'claim') {
-      this.resolveClaim(item, decision, remarks);
-    } else {
-      this.resolveApproval(item, decision, remarks);
-    }
-  }
-
-  // Claims route through the shared store, so the /claims list and detail update reactively.
-  private resolveClaim(
-    item: ApprovalInboxItem,
-    decision: ApprovalDecision,
-    remarks: string,
-  ): void {
-    const op =
-      decision === 'approve'
-        ? this.claimsService.approve(item.id, remarks)
-        : this.claimsService.reject(item.id, remarks);
-    op.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (updated) => {
-        // No manual removal: the store update recomputes claimItems, so a fully-resolved
-        // claim drops out of the inbox on its own and autoSelect moves to the next item.
-        this.autoSelect();
-        this.deciding.set(false);
-        if (decision === 'reject') {
-          this.notificationService.warn(`${updated.id} was rejected.`, 'Rejected');
-        } else if (updated.status === 'approved') {
-          this.notificationService.success(`${updated.id} is fully approved.`, 'Approved');
-        } else {
-          const stage = CLAIM_PIPELINE_STAGES[updated.currentStageIndex];
-          this.notificationService.success(`Claim approved and moved to ${stage}.`, 'Approved');
-        }
-      },
-      error: () => {
-        this.deciding.set(false);
-        this.notificationService.error('Could not record your decision. Please try again.');
-      },
-    });
-  }
-
-  private resolveApproval(
-    item: ApprovalInboxItem,
-    decision: ApprovalDecision,
-    remarks: string,
-  ): void {
-    this.approvalsService
-      .decide(item.id, decision, remarks)
+    this.dashboardService
+      .getAttention(context.regions)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.serviceItems.update((items) => items.filter((current) => current.id !== item.id));
-          this.autoSelect();
-          this.deciding.set(false);
-          const verb = decision === 'approve' ? 'Approved' : 'Rejected';
-          if (decision === 'approve') {
-            this.notificationService.success(`${item.reference} — ${item.title}`, verb);
-          } else {
-            this.notificationService.warn(`${item.reference} — ${item.title}`, verb);
-          }
-        },
-        error: () => {
-          this.deciding.set(false);
-          this.notificationService.error('Could not record your decision. Please try again.');
-        },
-      });
+      .subscribe({ next: (items) => this.attentionItems.set(items) });
+
+    this.approvalsService
+      .getInbox()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (items) => this.approvalItems.set(items) });
+
+    // Claims and schemes are signal stores — refresh() only primes them; the computed
+    // counts above already track the store, so there is nothing to assign here.
+    this.claimsService.refresh().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.schemesService.refresh().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+
+    if (this.permissionService.canAccess('BUDGET_VIEW')) {
+      this.budgetService
+        .getBudgets()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (records) => this.budgets.set(records) });
+    }
   }
 }

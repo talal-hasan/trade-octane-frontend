@@ -20,6 +20,66 @@
   white-space: nowrap;
 }
 
+// Entrance animation. Separate from `motion` because entrances are longer and use a
+// different curve — and because they must be *fully* suppressed (not just shortened)
+// under reduced motion, or the element animates from a transformed position instantly
+// and appears to jump.
+@mixin enter($name, $duration: var(--to-motion-enter), $easing: var(--to-ease-out-quint), $delay: 0ms) {
+  animation: $name $duration $easing $delay both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// A brand-tinted surface wash. `color-mix()` derives the tint from whatever the token
+// currently resolves to, so it tracks light/dark and any future palette change without
+// a second hardcoded value per theme.
+@mixin tinted-surface($hue: var(--to-accent), $amount: 4%) {
+  background: color-mix(in srgb, #{$hue} #{$amount}, var(--to-bg-1));
+}
+
+// Table header treatment: brand tint + a solid brand hairline underneath. Used by every
+// table so column headers read consistently wherever data is tabulated.
+@mixin table-head($hue: var(--to-accent)) {
+  background: color-mix(in srgb, #{$hue} 6%, var(--to-bg-1));
+  border-bottom: 2px solid color-mix(in srgb, #{$hue} 55%, transparent);
+}
+
+// The pastel card surface from the reference screenshot: brand light pooling into the
+// top-left, gone by mid-card. Opt in per card — a page where *every* card is washed
+// reads as a tinted page, which defeats it. Use on hero/summary cards and leave data
+// cards (tables, forms) on flat --to-bg-1.
+@mixin pastel-card {
+  background: var(--to-canvas-card);
+  border: 1px solid var(--to-border-canvas);
+}
+
+// Chrome surface — page canvas, rail, top bar. Paints the mesh and keeps a flat
+// fallback underneath for anything that cannot resolve the layered value.
+@mixin canvas($layers) {
+  background-color: var(--to-bg-0);
+  background-image: $layers;
+  background-attachment: fixed;
+}
+
+// Card that lifts into a coloured glow on hover. The resting state stays hairline-only.
+@mixin lift-on-hover($glow: var(--to-glow-accent-sm)) {
+  @include motion(border-color, box-shadow, transform);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--to-accent) 45%, var(--to-border));
+    box-shadow: $glow;
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
 // Breakpoints — desktop-first per CLAUDE.md §14 [PENDING: responsive scope].
 $to-breakpoint-tablet: 1024px;
 $to-breakpoint-desktop: 1280px;

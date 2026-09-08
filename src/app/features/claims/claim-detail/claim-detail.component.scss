@@ -18,11 +18,36 @@
   }
 }
 
+// The record itself is the hero of this page, so it carries the dashboard's pastel
+// bloom and spectrum rail. The decision panel opposite stays on flat surface with a
+// single accent cap — two washed cards side by side and neither reads as primary.
 .to-claim-detail__main {
+  position: relative;
   padding: t.$to-space-6;
-  background: var(--to-bg-1);
-  border: 1px solid var(--to-border);
   border-radius: t.$to-radius-card;
+  overflow: hidden;
+  @include u.pastel-card;
+  @include u.enter(to-claim-detail-in);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--to-gradient-spectrum);
+  }
+}
+
+@keyframes to-claim-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .to-claim-detail__head {
@@ -42,17 +67,20 @@
 
   &--normal {
     color: var(--to-info);
-    background: var(--to-info-subtle);
+    background: color-mix(in srgb, var(--to-info-solid) 13%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-info-solid) 26%, transparent);
   }
 
   &--delay {
     color: var(--to-warning);
-    background: var(--to-warning-subtle);
+    background: color-mix(in srgb, var(--to-warning-solid) 15%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-warning-solid) 28%, transparent);
   }
 
   &--damage {
     color: var(--to-danger);
-    background: var(--to-danger-subtle);
+    background: color-mix(in srgb, var(--to-danger-solid) 13%, var(--to-bg-1));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--to-danger-solid) 26%, transparent);
   }
 }
 
@@ -62,8 +90,9 @@
   gap: t.$to-space-4;
   margin: 0 0 t.$to-space-4;
   padding: t.$to-space-4;
-  background: var(--to-bg-0);
+  border: 1px solid var(--to-border-canvas);
   border-radius: t.$to-radius-card;
+  @include u.tinted-surface(var(--to-accent), 5%);
 
   @include u.respond-to(tablet) {
     grid-template-columns: repeat(2, 1fr);
@@ -95,9 +124,14 @@
   align-items: center;
   gap: t.$to-space-2;
   padding: t.$to-space-2 t.$to-space-3;
-  background: var(--to-bg-2);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1)) 0%,
+    var(--to-accent-subtle) 100%
+  );
+  border: 1px solid var(--to-accent-muted);
   border-radius: t.$to-radius-control;
-  color: var(--to-text-secondary);
+  color: var(--to-accent-text);
   font-size: t.$to-font-size-sm;
   margin-bottom: t.$to-space-4;
 }
@@ -113,7 +147,8 @@
 .to-claim-detail__remarks {
   margin: 0 0 t.$to-space-4;
   padding-left: t.$to-space-3;
-  border-left: 2px solid var(--to-border);
+  border-left: 2px solid transparent;
+  border-image: var(--to-gradient-spectrum) 1;
   color: var(--to-text-secondary);
   font-size: t.$to-font-size-sm;
   font-style: italic;
@@ -144,6 +179,13 @@
   background: var(--to-bg-1);
   border: 1px solid var(--to-border);
   border-radius: t.$to-radius-card;
+}
+
+// A 2px Sky Blue cap marks this as the panel that *acts*, the same way the access
+// summary is capped on the user-provisioning wizard.
+.to-claim-detail__actions {
+  border-top: 2px solid var(--to-accent);
+  box-shadow: var(--to-shadow-sm);
 }
 
 .to-claim-detail__actions .to-claim-detail__section-title {

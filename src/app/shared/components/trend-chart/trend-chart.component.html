@@ -1,0 +1,82 @@
+@if (points().length === 0) {
+  <p class="to-trend__empty">No data in your scope.</p>
+} @else {
+  <div class="to-trend">
+    <svg [attr.viewBox]="viewBox" class="to-trend__svg" role="img" aria-label="Trend over time">
+      <defs>
+        <!-- Sky Blue fading to nothing: the area reads as the line's own weight rather
+             than as a second block of colour competing with it. -->
+        <linearGradient id="toTrendFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--to-accent)" stop-opacity="0.28" />
+          <stop offset="100%" stop-color="var(--to-accent)" stop-opacity="0" />
+        </linearGradient>
+        <linearGradient id="toTrendLine" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="var(--to-accent)" />
+          <stop offset="100%" stop-color="var(--to-brand-magenta)" />
+        </linearGradient>
+      </defs>
+
+      <line
+        class="to-trend__baseline"
+        [attr.x1]="0"
+        [attr.y1]="baselineY"
+        [attr.x2]="600"
+        [attr.y2]="baselineY"
+      />
+
+      <path [attr.d]="areaPath()" fill="url(#toTrendFill)" />
+      <path
+        [attr.d]="linePath()"
+        class="to-trend__line"
+        fill="none"
+        stroke="url(#toTrendLine)"
+        stroke-width="2"
+      />
+
+      @for (point of points(); track point.label; let i = $index) {
+        <!-- Full-height hover target per sample: a 4px dot is far too small to acquire
+             with a mouse, so the whole column is the target. -->
+        <rect
+          class="to-trend__hit"
+          [attr.x]="point.x - 24"
+          [attr.y]="0"
+          width="48"
+          [attr.height]="baselineY"
+          (mouseenter)="setHovered(i)"
+          (mouseleave)="setHovered(null)"
+        />
+
+        @if (hovered() === i) {
+          <line
+            class="to-trend__guide"
+            [attr.x1]="point.x"
+            [attr.y1]="point.y"
+            [attr.x2]="point.x"
+            [attr.y2]="baselineY"
+          />
+        }
+
+        <circle
+          class="to-trend__dot"
+          [class.to-trend__dot--active]="hovered() === i"
+          [attr.cx]="point.x"
+          [attr.cy]="point.y"
+          [attr.r]="hovered() === i ? 5 : 3"
+        />
+
+        <text class="to-trend__tick" [attr.x]="point.x" [attr.y]="labelY" text-anchor="middle">
+          {{ point.label }}
+        </text>
+      }
+    </svg>
+
+    <!-- Readout sits outside the SVG so it inherits app typography rather than needing
+         SVG text metrics, and can't be clipped by the viewBox. -->
+    <div class="to-trend__readout" [class.to-trend__readout--visible]="activePoint() !== null">
+      @if (activePoint(); as point) {
+        <span class="to-trend__readout-value to-numeric">{{ point.display }}</span>
+        <span class="to-trend__readout-meta">{{ unit() }} · {{ point.label }}</span>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,17 @@
+<span class="to-stat__icon to-stat__icon--{{ tone() }}" aria-hidden="true">
+  <tabler-icon [icon]="iconData()" [size]="15" />
+</span>
+
+<span class="to-stat__value to-numeric">{{ displayValue() }}</span>
+
+@if (delta(); as d) {
+  <span
+    class="to-stat__delta to-stat__delta--{{ deltaClass() }}"
+    [attr.aria-label]="deltaLabel() + ' ' + d.direction + ' ' + d.comparedTo"
+  >
+    <tabler-icon [icon]="arrowIcon()" [size]="12" />
+    <span class="to-numeric">{{ deltaLabel() }}</span>
+  </span>
+}
+
+<span class="to-stat__label">{{ label() }}</span>

@@ -1,10 +1,14 @@
 @use '../../../../styles/tokens' as t;
 
+// Subtle background + AA-safe label text, with a single saturated brand-hex dot as the
+// mark (CLAUDE.md §5: "never saturated fills"). The dot is where the FrieslandCampina
+// support colour appears at full strength — it scans instantly down a dense table column
+// while the pill itself stays quiet.
 .to-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: t.$to-space-1;
-  padding: 2px t.$to-space-2;
+  gap: t.$to-space-2;
+  padding: 2px t.$to-space-2 2px 7px;
   border-radius: t.$to-radius-pill;
   font-size: t.$to-font-size-xs;
   font-weight: var(--to-font-weight-medium);
@@ -12,25 +16,60 @@
   white-space: nowrap;
 }
 
+.to-status-pill__dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: t.$to-radius-pill;
+  background: currentcolor;
+}
+
 .to-status--approved {
   color: var(--to-success);
   background: var(--to-success-subtle);
+
+  .to-status-pill__dot {
+    background: var(--to-success-solid); // Grass green
+  }
 }
 
 .to-status--pending {
   color: var(--to-warning);
   background: var(--to-warning-subtle);
+
+  .to-status-pill__dot {
+    background: var(--to-warning-solid); // Vibrant orange
+  }
 }
 
 .to-status--draft {
-  color: var(--to-text-muted);
+  color: var(--to-text-secondary);
   background: var(--to-bg-2);
+
+  .to-status-pill__dot {
+    background: var(--to-brand-grey); // Cool grey
+  }
 }
 
-.to-status--rejected,
-.to-status--overdue {
+.to-status--rejected {
   color: var(--to-danger);
   background: var(--to-danger-subtle);
+
+  .to-status-pill__dot {
+    background: var(--to-danger-solid); // Passion red
+  }
+}
+
+// Overdue was previously identical to rejected. They mean different things — rejected is
+// a closed decision, overdue is an open item breaching SLA — so overdue now carries
+// Magical magenta, the palette's highest-energy hue, reserved for escalation.
+.to-status--overdue {
+  color: var(--to-critical);
+  background: var(--to-critical-subtle);
+
+  .to-status-pill__dot {
+    background: var(--to-critical-solid); // Magical magenta
+  }
 }
 
 // Same warning hue as "pending" so it stays within the semantic palette, but the icon
@@ -39,7 +78,8 @@
 .to-status--needs-attention {
   color: var(--to-warning);
   background: var(--to-warning-subtle);
-  box-shadow: inset 0 0 0 1px rgb(138 96 0 / 25%);
+  padding-left: t.$to-space-2;
+  box-shadow: inset 0 0 0 1px rgb(150 84 0 / 28%);
 }
 
 .to-status-pill__icon {

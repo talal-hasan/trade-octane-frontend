@@ -1,5 +1,5 @@
 import { Component, computed, inject, viewChild, ViewEncapsulation } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
@@ -23,7 +23,6 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   standalone: true,
   imports: [
     RouterOutlet,
-    RouterLink,
     SidebarComponent,
     CommandPaletteComponent,
     RoleSwitcherComponent,

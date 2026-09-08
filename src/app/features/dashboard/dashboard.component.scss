@@ -4,307 +4,454 @@
 :host {
   display: block;
   padding: t.$to-space-6;
-  height: 100%;
 }
 
-.to-inbox {
-  display: flex;
-  flex-direction: column;
-  gap: t.$to-space-4;
-  margin-top: t.$to-space-4;
-}
-
-// ─── Tabs ────────────────────────────────────────────────
-.to-inbox__tabs {
-  display: flex;
-  gap: t.$to-space-1;
-  border-bottom: 1px solid var(--to-border);
-}
-
-.to-inbox__tab {
+// ─── Scope chip in the header ───────────────────────────────
+.to-dash__scope {
   display: inline-flex;
   align-items: center;
   gap: t.$to-space-2;
-  padding: t.$to-space-2 t.$to-space-3;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  color: var(--to-text-secondary);
-  font-size: t.$to-font-size-sm;
-  font-family: inherit;
-  cursor: pointer;
-  @include u.motion(color, border-color);
-
-  &:hover {
-    color: var(--to-text-primary);
-  }
-
-  &--active {
-    color: var(--to-accent-text);
-    border-bottom-color: var(--to-accent);
-    font-weight: var(--to-font-weight-medium);
-  }
-}
-
-.to-inbox__tab-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 18px;
-  padding: 0 t.$to-space-1;
+  padding: t.$to-space-1 t.$to-space-3;
+  border: 1px solid var(--to-border);
   border-radius: t.$to-radius-pill;
-  background: var(--to-bg-2);
-  color: var(--to-text-muted);
   font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-text-secondary);
 }
 
-.to-inbox__tab--active .to-inbox__tab-count {
-  background: var(--to-accent-subtle);
-  color: var(--to-accent-text);
-}
+// Slow pulse on the live indicator. It is the only looping animation in the product —
+// justified because it signals "these numbers are live", which is a continuous fact.
+.to-dash__scope-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-success-solid);
+  flex-shrink: 0;
+  animation: to-dash-pulse 2.4s ease-in-out infinite;
 
-// ─── Split pane ──────────────────────────────────────────
-.to-inbox__body {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: t.$to-space-4;
-  align-items: start;
-
-  @include u.respond-to(tablet) {
-    grid-template-columns: 1fr;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 
-// ─── List ────────────────────────────────────────────────
-.to-inbox__list {
-  display: flex;
-  flex-direction: column;
-  gap: t.$to-space-2;
-  min-height: 200px;
+@keyframes to-dash-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(57 181 74 / 45%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgb(57 181 74 / 0%);
+  }
 }
 
-.to-inbox__card {
+// ─── Rows ───────────────────────────────────────────────────
+// Asymmetric, per the client's reference mock: a narrow column of compact facts beside
+// a wide panel that expands on one of them. A uniform grid of equal cards is what made
+// the first pass feel empty.
+.to-dash__row {
+  display: grid;
+  gap: t.$to-space-4;
+  margin: t.$to-space-6 0;
+  align-items: start;
+}
+
+.to-dash__row--split {
+  grid-template-columns: minmax(260px, 5fr) minmax(320px, 7fr);
+}
+
+.to-dash__row--split-reverse {
+  grid-template-columns: minmax(320px, 7fr) minmax(260px, 5fr);
+}
+
+@include u.respond-to(tablet) {
+  .to-dash__row--split,
+  .to-dash__row--split-reverse {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-dash__side {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  min-width: 0;
+}
+
+// ─── Compact stat block ─────────────────────────────────────
+.to-dash__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: t.$to-space-3;
+  align-content: start;
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// The anchor is layout-transparent; to-stat-tile is the visual box, so the whole tile
+// stays one hit target without nesting two bordered elements.
+.to-dash__stat-link {
+  display: block;
+  text-decoration: none;
+  border-radius: t.$to-radius-card;
+  @include u.enter(to-dash-tile-in);
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.to-dash__stat-skeleton {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3 t.$to-space-4;
+  min-height: 60px;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+@keyframes to-dash-tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// ─── Cards ──────────────────────────────────────────────────
+.to-dash__card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  min-width: 0;
+}
+
+// The hero is the one card that carries a full brand wash — the pastel bloom from the
+// reference, pooling sky at the top-left and magenta/lime at the far corners, plus a
+// spectrum hairline across the top that echoes the brandmark's star. One card, once:
+// doing this to every card would drown the page and there would be no hero left.
+.to-dash__hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--to-canvas-hero);
+  border-color: var(--to-border-canvas);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--to-gradient-spectrum);
+  }
+}
+
+.to-dash__card-head,
+.to-dash__hero-head {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: t.$to-space-3;
-  width: 100%;
-  text-align: left;
-  padding: t.$to-space-3;
-  background: var(--to-bg-1);
-  border: 1px solid var(--to-border);
-  border-radius: t.$to-radius-card;
-  cursor: pointer;
-  font-family: inherit;
-  @include u.motion(border-color, background-color, box-shadow);
-
-  &:hover {
-    border-color: var(--to-border-strong);
-  }
-
-  &--active {
-    border-color: var(--to-accent);
-    box-shadow: 0 0 0 1px var(--to-accent);
-  }
-
-  &--skeleton {
-    cursor: default;
-    align-items: center;
-  }
 }
 
-.to-inbox__card-skeleton-lines {
-  display: flex;
-  flex-direction: column;
-  gap: t.$to-space-2;
-  flex: 1;
-}
-
-.to-inbox__card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: t.$to-radius-control;
-
-  &--budget {
-    background: var(--to-accent-subtle);
-    color: var(--to-accent);
-  }
-
-  &--scheme {
-    background: var(--to-info-subtle);
-    color: var(--to-info);
-  }
-
-  &--claim {
-    background: var(--to-warning-subtle);
-    color: var(--to-warning);
-  }
-}
-
-.to-inbox__card-main {
-  display: flex;
+.to-dash__card-head {
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
-  flex: 1;
 }
 
-.to-inbox__card-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: t.$to-space-2;
+.to-dash__card-head--padded {
+  padding: 0 t.$to-space-1;
 }
 
-.to-inbox__card-ref {
-  font-size: t.$to-font-size-2xs;
-  font-weight: var(--to-font-weight-medium);
-  color: var(--to-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.to-inbox__card-amount {
-  font-size: t.$to-font-size-xs;
-  font-weight: var(--to-font-weight-medium);
-  color: var(--to-text-primary);
-  white-space: nowrap;
-}
-
-.to-inbox__card-title {
+.to-dash__card-title {
+  margin: 0;
   font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
   color: var(--to-text-primary);
-  @include u.truncate;
 }
 
-.to-inbox__card-meta {
-  font-size: t.$to-font-size-xs;
+.to-dash__card-hint {
+  font-size: t.$to-font-size-2xs;
   color: var(--to-text-muted);
-  @include u.truncate;
 }
 
-// ─── Detail ──────────────────────────────────────────────
-.to-inbox__detail {
-  background: var(--to-bg-1);
-  border: 1px solid var(--to-border);
-  border-radius: t.$to-radius-card;
-  min-height: 320px;
-  position: sticky;
-  top: t.$to-space-6;
-}
-
-.to-inbox__detail-inner {
-  padding: t.$to-space-6;
-}
-
-.to-inbox__detail-header {
-  display: flex;
-  align-items: center;
-  gap: t.$to-space-3;
-  margin-bottom: t.$to-space-3;
-}
-
-.to-inbox__type-tag {
+.to-dash__card-link {
   display: inline-flex;
   align-items: center;
-  gap: t.$to-space-1;
-  padding: 2px t.$to-space-2;
-  border-radius: t.$to-radius-pill;
-  font-size: t.$to-font-size-2xs;
-  font-weight: var(--to-font-weight-medium);
-
-  &--budget {
-    background: var(--to-accent-subtle);
-    color: var(--to-accent-text);
-  }
-
-  &--scheme {
-    background: var(--to-info-subtle);
-    color: var(--to-info);
-  }
-
-  &--claim {
-    background: var(--to-warning-subtle);
-    color: var(--to-warning);
-  }
-}
-
-.to-inbox__detail-ref {
-  font-size: t.$to-font-size-xs;
-  font-weight: var(--to-font-weight-medium);
-  color: var(--to-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.to-inbox__detail-title {
-  margin: 0 0 t.$to-space-2;
-  font-size: t.$to-font-size-lg;
-  font-weight: var(--to-font-weight-medium);
-  line-height: var(--to-line-height-heading);
-  color: var(--to-text-primary);
-}
-
-.to-inbox__detail-summary {
-  margin: 0 0 t.$to-space-6;
-  font-size: t.$to-font-size-sm;
-  line-height: var(--to-line-height-body);
-  color: var(--to-text-secondary);
-}
-
-.to-inbox__facts {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: t.$to-space-4;
-  margin: 0 0 t.$to-space-6;
-  padding: t.$to-space-4;
-  background: var(--to-bg-0);
-  border-radius: t.$to-radius-card;
-}
-
-.to-inbox__fact {
-  display: flex;
-  flex-direction: column;
   gap: 2px;
-
-  dt {
-    font-size: t.$to-font-size-2xs;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--to-text-muted);
-  }
-
-  dd {
-    margin: 0;
-    font-size: t.$to-font-size-sm;
-    color: var(--to-text-primary);
-  }
-}
-
-.to-inbox__section {
-  margin-top: t.$to-space-6;
-}
-
-.to-inbox__section-title {
-  margin: 0 0 t.$to-space-3;
+  flex-shrink: 0;
   font-size: t.$to-font-size-2xs;
   font-weight: var(--to-font-weight-medium);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--to-tracking-label);
+  color: var(--to-accent-text);
+  text-decoration: none;
+  @include u.motion(color, gap);
+
+  &:hover {
+    gap: 5px;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+    border-radius: t.$to-radius-control;
+  }
+}
+
+// ─── Hero figure ────────────────────────────────────────────
+.to-dash__hero-figure {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+}
+
+.to-dash__hero-value {
+  font-size: t.$to-font-size-2xl;
+  font-weight: var(--to-font-weight-medium);
+  line-height: var(--to-line-height-data);
+  letter-spacing: var(--to-tracking-tight);
+  color: var(--to-text-primary);
+}
+
+.to-dash__hero-meta {
+  font-size: t.$to-font-size-xs;
   color: var(--to-text-muted);
 }
 
-.to-inbox__readonly-note {
-  display: flex;
+.to-dash__overrun {
+  color: var(--to-danger);
+  font-weight: var(--to-font-weight-medium);
+}
+
+// ─── Delta chips ────────────────────────────────────────────
+// Shared by the hero and the breakdown rows. Colour tracks whether the movement is
+// *good*, never which way the arrow points.
+.to-dash__delta {
+  display: inline-flex;
   align-items: center;
-  gap: t.$to-space-2;
-  margin: t.$to-space-3 0 0;
-  padding: t.$to-space-2 t.$to-space-3;
-  background: var(--to-warning-subtle);
-  border-radius: t.$to-radius-control;
-  color: var(--to-warning);
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  font-weight: var(--to-font-weight-medium);
+  line-height: 1.4;
+}
+
+.to-dash__delta--good {
+  background: color-mix(in srgb, var(--to-success-solid) 14%, var(--to-bg-1));
+  color: var(--to-success);
+}
+
+.to-dash__delta--bad {
+  background: color-mix(in srgb, var(--to-danger-solid) 13%, var(--to-bg-1));
+  color: var(--to-danger);
+}
+
+.to-dash__delta--flat {
+  background: var(--to-bg-2);
+  color: var(--to-text-muted);
+}
+
+// ─── Breakdown rows ─────────────────────────────────────────
+.to-dash__breakdown {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-dash__breakdown-row {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-2 0;
+  border-bottom: 1px solid var(--to-border);
   font-size: t.$to-font-size-xs;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.to-dash__breakdown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.to-dash__breakdown-label {
+  color: var(--to-text-secondary);
+  @include u.truncate;
+}
+
+.to-dash__breakdown-value {
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-dash__breakdown-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+  justify-content: flex-end;
+  padding: 1px 5px;
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+}
+
+// ─── Attention table ────────────────────────────────────────
+.to-dash__attention {
+  gap: t.$to-space-3;
+  padding: t.$to-space-4 t.$to-space-3 t.$to-space-3;
+}
+
+.to-dash__table-scroll {
+  overflow-x: auto;
+}
+
+.to-dash__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$to-font-size-xs;
+
+  thead th {
+    padding: t.$to-space-2 t.$to-space-3;
+    text-align: left;
+    white-space: nowrap;
+    font-size: t.$to-font-size-2xs;
+    font-weight: var(--to-font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: var(--to-tracking-label);
+    color: var(--to-text-secondary);
+    @include u.table-head;
+
+    &:first-child {
+      border-top-left-radius: t.$to-radius-control;
+    }
+
+    &:last-child {
+      border-top-right-radius: t.$to-radius-control;
+    }
+  }
+
+  tbody td {
+    padding: t.$to-space-3;
+    border-bottom: 1px solid var(--to-border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// Severity shows as a left rail on the first cell — the same rail language used on
+// sidebar items, stat tiles and toasts, so "this one is urgent" reads identically
+// everywhere in the app.
+.to-dash__table-row {
+  @include u.motion(background-color);
+
+  td:first-child {
+    border-left: var(--to-accent-rail) solid transparent;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+}
+
+.to-dash__table-row--warning td:first-child {
+  border-left-color: var(--to-warning-solid);
+}
+
+.to-dash__table-row--critical td:first-child {
+  border-left-color: var(--to-critical-solid);
+}
+
+.to-dash__table-ref {
+  color: var(--to-accent-text);
+  font-weight: var(--to-font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.to-dash__table-module {
+  color: var(--to-text-secondary);
+  white-space: nowrap;
+}
+
+.to-dash__table-title {
+  display: block;
+  color: var(--to-text-primary);
+}
+
+.to-dash__table-reason {
+  display: block;
+  margin-top: 2px;
+  color: var(--to-text-muted);
+}
+
+.to-dash__table-age {
+  color: var(--to-text-secondary);
+  white-space: nowrap;
+}
+
+// `position: relative` is load-bearing: the .to-sr-only span inside would otherwise
+// resolve its absolute position against the initial containing block, escaping the
+// scrolling content area and stretching the document into a phantom second scrollbar.
+.to-dash__table-action {
+  position: relative;
+  width: 40px;
+  text-align: right;
+}
+
+.to-dash__table-open {
+  display: inline-flex;
+  padding: t.$to-space-1;
+  border-radius: t.$to-radius-control;
+  color: var(--to-text-muted);
+  @include u.motion(color, background-color);
+
+  &:hover {
+    color: var(--to-accent);
+    background: var(--to-accent-subtle);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--to-focus-ring);
+  }
+}
+
+.to-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

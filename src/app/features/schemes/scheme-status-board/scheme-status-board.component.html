@@ -1,0 +1,219 @@
+<to-page-header
+  title="Schemes"
+  subtitle="Active trade schemes — BRD and Trade Offer — with their lifecycle status."
+  [breadcrumbs]="[{ label: 'Schemes' }]"
+/>
+
+<div class="to-scheme-board">
+  <div class="to-scheme-board__panel">
+    <div class="to-scheme-board__panel-head">
+      <span class="to-scheme-board__pulse" aria-hidden="true"></span>
+      <h2 class="to-scheme-board__panel-title">Active schemes</h2>
+      <span class="to-scheme-board__counts to-numeric">
+        {{ activeCount() }} active · {{ pausedCount() }} paused · {{ expiredCount() }} expired
+      </span>
+    </div>
+
+    <div class="to-scheme-board__columns">
+      <span>No</span>
+      <span>Scheme</span>
+      <span>Region &amp; Brand</span>
+      <span>Expiry</span>
+      <span>Redemption</span>
+      <span>Status</span>
+    </div>
+
+    @if (loading()) {
+      @for (row of skeletonRows; track row) {
+        <div class="to-scheme-board__row to-scheme-board__row--skeleton">
+          <to-skeleton variant="rect" width="36px" height="36px" />
+          <div class="to-scheme-board__skeleton-lines">
+            <to-skeleton variant="text" width="40%" />
+            <to-skeleton variant="text" width="24%" />
+          </div>
+        </div>
+      }
+    } @else if (error()) {
+      <to-empty-state
+        icon="alert-triangle"
+        heading="Couldn't load schemes"
+        description="Something went wrong fetching the schemes."
+      >
+        <button type="button" pButton actions (click)="retry()">Retry</button>
+      </to-empty-state>
+    } @else if (schemes().length === 0) {
+      <to-empty-state
+        icon="discount-2"
+        heading="No schemes yet"
+        description="Schemes you create will show up here."
+      />
+    } @else {
+      @for (scheme of schemes(); track scheme.id; let i = $index) {
+        <button
+          type="button"
+          class="to-scheme-board__row to-scheme-board__row--{{ scheme.status }}"
+          (click)="openDetail(scheme)"
+        >
+          <span class="to-scheme-board__accent" aria-hidden="true"></span>
+
+          <span class="to-scheme-board__no">{{ ordinal(i) }}</span>
+
+          <span class="to-scheme-board__scheme">
+            <span class="to-scheme-board__type-badge to-scheme-board__type-badge--{{ scheme.type }}">
+              <tabler-icon [icon]="icons['discount-2']" [size]="16" />
+            </span>
+            <span class="to-scheme-board__scheme-text">
+              <span class="to-scheme-board__scheme-name">{{ scheme.name }}</span>
+              <span class="to-scheme-board__scheme-id to-numeric">
+                {{ scheme.id }} · {{ typeLabel(scheme.type) }}
+              </span>
+            </span>
+          </span>
+
+          <span class="to-scheme-board__region">
+            <span class="to-scheme-board__brand-chip">{{ brandInitials(scheme.brand) }}</span>
+            <span class="to-scheme-board__region-text">
+              <span>{{ scheme.region }}</span>
+              <span class="to-scheme-board__brand-name">{{ scheme.brand }}</span>
+            </span>
+          </span>
+
+          <span class="to-scheme-board__expiry to-numeric">{{ formatExpiry(scheme.expiryDate) }}</span>
+
+          <span class="to-scheme-board__meter">
+            <span class="to-scheme-board__bars to-scheme-board__bars--{{ scheme.status }}">
+              @for (cell of meterCells; track cell) {
+                <span
+                  class="to-scheme-board__bar"
+                  [class.to-scheme-board__bar--filled]="cell < filledMeterCells(scheme.redemptionPercent)"
+                ></span>
+              }
+            </span>
+            <span class="to-scheme-board__meter-value to-numeric">{{ scheme.redemptionPercent }}%</span>
+          </span>
+
+          <span class="to-scheme-board__status to-scheme-board__status--{{ scheme.status }}">
+            {{ statusLabels[scheme.status] }}
+          </span>
+        </button>
+      }
+    }
+  </div>
+</div>
+
+<!-- ─── Detail overlay (PrimeNG dialog) ─────────────────────── -->
+<p-dialog
+  [visible]="detailVisible()"
+  (visibleChange)="onDetailVisibleChange($event)"
+  [modal]="true"
+  [showHeader]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '640px' }"
+  styleClass="to-scheme-dialog"
+>
+  @if (selectedScheme(); as scheme) {
+    <div class="to-scheme-detail">
+      <div class="to-scheme-detail__head to-scheme-detail__head--{{ scheme.status }}">
+        <div class="to-scheme-detail__ident">
+          <span class="to-scheme-board__type-badge to-scheme-board__type-badge--{{ scheme.type }}">
+            <tabler-icon [icon]="icons['discount-2']" [size]="18" />
+          </span>
+          <div>
+            <h3 class="to-scheme-detail__name">{{ scheme.name }}</h3>
+            <div class="to-scheme-detail__sub to-numeric">
+              {{ scheme.id }} · {{ typeLabel(scheme.type) }} · {{ scheme.region }} · {{ scheme.brand }}
+            </div>
+          </div>
+        </div>
+
+        <div class="to-scheme-detail__actions">
+          @if (canManage()) {
+            @switch (scheme.status) {
+              @case ('active') {
+                <button type="button" class="to-scheme-detail__btn to-scheme-detail__btn--warning" [disabled]="deciding()" (click)="pause(scheme)">
+                  <tabler-icon [icon]="icons['player-pause']" [size]="14" />
+                  Pause
+                </button>
+                <button type="button" class="to-scheme-detail__btn to-scheme-detail__btn--danger" [disabled]="deciding()" (click)="requestExpire(scheme)">
+                  <tabler-icon [icon]="icons['circle-x']" [size]="14" />
+                  Expire
+                </button>
+              }
+              @case ('paused') {
+                <button type="button" class="to-scheme-detail__btn to-scheme-detail__btn--success" [disabled]="deciding()" (click)="resume(scheme)">
+                  <tabler-icon [icon]="icons['player-play']" [size]="14" />
+                  Resume
+                </button>
+                <button type="button" class="to-scheme-detail__btn to-scheme-detail__btn--danger" [disabled]="deciding()" (click)="requestExpire(scheme)">
+                  <tabler-icon [icon]="icons['circle-x']" [size]="14" />
+                  Expire
+                </button>
+              }
+            }
+          }
+          @if (canDuplicate()) {
+            <button type="button" class="to-scheme-detail__btn to-scheme-detail__btn--accent" [disabled]="deciding()" (click)="duplicate(scheme)">
+              <tabler-icon [icon]="icons['copy']" [size]="14" />
+              Duplicate
+            </button>
+          }
+          <button type="button" class="to-scheme-detail__close" aria-label="Close" (click)="selectedId.set(null)">
+            <tabler-icon [icon]="icons['x']" [size]="16" />
+          </button>
+        </div>
+      </div>
+
+      <div class="to-scheme-detail__body">
+        <div class="to-scheme-detail__stats">
+          <div class="to-scheme-detail__stat">
+            <span class="to-scheme-detail__stat-label">Discount</span>
+            <span class="to-scheme-detail__stat-value to-numeric">{{ scheme.discountPercent }}%</span>
+          </div>
+          <div class="to-scheme-detail__stat">
+            <span class="to-scheme-detail__stat-label">Expiry</span>
+            <span class="to-scheme-detail__stat-value to-numeric">{{ formatExpiry(scheme.expiryDate) }}</span>
+          </div>
+          <div class="to-scheme-detail__stat">
+            <span class="to-scheme-detail__stat-label">Status</span>
+            <span class="to-scheme-detail__stat-value">
+              <span class="to-scheme-board__status to-scheme-board__status--{{ scheme.status }}">
+                {{ statusLabels[scheme.status] }}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="to-scheme-detail__meter-block">
+          <span class="to-scheme-detail__stat-label">Redemption</span>
+          <span class="to-scheme-board__meter">
+            <span class="to-scheme-board__bars to-scheme-board__bars--{{ scheme.status }}">
+              @for (cell of meterCells; track cell) {
+                <span
+                  class="to-scheme-board__bar"
+                  [class.to-scheme-board__bar--filled]="cell < filledMeterCells(scheme.redemptionPercent)"
+                ></span>
+              }
+            </span>
+            <span class="to-scheme-board__meter-value to-numeric">{{ scheme.redemptionPercent }}%</span>
+          </span>
+        </div>
+
+        <div class="to-scheme-detail__activity">
+          <span class="to-scheme-detail__stat-label">Recent activity</span>
+          <to-activity-timeline [entries]="scheme.activity" />
+        </div>
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<to-confirm-dialog
+  [visible]="expireDialogVisible()"
+  (visibleChange)="expireDialogVisible.set($event)"
+  title="Expire this scheme?"
+  message="Expiring takes effect instantly and can't be undone — the scheme stops accepting redemptions immediately."
+  confirmLabel="Expire scheme"
+  variant="danger"
+  (confirmed)="confirmExpire()"
+  (cancelled)="cancelExpire()"
+/>

@@ -1,22 +1,52 @@
 @use '../../../styles/tokens' as t;
 @use '../../../styles/utilities' as u;
 
+// Layout: a full-height sidebar on the left with the top bar and content stacked to its
+// right (Linear / Vercel / Stripe). Changed from the full-width top bar in CLAUDE.md §6
+// so the FrieslandCampina lockup gets a 200px-wide brand block of its own instead of
+// being squeezed into a 48px strip — at 48px the wordmark rendered ~8px tall and was
+// effectively illegible. See to-sidebar for the brand block itself.
 .to-shell {
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
 
+// 3px of the brandmark's own colour sequence — orange → lime → grass → sky → magenta —
+// pinned across the very top. Runs the full application width now that the sidebar is
+// full height, so it reads as the edge of the product rather than the edge of a bar.
+.to-shell__spectrum {
+  height: 3px;
+  flex-shrink: 0;
+  background: var(--to-gradient-spectrum);
+  z-index: 30;
+}
+
+.to-shell__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.to-shell__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .to-shell__topbar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: t.$to-space-4;
   height: 48px;
   flex-shrink: 0;
   padding: 0 t.$to-space-4;
-  background: var(--to-bg-1);
-  border-bottom: 1px solid var(--to-border);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+  border-bottom: 1px solid var(--to-border-canvas);
+  background-color: var(--to-bg-1);
+  background-image: var(--to-canvas-topbar);
   position: relative;
   z-index: 20;
 }
@@ -27,58 +57,31 @@
   gap: t.$to-space-3;
 }
 
-.to-shell__brand {
-  display: flex;
-  align-items: center;
-  gap: t.$to-space-2;
-  text-decoration: none;
-  outline: none;
-  border-radius: t.$to-radius-control;
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
-  }
-}
-
-.to-shell__brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: t.$to-radius-control;
-  background: var(--to-accent);
-  color: #fff;
-  font-size: t.$to-font-size-2xs;
-  font-weight: var(--to-font-weight-medium);
-  letter-spacing: 0.01em;
-  line-height: 1;
-}
-
-.to-shell__logo {
-  font-size: t.$to-font-size-md;
-  font-weight: var(--to-font-weight-medium);
-  color: var(--to-text-primary);
-}
-
 .to-shell__topbar-center {
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
 .to-shell__search-trigger {
   display: flex;
   align-items: center;
   gap: t.$to-space-2;
-  width: 320px;
+  width: 100%;
+  max-width: 420px;
   padding: t.$to-space-2 t.$to-space-3;
-  background: var(--to-bg-2);
-  border: 1px solid var(--to-border);
+  background: rgb(255 255 255 / 55%);
+  border: 1px solid var(--to-border-canvas);
   border-radius: t.$to-radius-control;
   color: var(--to-text-muted);
   font-size: t.$to-font-size-sm;
   cursor: pointer;
+  backdrop-filter: blur(6px);
   @include u.motion(border-color, background-color, box-shadow);
+
+  :root[data-theme='dark'] & {
+    background: rgb(255 255 255 / 5%);
+  }
 
   span {
     flex: 1;
@@ -97,14 +100,15 @@
   }
 
   &:hover {
-    border-color: var(--to-border-strong);
+    border-color: color-mix(in srgb, var(--to-accent) 45%, transparent);
     background: var(--to-bg-1);
+    box-shadow: var(--to-glow-accent-sm);
   }
 
   &:focus-visible {
     outline: none;
     border-color: var(--to-accent);
-    box-shadow: 0 0 0 3px var(--to-accent-subtle);
+    box-shadow: var(--to-focus-ring);
   }
 }
 
@@ -155,8 +159,8 @@
   @include u.motion(background-color, color, transform);
 
   &:hover {
-    background: var(--to-bg-2);
-    color: var(--to-text-primary);
+    background: color-mix(in srgb, var(--to-accent) 12%, transparent);
+    color: var(--to-accent-text);
   }
 
   &:active {
@@ -179,7 +183,7 @@
   @include u.motion(box-shadow);
 
   &:hover .p-avatar {
-    box-shadow: 0 0 0 2px var(--to-border-strong);
+    box-shadow: var(--to-glow-accent-sm);
   }
 
   &:focus-visible {
@@ -219,15 +223,14 @@
   color: var(--to-text-muted);
 }
 
-.to-shell__body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
+// The page canvas. `background-attachment: fixed` anchors the mesh to the viewport, so
+// the coloured pools stay in their corners while content scrolls past them — scrolling
+// a 2000px page must not drag a magenta pool up through the middle of a table.
 .to-shell__content {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  background: var(--to-bg-0);
+  background-color: var(--to-bg-0);
+  background-image: var(--to-canvas-page);
+  background-attachment: fixed;
 }

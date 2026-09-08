@@ -1,0 +1,88 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: block;
+}
+
+.to-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-bar-chart__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-1;
+}
+
+.to-bar-chart__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  @include u.truncate;
+}
+
+.to-bar-chart__value {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-bar-chart__total {
+  font-weight: var(--to-font-weight-regular);
+  color: var(--to-text-muted);
+}
+
+// Square-ended bars, not pills. The flat edge is what gives the chart its hard,
+// technical register — rounded caps read soft and consumer-grade at this size.
+.to-bar-chart__track {
+  height: 6px;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--to-viz-track);
+  overflow: hidden;
+}
+
+.to-bar-chart__fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--to-accent);
+  @include u.motion(width);
+}
+
+// Overrun always wins over any categorical colour — a bar past its allocation must
+// read as Passion red regardless of which series it belongs to.
+.to-bar-chart__fill--overrun {
+  background: var(--to-danger-solid);
+}
+
+.to-bar-chart__row--warning .to-bar-chart__fill {
+  background: var(--to-warning-solid);
+}
+
+.to-bar-chart__row--critical .to-bar-chart__fill {
+  background: var(--to-critical-solid);
+}
+
+.to-bar-chart__row--success .to-bar-chart__fill {
+  background: var(--to-success-solid);
+}
+
+.to-bar-chart__row--neutral .to-bar-chart__fill {
+  background: var(--to-brand-grey);
+}
+
+.to-bar-chart__empty {
+  margin: 0;
+  padding: t.$to-space-4 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
