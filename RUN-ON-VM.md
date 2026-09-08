@@ -81,18 +81,31 @@ binary, run `npm rebuild esbuild` on the VM.
 ## Running it
 
 ```powershell
-$env:TO_API_TARGET = 'http://localhost'
 npm run start:live
 ```
 
 Then open **http://localhost:4200** in the VM's own browser.
 
-- `TO_API_TARGET` is the **origin only** — no `/api/v1`, no `/swagger`. The API is on port
-  80, so no port is needed in the URL.
-- If IIS uses host-header bindings, `http://localhost` may not match a site. Use
-  `http://10.10.30.17` instead.
-- `start:live` selects `environment.live.ts` (`useMocks: false`), so the app talks to the
-  real API rather than the captured fixtures. Plain `npm start` stays on mocks.
+**Use `start:live`, not `start`.** This is the one thing that catches people:
+
+| Command | Data source | Top bar |
+|---|---|---|
+| `npm start` | `public/assets/response_menu.json` and the other mock services | shows **MOCK DATA** |
+| `npm run start:live` | the real API at `http://10.10.30.17` | no badge |
+
+If you see the amber **MOCK DATA** badge in the top bar, you are on `npm start` — stop the
+server and rerun with `start:live`. Nothing else distinguishes the two at a glance, because
+the mock deliberately serves a *real* captured menu payload.
+
+The dev server prints its backend on startup, so you can confirm without guessing:
+
+```
+[proxy] /api/* -> http://10.10.30.17
+```
+
+The target defaults to `http://10.10.30.17` (see `proxy.conf.js`); override it with
+`$env:TO_API_TARGET` only if the API moves. It is the **origin only** — no `/api/v1`, no
+`/swagger`.
 
 ### Verify the API before blaming the app
 

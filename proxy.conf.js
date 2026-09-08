@@ -14,13 +14,17 @@
  *
  * ── Usage ────────────────────────────────────────────────────────────────────
  *
- *   npm run start:live                                        → target below
+ *   npm start              mock data. No backend needed. Top bar shows "MOCK DATA".
+ *   npm run start:live     the real API at DEFAULT_TARGET below. No badge.
+ *
+ * Override the target when the API moves:
+ *
  *   $env:TO_API_TARGET='http://10.20.30.40:5000'; npm run start:live   (PowerShell)
  *   TO_API_TARGET=http://10.20.30.40:5000 npm run start:live           (bash)
  *
- * Set the target to the **origin only** — scheme, host, port. No `/api/v1`, no `/swagger`.
- * If Swagger UI is at `http://10.20.30.40:5000/swagger/index.html`, the target is
- * `http://10.20.30.40:5000`.
+ * The target is the **origin only** — scheme, host, port. No `/api/v1`, no `/swagger`.
+ * Swagger UI at `http://10.10.30.17/swagger/` means the target is `http://10.10.30.17`;
+ * the API itself is served from `/api/v1/...` on that same origin.
  *
  * ── A note on option names ───────────────────────────────────────────────────
  *
@@ -36,7 +40,26 @@
  * refused it — as opposed to never having been proxied at all.
  */
 
-const target = process.env['TO_API_TARGET'] || 'http://localhost:5000';
+/**
+ * The Trade Octane API VM (IIS, port 80 — hence no port in the URL).
+ *
+ * This is the default rather than `localhost` because the only machine that can currently
+ * reach it *is* the VM, and there the API is a peer, not a local process. Baking it in
+ * means `npm run start:live` works with no environment variable to remember or mistype
+ * over an RDP session — the single most common way to end up staring at mock data and
+ * wondering why.
+ *
+ * `10.10.30.17` rather than `localhost`: it works from the VM either way, and it keeps
+ * working if IIS is bound to a host header that `localhost` does not match.
+ */
+const DEFAULT_TARGET = 'http://10.10.30.17';
+
+const target = process.env['TO_API_TARGET'] || DEFAULT_TARGET;
+
+// Printed once at startup. Without it there is no way to tell from the terminal which
+// backend the dev server is proxying to, and "why is my data wrong" becomes a guess.
+// eslint-disable-next-line no-console -- dev-server startup diagnostic
+console.log(`[proxy] /api/* -> ${target}`);
 
 module.exports = {
   '/api': {
