@@ -1,0 +1,249 @@
+<to-page-header
+  title="Integration"
+  subtitle="Auto-DA releases and batch-status pushes to SAP."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Integration' }]"
+/>
+
+<div class="to-adm">
+  <div class="to-adm__split">
+    <div class="to-int__main">
+      <!-- ── Batch status ─────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-adm__card--pad">
+        <div class="to-int__head">
+          <h2 class="to-adm__subtitle">Batch status</h2>
+          @if (batches(); as summary) {
+            @if (!summary.sapAvailable) {
+              <!-- Worth stating plainly: without this the rows look authoritative when
+                   they are only whatever was cached. -->
+              <span class="to-adm__flag to-adm__flag--warn">
+                SAP unavailable — showing cached rows
+              </span>
+            } @else {
+              <span class="to-adm__flag to-adm__flag--ok">SAP reachable</span>
+            }
+          }
+        </div>
+
+        <div class="to-adm__search">
+          <tabler-icon [icon]="icons['search']" [size]="15" />
+          <input
+            pInputText
+            type="search"
+            [formControl]="batchSearchControl"
+            (search)="searchBatches()"
+            (keyup.enter)="searchBatches()"
+            placeholder="Search batch or material"
+            aria-label="Search batches"
+          />
+        </div>
+
+        @if (batchesLoading()) {
+          <to-skeleton width="100%" height="160px" />
+        } @else if (!batches() || (batches()?.rows ?? []).length === 0) {
+          <to-empty-state icon="inbox" heading="No batches in the lookback window" />
+        } @else {
+          <div class="to-adm__table-wrap">
+            <table class="to-adm__table">
+              <thead>
+                <tr>
+                  <th scope="col" class="to-adm__th to-int__th-check">
+                    <input
+                      type="checkbox"
+                      class="to-int__checkbox"
+                      [checked]="allBatchesSelected()"
+                      (change)="toggleAllBatches()"
+                      aria-label="Select all batches"
+                    />
+                  </th>
+                  <th scope="col" class="to-adm__th">Batch</th>
+                  <th scope="col" class="to-adm__th">Material</th>
+                  <th scope="col" class="to-adm__th">Sale allowed</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of batches()?.rows ?? []; track row.batch) {
+                  <tr class="to-adm__row">
+                    <td class="to-adm__td">
+                      <input
+                        type="checkbox"
+                        class="to-int__checkbox"
+                        [checked]="batchSelection().has(row.batch)"
+                        (change)="toggleBatch(row.batch)"
+                        [attr.aria-label]="'Select batch ' + row.batch"
+                      />
+                    </td>
+                    <td class="to-adm__td to-adm__td--mono">{{ row.batch }}</td>
+                    <td class="to-adm__td to-adm__td--muted">{{ row.material || '—' }}</td>
+                    <td class="to-adm__td to-adm__td--muted">{{ row.saleAllowed || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- ── Runs ─────────────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-adm__card--pad">
+        <div class="to-int__head">
+          <h2 class="to-adm__subtitle">Recent runs</h2>
+          @if (hasLiveRun()) {
+            <span class="to-int__live">
+              <span class="to-int__live-dot"></span>
+              updating
+            </span>
+          }
+        </div>
+
+        @if (runsLoading()) {
+          @for (r of skeletonRows; track r) {
+            <div class="to-adm__skeleton-row">
+              <to-skeleton width="30%" height="12px" />
+              <to-skeleton width="20%" height="12px" />
+            </div>
+          }
+        } @else if (runsFailed()) {
+          <to-empty-state icon="alert-triangle" heading="Could not load runs">
+            <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retryRuns()">
+              <tabler-icon [icon]="icons['refresh']" [size]="15" />
+              Try again
+            </button>
+          </to-empty-state>
+        } @else if (runs().length === 0) {
+          <to-empty-state icon="plug-connected" heading="No runs yet" />
+        } @else {
+          <ul class="to-int__runs">
+            @for (run of runs(); track run.runId) {
+              <li class="to-int__run">
+                <button type="button" class="to-int__run-head" (click)="toggleRun(run.runId)">
+                  <span class="to-int__run-main">
+                    <span class="to-int__run-title">
+                      {{ run.kind === 'AutoDaRelease' ? 'Auto-DA release' : 'Batch status push' }}
+                      @if (run.dryRun) {
+                        <span class="to-adm__flag">dry run</span>
+                      }
+                    </span>
+                    <span class="to-int__run-meta">
+                      {{ run.actor || 'system' }} · {{ formatMoment(run.queuedAtUtc) }}
+                      @if (run.stage) {
+                        · {{ run.stage }}
+                      }
+                    </span>
+                  </span>
+                  <span class="to-int__run-side">
+                    <span class="to-int__state" [attr.data-tone]="stateTone(run.state)">
+                      {{ stateLabel(run.state) }}
+                    </span>
+                    <span class="to-numeric to-int__run-count">
+                      {{ run.processed }}/{{ run.total }}
+                    </span>
+                  </span>
+                </button>
+
+                @if (run.state === 'Running' || run.state === 'Queued') {
+                  <span class="to-int__progress">
+                    <span class="to-int__progress-fill" [style.width.%]="progressPercent(run)"></span>
+                  </span>
+                }
+
+                @if (expandedRunId() === run.runId) {
+                  <div class="to-int__detail">
+                    <div class="to-int__stats">
+                      <span><strong class="to-numeric">{{ run.succeeded }}</strong> succeeded</span>
+                      <span><strong class="to-numeric">{{ run.partial }}</strong> partial</span>
+                      <span><strong class="to-numeric">{{ run.failed }}</strong> failed</span>
+                      <span><strong class="to-numeric">{{ run.skipped }}</strong> skipped</span>
+                    </div>
+                    @if (run.error) {
+                      <p class="to-int__error">{{ run.error }}</p>
+                    }
+                    @if (run.items.length > 0) {
+                      <ul class="to-int__items">
+                        @for (item of run.items; track item.key) {
+                          <li class="to-int__item">
+                            <span class="to-adm__td--mono">{{ item.key }}</span>
+                            <span class="to-int__item-outcome">{{ item.outcome }}</span>
+                            @if (item.detail) {
+                              <span class="to-int__item-detail">{{ item.detail }}</span>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+
+    <!-- ── Start a run ──────────────────────────────────────────────────────── -->
+    <aside class="to-adm__panel">
+      <div class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">Push batch status</h2>
+        <p class="to-adm__note">Sends the selected batches to SAP.</p>
+
+        <div class="to-int__selected to-numeric">{{ batchSelection().size }} selected</div>
+
+        <label class="to-int__dry">
+          <input type="checkbox" class="to-int__checkbox" [checked]="batchDryRun()" (change)="batchDryRun.set(!batchDryRun())" />
+          <span>Dry run — evaluate only, post nothing</span>
+        </label>
+
+        <button
+          type="button"
+          pButton
+          class="p-button-sm to-int__start"
+          [class.p-button-danger]="!batchDryRun()"
+          [disabled]="!canStartBatch()"
+          (click)="confirming.set('batch')"
+        >
+          {{ starting() ? 'Starting…' : batchDryRun() ? 'Start dry run' : 'Push to SAP' }}
+        </button>
+      </div>
+
+      <div class="to-adm__card to-adm__card--pad to-int__card-gap">
+        <h2 class="to-adm__subtitle">Auto-DA release</h2>
+
+        <div class="to-adm__field">
+          <label class="to-adm__label" for="period">Period</label>
+          <input pInputText id="period" type="text" [formControl]="autoDaPeriodControl" placeholder="e.g. 2026-09" />
+        </div>
+
+        <div class="to-adm__field to-int__card-gap">
+          <label class="to-adm__label" for="delivery">Delivery number</label>
+          <input pInputText id="delivery" type="text" [formControl]="autoDaDeliveryControl" placeholder="Optional" />
+        </div>
+
+        <label class="to-int__dry">
+          <input type="checkbox" class="to-int__checkbox" [checked]="autoDaDryRun()" (change)="autoDaDryRun.set(!autoDaDryRun())" />
+          <span>Dry run — evaluate only, post nothing</span>
+        </label>
+
+        <button
+          type="button"
+          pButton
+          class="p-button-sm to-int__start"
+          [class.p-button-danger]="!autoDaDryRun()"
+          [disabled]="starting()"
+          (click)="confirming.set('autoda')"
+        >
+          {{ starting() ? 'Starting…' : autoDaDryRun() ? 'Start dry run' : 'Release against SAP' }}
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming() !== null"
+  (visibleChange)="confirming.set(null)"
+  [variant]="(confirming() === 'batch' && !batchDryRun()) || (confirming() === 'autoda' && !autoDaDryRun()) ? 'danger' : 'default'"
+  title="Start this run?"
+  [message]="confirmMessage()"
+  confirmLabel="Start"
+  (confirmed)="start()"
+  (cancelled)="confirming.set(null)"
+/>

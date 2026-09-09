@@ -1,0 +1,219 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Only what is specific to this screen. The filter bar, chipset, card, census, flags and
+// pager all come from the global `_admin.scss` partial.
+
+.to-ar__queues {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+}
+
+.to-ar__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  overflow: hidden;
+}
+
+.to-ar__queue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  width: 100%;
+  padding: t.$to-space-3 t.$to-space-4;
+  border: none;
+  border-top: 1px solid var(--to-border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  @include u.motion(background-color, border-color);
+
+  li:first-child & {
+    border-top: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+
+  // The rail is this app's shared "state" language (CLAUDE.md §5): amber for a queue that
+  // cannot drain, accent for the one being worked on.
+  &--stuck {
+    border-left-color: var(--to-warning-solid);
+  }
+
+  &--active {
+    border-left-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 9%, var(--to-bg-1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+}
+
+.to-ar__queue-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-ar__queue-holder {
+  @include u.truncate;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ar__queue-meta {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ar__queue-side {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  flex-shrink: 0;
+}
+
+.to-ar__queue-count {
+  min-width: 44px;
+  text-align: right;
+  font-size: t.$to-font-size-md;
+  color: var(--to-text-primary);
+}
+
+// ─── Panel ────────────────────────────────────────────────────────────────────
+
+.to-ar__panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+}
+
+.to-ar__panel-title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-ar__panel-sub {
+  margin: 2px 0 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ar__close {
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: none;
+  color: var(--to-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--to-text-primary);
+    background: var(--to-bg-2);
+  }
+}
+
+// The number the transfer is guarded on. Given weight because a mis-read here is what a
+// half-applied re-route would look like.
+.to-ar__count-line {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ar__count-figure {
+  font-size: t.$to-font-size-xl;
+  line-height: 1;
+  color: var(--to-text-primary);
+}
+
+.to-ar__transfer {
+  width: 100%;
+  margin-top: t.$to-space-3;
+  justify-content: center;
+}
+
+.to-ar__preview-title {
+  margin: t.$to-space-6 0 t.$to-space-2;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-ar__preview {
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-ar__preview-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-ar__preview-ref {
+  @include u.truncate;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+}
+
+.to-ar__preview-meta {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ar__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-8 t.$to-space-4;
+  text-align: center;
+  color: var(--to-text-muted);
+
+  p {
+    margin: 0;
+    font-size: t.$to-font-size-xs;
+  }
+}

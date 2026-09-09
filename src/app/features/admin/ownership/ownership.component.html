@@ -1,0 +1,37 @@
+<to-page-header
+  title="Ownership Transfers"
+  subtitle="Move budgets and activities off someone who can no longer action them."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Ownership Transfers' }]"
+/>
+
+@if (availableTabs().length === 0) {
+  <to-empty-state
+    icon="lock"
+    heading="No transfer types available"
+    description="You can reach this screen, but neither ownership type is granted to you."
+  />
+} @else {
+  <div class="to-owt__tabs" role="tablist" aria-label="Ownership type">
+    @for (tab of availableTabs(); track tab) {
+      <button
+        type="button"
+        role="tab"
+        class="to-owt__tab"
+        [class.to-owt__tab--active]="activeTab() === tab"
+        [attr.aria-selected]="activeTab() === tab"
+        (click)="select(tab)"
+      >
+        {{ tabLabels[tab] }}
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+    @case ('budget') {
+      <to-budget-ownership />
+    }
+    @case ('activity') {
+      <to-activity-ownership />
+    }
+  }
+}

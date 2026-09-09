@@ -109,6 +109,62 @@ export const routes: Routes = [
             (m) => m.MenuListComponent,
           ),
       },
+      {
+        path: 'admin/menus/new',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/menus/menu-form/menu-form.component').then(
+            (m) => m.MenuFormComponent,
+          ),
+      },
+      {
+        path: 'admin/menus/:menuId',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/menus/menu-form/menu-form.component').then(
+            (m) => m.MenuFormComponent,
+          ),
+      },
+      {
+        path: 'admin/approval-routing',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/approval-routing/approval-routing.component').then(
+            (m) => m.ApprovalRoutingComponent,
+          ),
+      },
+      {
+        path: 'admin/ownership',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/ownership/ownership.component').then(
+            (m) => m.OwnershipComponent,
+          ),
+      },
+      {
+        path: 'admin/activity-logs',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/activity-logs/activity-logs.component').then(
+            (m) => m.ActivityLogsComponent,
+          ),
+      },
+      {
+        path: 'admin/frequency',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/frequency/frequency.component').then(
+            (m) => m.FrequencyComponent,
+          ),
+      },
+      {
+        path: 'admin/integration',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin/integration/integration.component').then(
+            (m) => m.IntegrationComponent,
+          ),
+      },
 
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {

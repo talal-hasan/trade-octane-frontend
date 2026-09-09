@@ -129,10 +129,14 @@ describe('transformMenu', () => {
   });
 
   it('marks a destination as ported once any contributing row is ported', () => {
-    const result = transformMenu([ADMINISTRATION]);
+    const result = transformMenu([ADMINISTRATION, FSD]);
+
+    // Users folds seven rows. "Employee Resignation" (133) is still unported, but the
+    // other six are built — one ported contributor is enough for the destination.
     expect(findItem(result.sections, '/admin/users')?.pending).toBe(false);
-    // Approval Routing has no built screen yet: both its rows are unported.
-    expect(findItem(result.sections, '/admin/approval-routing')?.pending).toBe(true);
+
+    // A module with no ported row anywhere stays pending and routes to the placeholder.
+    expect(findItem(result.sections, '/legacy/196')?.pending).toBe(true);
   });
 });
 

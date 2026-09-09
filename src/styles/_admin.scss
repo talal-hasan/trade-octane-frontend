@@ -1,0 +1,546 @@
+@use 'tokens' as t;
+@use 'utilities' as u;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared Administration screen chrome.
+//
+// **This file emits real CSS, so it is imported by main.scss exactly once and by no
+// component** — the same rule as _theme.scss (CLAUDE.md §5 Stylesheet split). A component
+// that `@use`d it would stamp another copy of every rule below into its own bundle.
+//
+// It exists because the Administration screens are the same screen eight times over: a
+// filter bar, a chipset, a card, a keyset pager, a "this grant does nothing" flag. Nine
+// components each re-declaring those was both duplication and drift — the chip on one
+// screen had already stopped matching the chip on another.
+//
+// Screen-specific layout stays in the component's own stylesheet. Only what is genuinely
+// shared lives here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.to-adm {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+// ─── Filter bar ───────────────────────────────────────────────────────────────
+
+.to-adm__filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-adm__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+  color: var(--to-text-muted);
+
+  input {
+    width: 100%;
+  }
+}
+
+.to-adm__chipset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  background: var(--to-bg-2);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+// A filter chip. Toggling off is always possible — clicking the active chip clears it,
+// which is why these are buttons rather than radios.
+.to-adm__chip {
+  padding: t.$to-space-1 t.$to-space-3;
+  border: none;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    background: var(--to-bg-1);
+    color: var(--to-accent-text);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Surfaces ─────────────────────────────────────────────────────────────────
+
+.to-adm__card {
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-adm__card--pad {
+  padding: t.$to-space-4;
+}
+
+.to-adm__title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-adm__subtitle {
+  margin: 0 0 t.$to-space-3;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-adm__hint {
+  margin: t.$to-space-1 0 0;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+}
+
+.to-adm__note {
+  margin: 0;
+  max-width: 62ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// ─── Split layout: list on the left, detail or action panel on the right ─────
+
+.to-adm__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .to-adm__split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-adm__panel {
+  position: sticky;
+  top: 0;
+}
+
+// ─── Forms ────────────────────────────────────────────────────────────────────
+
+.to-adm__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+
+  input,
+  select {
+    width: 100%;
+  }
+}
+
+.to-adm__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+.to-adm__table-wrap {
+  overflow-x: auto;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-adm__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$to-font-size-sm;
+}
+
+.to-adm__th {
+  @include u.table-head;
+  padding: t.$to-space-3 t.$to-space-4;
+  text-align: left;
+  font-weight: 500;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  white-space: nowrap;
+
+  &--right {
+    text-align: right;
+  }
+}
+
+.to-adm__row {
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  // A row whose state means "this does not do what it looks like it does" — a drifted
+  // owner, a dead grant, a queue nobody can drain.
+  &--attention {
+    background: color-mix(in srgb, var(--to-warning-solid) 6%, var(--to-bg-1));
+
+    &:hover {
+      background: color-mix(in srgb, var(--to-warning-solid) 10%, var(--to-bg-1));
+    }
+  }
+}
+
+.to-adm__td {
+  padding: t.$to-space-2 t.$to-space-4;
+  vertical-align: middle;
+  color: var(--to-text-primary);
+
+  &--muted {
+    color: var(--to-text-secondary);
+  }
+
+  &--mono {
+    font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-secondary);
+  }
+
+  &--right {
+    text-align: right;
+  }
+}
+
+// ─── Flags ────────────────────────────────────────────────────────────────────
+
+.to-adm__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 t.$to-space-1;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  white-space: nowrap;
+
+  &--warn {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+    cursor: help;
+  }
+
+  &--ok {
+    border-color: var(--to-success);
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+}
+
+// ─── Pager (keyset: Prev / Next only — see CursorPager) ──────────────────────
+
+.to-adm__pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  padding-top: t.$to-space-1;
+}
+
+.to-adm__pager-range {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-adm__pager-buttons {
+  display: flex;
+  gap: t.$to-space-1;
+}
+
+// ─── Skeletons ────────────────────────────────────────────────────────────────
+
+.to-adm__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+// ─── Census strip: the headline counts a screen is really about ──────────────
+
+.to-adm__census {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-6;
+  padding: t.$to-space-3 t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-adm__census-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  // The "something is wrong" figure. Goes quiet when it reaches zero, because a zero
+  // problem count painted amber trains people to ignore amber.
+  &--warn .to-adm__census-value {
+    color: var(--to-warning);
+  }
+
+  &--clear .to-adm__census-value {
+    color: var(--to-success);
+  }
+}
+
+.to-adm__census-label {
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-adm__census-value {
+  font-size: t.$to-font-size-lg;
+  line-height: 1.1;
+  color: var(--to-text-primary);
+}
+
+.to-adm__census-action {
+  margin-left: auto;
+  padding: t.$to-space-1 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+
+  &--on {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ownership transfer screens (budget + activity).
+//
+// Both are the identical flow — period, current owner, rows, destination — so the owner
+// picker, the selectable row table and the destination panel live here rather than being
+// declared twice and drifting apart.
+// ─────────────────────────────────────────────────────────────────────────────
+.to-own {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-own__main {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-own__owner-search {
+  margin-bottom: t.$to-space-3;
+}
+
+// ─── Owner picker ─────────────────────────────────────────────────────────────
+
+.to-own__owners {
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-own__owner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  width: 100%;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: none;
+  border-top: 1px solid var(--to-border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  text-align: left;
+  cursor: pointer;
+  @include u.motion(background-color, border-color);
+
+  li:first-child & {
+    border-top: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+
+  &--stuck {
+    border-left-color: var(--to-warning-solid);
+  }
+
+  &--active {
+    border-left-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 9%, var(--to-bg-1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+}
+
+.to-own__owner-name {
+  @include u.truncate;
+  color: var(--to-text-primary);
+}
+
+.to-own__owner-side {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  flex-shrink: 0;
+}
+
+.to-own__owner-count {
+  min-width: 36px;
+  text-align: right;
+  color: var(--to-text-secondary);
+}
+
+// ─── Rows ─────────────────────────────────────────────────────────────────────
+
+.to-own__rows-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-own__rows-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-own__th-check {
+  width: 40px;
+}
+
+.to-own__checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+.to-own__code {
+  display: block;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+}
+
+.to-own__desc {
+  @include u.truncate;
+  display: block;
+  max-width: 340px;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Destination panel ────────────────────────────────────────────────────────
+
+.to-own__count {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-own__count-figure {
+  font-size: t.$to-font-size-xl;
+  line-height: 1;
+  color: var(--to-text-primary);
+}
+
+.to-own__transfer {
+  width: 100%;
+  margin-top: t.$to-space-3;
+  justify-content: center;
+}

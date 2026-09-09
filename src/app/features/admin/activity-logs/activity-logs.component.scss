@@ -1,0 +1,42 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-alg__actor {
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.to-alg__dates {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+
+  input {
+    width: 150px;
+  }
+}
+
+.to-alg__dash {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-alg__who {
+  display: block;
+  color: var(--to-text-primary);
+}
+
+.to-alg__who-id {
+  display: block;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-alg__desc {
+  @include u.truncate;
+  display: block;
+  max-width: 420px;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}

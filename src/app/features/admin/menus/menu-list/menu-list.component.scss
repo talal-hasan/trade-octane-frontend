@@ -157,6 +157,23 @@
 
 // The tree is two levels and the grid is sorted by TreeOrder, so a single indent marker is
 // enough to show which rows are children without a full tree control.
+.to-ml__header-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// The name is the way into the editor — legacy needed a separate Edit column for this.
+.to-ml__name--link {
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    color: var(--to-accent-text);
+    text-decoration: underline;
+  }
+}
+
 .to-ml__indent {
   color: var(--to-text-muted);
 }

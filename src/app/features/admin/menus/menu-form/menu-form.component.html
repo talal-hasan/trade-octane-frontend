@@ -1,0 +1,162 @@
+<to-page-header
+  [title]="isEdit() ? 'Edit menu item' : 'Add menu item'"
+  subtitle="Menu rows are what access is granted on. Creating one grants nothing by itself."
+  [breadcrumbs]="[
+    { label: 'Administration' },
+    { label: 'Menus', route: '/admin/menus' },
+    { label: isEdit() ? 'Edit' : 'New' },
+  ]"
+/>
+
+@if (loading()) {
+  <to-skeleton width="100%" height="320px" />
+} @else {
+  <form class="to-mf" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="to-mf__layout">
+      <section class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">Details</h2>
+
+        <div class="to-adm__field to-mf__field">
+          <label class="to-adm__label" for="menuName">Menu name</label>
+          <input pInputText id="menuName" type="text" formControlName="menuName" />
+          @if (form.controls.menuName.touched && form.controls.menuName.invalid) {
+            <span class="to-mf__error">A menu name is required.</span>
+          }
+        </div>
+
+        <div class="to-adm__field to-mf__field">
+          <label class="to-adm__label" for="menuPage">
+            Page
+            <span class="to-mf__hint-inline">The legacy page this row opens</span>
+          </label>
+          <input pInputText id="menuPage" type="text" formControlName="menuPage" placeholder="e.g. CreateUser.aspx" />
+          @if (form.controls.menuPage.touched && form.controls.menuPage.invalid) {
+            <span class="to-mf__error">A page is required.</span>
+          }
+        </div>
+
+        <div class="to-mf__row">
+          <div class="to-adm__field to-mf__field">
+            <label class="to-adm__label" for="parentId">
+              Parent
+              <span class="to-mf__hint-inline">Blank makes this a root module</span>
+            </label>
+            <select id="parentId" formControlName="parentId" class="to-mf__select">
+              <option [value]="0">— none (root) —</option>
+              @for (parent of parents(); track parent.menuId) {
+                <option [value]="parent.menuId">{{ parent.menuName }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="to-adm__field to-mf__field to-mf__field--narrow">
+            <label class="to-adm__label" for="orderId">Order</label>
+            <input pInputText id="orderId" type="number" formControlName="orderId" />
+          </div>
+        </div>
+
+        <div class="to-adm__field to-mf__field">
+          <label class="to-adm__label" for="icons">Icon</label>
+          <input pInputText id="icons" type="text" list="to-mf-icons" formControlName="icons" placeholder="Optional" />
+          <datalist id="to-mf-icons">
+            @for (name of iconNames(); track name) {
+              <option [value]="name"></option>
+            }
+          </datalist>
+          <span class="to-adm__hint">
+            FontAwesome 4 names, as the legacy menu stores them. The new portal maps them to
+            its own icon set.
+          </span>
+        </div>
+
+        <div class="to-mf__row">
+          <div class="to-adm__field to-mf__field">
+            <span class="to-adm__label" id="octane-label">Application</span>
+            <div class="to-adm__chipset" role="group" aria-labelledby="octane-label">
+              @for (o of octanes; track o) {
+                <button
+                  type="button"
+                  class="to-adm__chip"
+                  [class.to-adm__chip--on]="form.controls.octane.value === o"
+                  (click)="form.controls.octane.setValue(o); form.markAsDirty()"
+                >
+                  {{ o === 'Octane1' ? 'Administration 1.0' : 'Administration 2.0' }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="to-adm__field to-mf__field">
+            <span class="to-adm__label" id="activation-label">Visibility</span>
+            <div class="to-adm__chipset" role="group" aria-labelledby="activation-label">
+              @for (a of activations; track a) {
+                <button
+                  type="button"
+                  class="to-adm__chip"
+                  [class.to-adm__chip--on]="form.controls.activation.value === a"
+                  (click)="form.controls.activation.setValue(a); form.markAsDirty()"
+                >
+                  {{ a }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="to-mf__aside">
+        <!-- The thing admins get wrong: a menu row is not access. -->
+        <div class="to-adm__card to-adm__card--pad to-mf__notice">
+          <h2 class="to-adm__subtitle">Before you save</h2>
+          <ul class="to-mf__list">
+            <li>
+              <strong>A new row grants nothing.</strong> Nobody sees it until it is granted
+              to a role or a user on the Access screens.
+            </li>
+            <li>
+              <strong>Hidden rows do not authorise.</strong> A grant pointing at a hidden
+              item has no effect.
+            </li>
+            @if (isEdit()) {
+              <li>
+                @if (isMapped()) {
+                  <strong>This row is ported.</strong> The new portal has a screen for it.
+                } @else {
+                  <strong>This row is legacy-only.</strong> It renders under “More” and opens
+                  the legacy portal until it gets a blueprint entry.
+                }
+              </li>
+            }
+          </ul>
+        </div>
+
+        @if (existing(); as menu) {
+          <div class="to-adm__card to-adm__card--pad to-mf__notice">
+            <h2 class="to-adm__subtitle">Current grants</h2>
+            <div class="to-mf__grants">
+              <span><strong class="to-numeric">{{ menu.roleGrants }}</strong> role grants</span>
+              <span><strong class="to-numeric">{{ menu.userGrants }}</strong> direct grants</span>
+            </div>
+            @if (!menu.isReachable) {
+              <p class="to-adm__hint">
+                Nothing links to this item, so nobody can reach it even if granted.
+              </p>
+            }
+          </div>
+        }
+
+        <div class="to-mf__actions">
+          <a pButton routerLink="/admin/menus" class="p-button-text p-button-sm">Cancel</a>
+          <button
+            type="submit"
+            pButton
+            class="p-button-sm"
+            [disabled]="saving() || form.invalid || (isEdit() && form.pristine)"
+          >
+            {{ saving() ? 'Saving…' : isEdit() ? 'Save changes' : 'Create menu item' }}
+          </button>
+        </div>
+      </aside>
+    </div>
+  </form>
+}

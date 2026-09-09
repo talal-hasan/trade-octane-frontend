@@ -365,7 +365,8 @@ export function withAdminOnlyRoutes(
       menuIds: [],
       tabs: [],
       aliases: [route.navLabel],
-      pending: route.route !== '/admin/menus',
+      // Both admin-only screens are built now.
+      pending: false,
     };
     const section = next.find((candidate) => candidate.label === route.group);
     if (section) {

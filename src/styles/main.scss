@@ -7,6 +7,9 @@
 @use 'tokens';
 @use 'typography';
 @use 'primeng-overrides';
+// Shared Administration screen chrome. Emits CSS, so imported here once and never by a
+// component — same rule as 'theme' above.
+@use 'admin';
 
 // Inter — self-hosted, weights 400 (regular) and 500 (medium) only.
 @import '@fontsource/inter/400.css';

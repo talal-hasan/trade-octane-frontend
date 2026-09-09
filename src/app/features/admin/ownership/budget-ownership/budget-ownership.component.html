@@ -1,0 +1,373 @@
+<div class="to-own">
+  <div class="to-adm__filters">
+    @if (filtersLoading()) {
+      <to-skeleton width="360px" height="30px" />
+    } @else {
+      <div class="to-adm__chipset" role="group" aria-label="Year">
+        @for (y of years(); track y) {
+          <button type="button" class="to-adm__chip" [class.to-adm__chip--on]="year() === y" (click)="setYear(y)">
+            {{ y }}
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__chipset" role="group" aria-label="Month">
+        @for (m of months(); track m.code) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="month() === +m.code"
+            (click)="setMonth(+m.code)"
+          >
+            {{ m.description }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (!filtersLoading()) {
+    <div class="to-adm__filters">
+      <div class="to-adm__chipset" role="group" aria-label="Scheme type">
+        @for (s of schemeTypes(); track s.code) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="selectedSchemes().has(s.code)"
+            (click)="toggleScheme(s.code)"
+          >
+            {{ s.description || s.code }}
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__chipset" role="group" aria-label="Region">
+        @for (r of regions(); track r.code) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="selectedRegions().has(r.code)"
+            (click)="toggleRegion(r.code)"
+          >
+            {{ r.description || r.code }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="to-adm__census">
+    <div class="to-adm__census-item">
+      <span class="to-adm__census-label">Budget shells in scope</span>
+      <span class="to-adm__census-value to-numeric">{{ totalShells().toLocaleString() }}</span>
+    </div>
+    <!-- Owned by someone who cannot act. Legacy could not list these owners at all — it
+         inner-joined USERS with no active test, so they simply did not appear. -->
+    <div
+      class="to-adm__census-item to-adm__census-item--warn"
+      [class.to-adm__census-item--clear]="stuckShells() === 0"
+    >
+      <span class="to-adm__census-label">Held by a non-actionable owner</span>
+      <span class="to-adm__census-value to-numeric">{{ stuckShells().toLocaleString() }}</span>
+    </div>
+  </div>
+
+  <div class="to-adm__split">
+    <div class="to-own__main">
+      <!-- Step 1 — dimension table. Budgets live in several, and a shell exists in one. -->
+      <section class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">1 · Which budget table?</h2>
+        @if (scopeLoading()) {
+          <to-skeleton width="100%" height="60px" />
+        } @else if (tables().length === 0) {
+          <p class="to-adm__note">No budget shells match these filters.</p>
+        } @else {
+          <div class="to-adm__chipset" role="group" aria-label="Budget table">
+            @for (tbl of tables(); track tbl.tableName) {
+              <button
+                type="button"
+                class="to-adm__chip"
+                [class.to-adm__chip--on]="table()?.tableName === tbl.tableName"
+                (click)="selectTable(tbl)"
+              >
+                {{ tbl.dimension || tbl.tableName }}
+                <span class="to-numeric">({{ tbl.shellCount }})</span>
+              </button>
+            }
+          </div>
+          @if (table()?.dimensionAmbiguous) {
+            <p class="to-adm__hint">
+              This table's dimension could not be resolved uniquely, so the product column
+              may be approximate.
+            </p>
+          }
+        }
+      </section>
+
+      <!-- Step 2 — current owner -->
+      @if (table()) {
+        <section class="to-adm__card to-adm__card--pad">
+          <h2 class="to-adm__subtitle">2 · Whose budgets are moving?</h2>
+          <div class="to-adm__search to-own__owner-search">
+            <tabler-icon [icon]="icons['search']" [size]="15" />
+            <input
+              pInputText
+              type="search"
+              [value]="ownerSearch()"
+              (input)="onOwnerSearch($any($event.target).value)"
+              placeholder="Search owners"
+              aria-label="Search owners"
+            />
+          </div>
+
+          @if (visibleOwners().length === 0) {
+            <p class="to-adm__note">No owners hold budgets in this scope.</p>
+          } @else {
+            <ul class="to-own__owners">
+              @for (owner of visibleOwners(); track owner.userId) {
+                <li>
+                  <button
+                    type="button"
+                    class="to-own__owner"
+                    [class.to-own__owner--active]="currentOwner()?.userId === owner.userId"
+                    [class.to-own__owner--stuck]="!owner.isActionable"
+                    (click)="selectOwner(owner)"
+                  >
+                    <span class="to-own__owner-name">{{ ownerLabel(owner) }}</span>
+                    <span class="to-own__owner-side">
+                      @if (!owner.isActionable) {
+                        <span
+                          class="to-adm__flag to-adm__flag--warn"
+                          [pTooltip]="owner.status === 'NotAUser' ? 'Not a user account.' : 'Deactivated — cannot action these.'"
+                          tooltipPosition="left"
+                        >
+                          {{ owner.status === 'NotAUser' ? 'not a user' : 'deactivated' }}
+                        </span>
+                      }
+                      <span class="to-numeric to-own__owner-count">{{ owner.shellCount }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      <!-- Step 3 — the shells -->
+      @if (currentOwner()) {
+        <section class="to-adm__card to-adm__card--pad">
+          <div class="to-own__rows-head">
+            <h2 class="to-adm__subtitle">3 · Pick the budget shells</h2>
+            <div class="to-own__rows-actions">
+              @if (driftedCount() > 0) {
+                <button
+                  type="button"
+                  class="to-adm__census-action"
+                  [class.to-adm__census-action--on]="driftedOnly()"
+                  (click)="toggleDriftedOnly()"
+                >
+                  {{ driftedCount() }} with drifted chain
+                </button>
+              }
+              <button
+                type="button"
+                pButton
+                class="p-button-outlined p-button-sm"
+                (click)="exportCsv()"
+                [disabled]="exporting()"
+              >
+                <tabler-icon [icon]="icons['download']" [size]="15" />
+                {{ exporting() ? 'Exporting…' : 'Export' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="to-adm__search">
+            <tabler-icon [icon]="icons['search']" [size]="15" />
+            <input
+              pInputText
+              type="search"
+              [formControl]="rowSearchControl"
+              (search)="searchRows()"
+              (keyup.enter)="searchRows()"
+              placeholder="Search shell code, product or description"
+              aria-label="Search shells"
+            />
+          </div>
+
+          @if (rowsLoading()) {
+            <div class="to-adm__card">
+              @for (r of skeletonRows; track r) {
+                <div class="to-adm__skeleton-row">
+                  <to-skeleton width="25%" height="12px" />
+                  <to-skeleton width="45%" height="12px" />
+                </div>
+              }
+            </div>
+          } @else if (rows().length === 0) {
+            <to-empty-state icon="wallet" heading="No budget shells match" />
+          } @else {
+            <div class="to-adm__table-wrap">
+              <table class="to-adm__table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="to-adm__th to-own__th-check">
+                      <input
+                        type="checkbox"
+                        class="to-own__checkbox"
+                        [checked]="allVisibleSelected()"
+                        (change)="toggleAllVisible()"
+                        aria-label="Select all on this page"
+                      />
+                    </th>
+                    <th scope="col" class="to-adm__th">Shell</th>
+                    <th scope="col" class="to-adm__th">Product</th>
+                    <th scope="col" class="to-adm__th">Region</th>
+                    <th scope="col" class="to-adm__th to-adm__th--right">Value</th>
+                    <th scope="col" class="to-adm__th">Chain</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of rows(); track row.shellCode) {
+                    <tr class="to-adm__row" [class.to-adm__row--attention]="row.ownershipDrifted">
+                      <td class="to-adm__td">
+                        <input
+                          type="checkbox"
+                          class="to-own__checkbox"
+                          [checked]="selection().has(row.shellCode)"
+                          (change)="toggleRow(row)"
+                          [attr.aria-label]="'Select ' + row.shellCode"
+                        />
+                      </td>
+                      <td class="to-adm__td">
+                        <span class="to-own__code">{{ row.shellCode }}</span>
+                        @if (row.description) {
+                          <span class="to-own__desc">{{ row.description }}</span>
+                        }
+                      </td>
+                      <td class="to-adm__td to-adm__td--muted">{{ row.productDescription || '—' }}</td>
+                      <td class="to-adm__td to-adm__td--muted">
+                        {{ row.regionDescription || row.region }}
+                      </td>
+                      <td class="to-adm__td to-adm__td--right to-numeric">
+                        {{ formatPkr(row.budgetValue) }}
+                      </td>
+                      <td class="to-adm__td">
+                        @if (row.ownershipDrifted) {
+                          <span
+                            class="to-adm__flag to-adm__flag--warn"
+                            pTooltip="The owner and the approval chain disagree on this shell."
+                            tooltipPosition="left"
+                          >
+                            drifted
+                          </span>
+                        } @else if (row.approvalStarted) {
+                          <span class="to-adm__flag">in approval</span>
+                        } @else {
+                          <span class="to-adm__td--muted">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="to-adm__pager">
+              <span class="to-adm__pager-range to-numeric">
+                {{ selection().size }} selected on this page
+                @if (resultsTruncated()) {
+                  · results truncated
+                }
+              </span>
+              <div class="to-adm__pager-buttons">
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="!pagerState().hasPrevious"
+                  (click)="previousPage()"
+                >
+                  <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="!pagerState().hasNext"
+                  (click)="nextPage()"
+                >
+                  Next
+                  <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+                </button>
+              </div>
+            </div>
+          }
+        </section>
+      }
+    </div>
+
+    <aside class="to-adm__panel">
+      <div class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">4 · Move them to</h2>
+
+        @if (!currentOwner()) {
+          <p class="to-adm__note">Pick a budget table and a current owner first.</p>
+        } @else {
+          <div class="to-own__count">
+            <span class="to-numeric to-own__count-figure">{{ selection().size }}</span>
+            selected
+          </div>
+          <!-- The money, stated. A shell count alone does not convey what is being moved. -->
+          <div class="to-own__count">
+            <span class="to-numeric to-own__count-figure">{{ formatPkr(selectedValue()) }}</span>
+          </div>
+
+          <div class="to-adm__field">
+            <label class="to-adm__label" for="newBudgetOwner">New owner</label>
+            <input
+              pInputText
+              id="newBudgetOwner"
+              type="text"
+              list="to-budget-owners"
+              [formControl]="newOwnerControl"
+              placeholder="Login name"
+            />
+            <datalist id="to-budget-owners">
+              @for (c of eligibleOwners(); track c.userId) {
+                <option [value]="c.userId">{{ ownerLabel(c) }}</option>
+              }
+            </datalist>
+          </div>
+
+          <button
+            type="button"
+            pButton
+            class="p-button-sm to-own__transfer"
+            [disabled]="!canTransfer()"
+            (click)="confirming.set(true)"
+          >
+            {{ transferring() ? 'Moving…' : 'Transfer ownership' }}
+          </button>
+
+          <p class="to-adm__hint">
+            Approval rows move with the shells. The transfer is guarded on the count above —
+            if the set changes first, nothing is applied.
+          </p>
+        }
+      </div>
+    </aside>
+  </div>
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming()"
+  (visibleChange)="confirming.set(false)"
+  title="Transfer these budget shells?"
+  [message]="confirmMessage()"
+  confirmLabel="Transfer"
+  (confirmed)="confirmTransfer()"
+  (cancelled)="confirming.set(false)"
+/>

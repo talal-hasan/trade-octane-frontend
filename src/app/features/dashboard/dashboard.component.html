@@ -14,6 +14,12 @@
     <button actions type="button" pButton severity="secondary" (click)="retry()">Try again</button>
   </to-empty-state>
 } @else {
+  <!-- Real figures from GET /dashboard/tiles. Placed first because the rest of this page
+       is still gated on the POC's permission strings, which are empty against the live
+       backend — a signed-in administrator was seeing "Nothing assigned to you yet" on a
+       working system. This block is gated on nothing; the endpoint scopes itself. -->
+  <to-activity-tiles />
+
   <!-- ═══ Row 1 — compact stats beside the utilisation hero ═══════════════ -->
   <section class="to-dash__row to-dash__row--split" aria-label="Pending overview">
     <div class="to-dash__stats">

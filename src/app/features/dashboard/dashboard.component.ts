@@ -23,6 +23,7 @@ import { ApprovalsService } from '../workspace/services/approvals.service';
 import { ApprovalInboxItem } from '../workspace/models/approval-item.model';
 import { AttentionItem, DashboardCharts, DashboardTile } from './models/dashboard.model';
 import { DashboardService } from './services/dashboard.service';
+import { ActivityTilesComponent } from './activity-tiles/activity-tiles.component';
 
 /** Days a pending item may sit before it counts as breaching the internal SLA. */
 const SLA_DAYS = 5;
@@ -80,6 +81,7 @@ function daysUntil(iso: string): number {
     DonutChartComponent,
     EmptyStateComponent,
     SkeletonComponent,
+    ActivityTilesComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

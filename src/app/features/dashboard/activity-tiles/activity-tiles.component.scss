@@ -1,0 +1,177 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-at {
+  margin-bottom: t.$to-space-6;
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-at__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-at__title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-at__source {
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-at__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: t.$to-space-3;
+}
+
+.to-at__tile {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-accent);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+
+  &--brand {
+    border-left-color: var(--to-viz-2);
+  }
+}
+
+.to-at__tile-head {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-at__tile-icon {
+  color: var(--to-accent);
+}
+
+.to-at__tile-label {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-at__tile-value {
+  font-size: t.$to-font-size-xl;
+  line-height: 1;
+  color: var(--to-text-primary);
+}
+
+.to-at__split {
+  margin-top: t.$to-space-6;
+}
+
+.to-at__subtitle {
+  margin: 0 0 t.$to-space-3;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-at__rows {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-at__row {
+  display: grid;
+  grid-template-columns: minmax(110px, 150px) 1fr auto;
+  align-items: center;
+  gap: t.$to-space-3;
+}
+
+.to-at__row-label {
+  @include u.truncate;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+// The track is the open portion and the fill is the closed portion. Grass green reads as
+// "done" rather than as a warning, which is what a high closed ratio actually is.
+.to-at__bar {
+  position: relative;
+  height: 6px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-warning-solid) 28%, var(--to-bg-2));
+  overflow: hidden;
+}
+
+.to-at__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--to-success-solid);
+  @include u.motion(width);
+}
+
+.to-at__row-figures {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-1;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+}
+
+.to-at__open {
+  color: var(--to-warning);
+}
+
+.to-at__closed {
+  color: var(--to-success);
+}
+
+.to-at__sep {
+  margin-right: t.$to-space-2;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-at__notice {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-at__retry {
+  margin-left: auto;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,0 +1,74 @@
+<section class="to-at" aria-label="Activity overview">
+  <header class="to-at__head">
+    <h2 class="to-at__title">Activity</h2>
+    <span class="to-at__source">Live from Trade Octane</span>
+  </header>
+
+  @if (loading()) {
+    <div class="to-at__grid">
+      @for (s of skeletons; track s) {
+        <div class="to-at__tile">
+          <to-skeleton width="40%" height="11px" />
+          <to-skeleton width="60%" height="24px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <div class="to-at__notice" role="status">
+      <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+      <span>Activity figures did not load.</span>
+      <button type="button" class="to-at__retry" (click)="retry()">Try again</button>
+    </div>
+  } @else if (isEmpty()) {
+    <div class="to-at__notice" role="status">
+      <tabler-icon [icon]="icons['inbox']" [size]="16" />
+      <span>No activity recorded for your scope yet.</span>
+    </div>
+  } @else {
+    <div class="to-at__grid">
+      @for (tile of raised(); track tile.label) {
+        <div class="to-at__tile">
+          <span class="to-at__tile-head">
+            <tabler-icon [icon]="icons[tile.icon]" [size]="14" class="to-at__tile-icon" />
+            <span class="to-at__tile-label">{{ tile.label }}</span>
+          </span>
+          <span class="to-at__tile-value to-numeric">{{ tile.value }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Open vs closed as a ratio, not eight loose integers: the two numbers only mean
+         anything relative to each other. -->
+    <div class="to-at__split">
+      <h3 class="to-at__subtitle">Open vs closed</h3>
+      <ul class="to-at__rows">
+        @for (row of openClosed(); track row.label) {
+          <li class="to-at__row">
+            <span class="to-at__row-label">{{ row.label }}</span>
+            <span class="to-at__bar" [attr.aria-label]="row.closed + ' closed of ' + row.label">
+              <span class="to-at__bar-fill" [style.width.%]="row.closedShare * 100"></span>
+            </span>
+            <span class="to-at__row-figures to-numeric">
+              <span class="to-at__open">{{ row.open }}</span>
+              <span class="to-at__sep">open</span>
+              <span class="to-at__closed">{{ row.closed }}</span>
+              <span class="to-at__sep">closed</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="to-at__split">
+      <h3 class="to-at__subtitle">By brand</h3>
+      <div class="to-at__grid">
+        @for (tile of brands(); track tile.label) {
+          <div class="to-at__tile to-at__tile--brand">
+            <span class="to-at__tile-label">{{ tile.label }}</span>
+            <span class="to-at__tile-value to-numeric">{{ tile.value }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

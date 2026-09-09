@@ -134,14 +134,14 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     navLabel: 'Approval Routing',
     icon: 'route',
     group: NAV_GROUP_ADMIN,
-    ported: false,
+    ported: true,
   },
   {
     menuId: 22,
     legacyName: 'Re-Route Scheme',
     route: '/admin/approval-routing',
     tab: 're-route',
-    ported: false,
+    ported: true,
   },
 
   // → Ownership transfers. Both are the identical shape — filter a period, pick the
@@ -155,14 +155,14 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     navLabel: 'Ownership Transfers',
     icon: 'transfer',
     group: NAV_GROUP_ADMIN,
-    ported: false,
+    ported: true,
   },
   {
     menuId: 226,
     legacyName: 'Change Activity Ownership',
     route: '/admin/ownership',
     tab: 'activity',
-    ported: false,
+    ported: true,
   },
 
   {
@@ -172,7 +172,7 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     navLabel: 'Activity Logs',
     icon: 'history',
     group: NAV_GROUP_ADMIN,
-    ported: false,
+    ported: true,
   },
   {
     menuId: 204,
@@ -181,7 +181,7 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     navLabel: 'Integration',
     icon: 'plug-connected',
     group: NAV_GROUP_ADMIN,
-    ported: false,
+    ported: true,
   },
 
   // → Own account. "Edit Password" (UpdatePassword.aspx) changes *your own* password,

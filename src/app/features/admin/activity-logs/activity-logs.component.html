@@ -1,0 +1,162 @@
+<to-page-header
+  title="Activity Logs"
+  subtitle="Who did what, and when."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Activity Logs' }]"
+>
+  <button
+    actions
+    type="button"
+    pButton
+    class="p-button-outlined p-button-sm"
+    (click)="exportCsv()"
+    [disabled]="exporting() || loading()"
+  >
+    <tabler-icon [icon]="icons['download']" [size]="15" />
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</to-page-header>
+
+<div class="to-adm">
+  <div class="to-adm__filters">
+    <div class="to-adm__chipset" role="group" aria-label="Actor group">
+      @for (g of groups; track g) {
+        <button
+          type="button"
+          class="to-adm__chip"
+          [class.to-adm__chip--on]="actorGroup() === g"
+          (click)="setGroup(g)"
+        >
+          {{ g }}
+        </button>
+      }
+    </div>
+
+    <div class="to-adm__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="applyFilters()"
+        (keyup.enter)="applyFilters()"
+        placeholder="Search activity, table or code"
+        aria-label="Search logs"
+      />
+    </div>
+
+    <div class="to-adm__field to-alg__actor">
+      <input
+        pInputText
+        type="text"
+        list="to-alg-actors"
+        placeholder="Filter by user"
+        aria-label="Filter by user"
+        (change)="setActor($any($event.target).value)"
+      />
+      <datalist id="to-alg-actors">
+        @for (a of actors(); track a.userId) {
+          <option [value]="a.userId">{{ a.displayName }}</option>
+        }
+      </datalist>
+    </div>
+
+    <div class="to-alg__dates">
+      <input pInputText type="date" [formControl]="fromControl" (change)="applyFilters()" aria-label="From date" />
+      <span class="to-alg__dash">to</span>
+      <input pInputText type="date" [formControl]="toControl" (change)="applyFilters()" aria-label="To date" />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-adm__table-wrap">
+      @for (r of skeletonRows; track r) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="18%" height="12px" />
+          <to-skeleton width="22%" height="12px" />
+          <to-skeleton width="35%" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load the logs"
+      description="The audit trail did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (rows().length === 0) {
+    <to-empty-state
+      icon="history"
+      heading="No log entries match"
+      description="Try a wider date range, a different actor group, or clear the search."
+    />
+  } @else {
+    <div class="to-adm__table-wrap">
+      <table class="to-adm__table">
+        <thead>
+          <tr>
+            <th scope="col" class="to-adm__th">When</th>
+            <th scope="col" class="to-adm__th">Who</th>
+            <th scope="col" class="to-adm__th">Activity</th>
+            <th scope="col" class="to-adm__th">Record</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.userId + row.completedOn + row.uniqueCode) {
+            <tr class="to-adm__row">
+              <td class="to-adm__td to-adm__td--muted to-numeric">{{ formatMoment(row.completedOn) }}</td>
+              <td class="to-adm__td">
+                <span class="to-alg__who">{{ row.userName || row.userId }}</span>
+                <span class="to-alg__who-id">{{ row.userId }}</span>
+              </td>
+              <td class="to-adm__td">
+                <span>{{ row.activity || '—' }}</span>
+                @if (row.description) {
+                  <span class="to-alg__desc">{{ row.description }}</span>
+                }
+              </td>
+              <td class="to-adm__td to-adm__td--mono">
+                {{ row.tableName || '—' }}
+                @if (row.uniqueCode) {
+                  · {{ row.uniqueCode }}
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Numbered paging is honest here: unlike the other grids this endpoint is
+         offset-paged and reports its own page number. -->
+    <div class="to-adm__pager">
+      <span class="to-adm__pager-range to-numeric">{{ rangeLabel() }} · page {{ page() }}</span>
+      <div class="to-adm__pager-buttons">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="page() <= 1"
+          (click)="previousPage()"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+          Previous
+        </button>
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-text"
+          [disabled]="!hasNext()"
+          (click)="nextPage()"
+        >
+          Next
+          <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,326 @@
+<div class="to-own">
+  <!-- Step 1 — period. Nothing below exists until this is chosen, so it leads. -->
+  <div class="to-adm__filters">
+    @if (filtersLoading()) {
+      <to-skeleton width="320px" height="30px" />
+    } @else {
+      <div class="to-adm__chipset" role="group" aria-label="Year">
+        @for (y of years(); track y) {
+          <button type="button" class="to-adm__chip" [class.to-adm__chip--on]="year() === y" (click)="setYear(y)">
+            {{ y }}
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__chipset" role="group" aria-label="Month">
+        @for (m of months(); track m.code) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="month() === +m.code"
+            (click)="setMonth(+m.code)"
+          >
+            {{ m.description }}
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__chipset" role="group" aria-label="Claim type">
+        @for (c of claimTypes(); track c.code) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="claimType() === c.code"
+            (click)="setClaimType(c.code)"
+          >
+            {{ c.description || c.code }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="to-adm__census">
+    <div class="to-adm__census-item">
+      <span class="to-adm__census-label">Activities in period</span>
+      <span class="to-adm__census-value to-numeric">{{ totalActivities().toLocaleString() }}</span>
+    </div>
+    <!-- Owned by someone who has left or been deactivated: these stop moving on their own,
+         which is the reason this screen exists. -->
+    <div
+      class="to-adm__census-item to-adm__census-item--warn"
+      [class.to-adm__census-item--clear]="stuckActivities() === 0"
+    >
+      <span class="to-adm__census-label">Held by a non-actionable owner</span>
+      <span class="to-adm__census-value to-numeric">{{ stuckActivities().toLocaleString() }}</span>
+    </div>
+  </div>
+
+  <div class="to-adm__split">
+    <div class="to-own__main">
+      <!-- Step 2 — current owner -->
+      <section class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">1 · Whose activities are moving?</h2>
+        <div class="to-adm__search to-own__owner-search">
+          <tabler-icon [icon]="icons['search']" [size]="15" />
+          <input
+            pInputText
+            type="search"
+            [value]="ownerSearch()"
+            (input)="onOwnerSearch($any($event.target).value)"
+            placeholder="Search owners"
+            aria-label="Search owners"
+          />
+        </div>
+
+        @if (ownersLoading()) {
+          <to-skeleton width="100%" height="120px" />
+        } @else if (visibleOwners().length === 0) {
+          <p class="to-adm__note">No owners hold activities in this period.</p>
+        } @else {
+          <ul class="to-own__owners">
+            @for (owner of visibleOwners(); track owner.userId) {
+              <li>
+                <button
+                  type="button"
+                  class="to-own__owner"
+                  [class.to-own__owner--active]="currentOwner()?.userId === owner.userId"
+                  [class.to-own__owner--stuck]="!owner.isActionable"
+                  (click)="selectOwner(owner)"
+                >
+                  <span class="to-own__owner-name">{{ ownerLabel(owner) }}</span>
+                  <span class="to-own__owner-side">
+                    @if (!owner.isActionable) {
+                      <span
+                        class="to-adm__flag to-adm__flag--warn"
+                        [pTooltip]="owner.status === 'NotAUser' ? 'Not a user account.' : 'Deactivated — cannot action these.'"
+                        tooltipPosition="left"
+                      >
+                        {{ owner.status === 'NotAUser' ? 'not a user' : 'deactivated' }}
+                      </span>
+                    }
+                    <span class="to-numeric to-own__owner-count">{{ owner.activityCount }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- Step 3 — the rows -->
+      @if (currentOwner()) {
+        <section class="to-adm__card to-adm__card--pad">
+          <div class="to-own__rows-head">
+            <h2 class="to-adm__subtitle">2 · Pick the activities</h2>
+            <div class="to-own__rows-actions">
+              @if (driftedCount() > 0) {
+                <button
+                  type="button"
+                  class="to-adm__census-action"
+                  [class.to-adm__census-action--on]="driftedOnly()"
+                  (click)="toggleDriftedOnly()"
+                >
+                  {{ driftedCount() }} with drifted chain
+                </button>
+              }
+              <button
+                type="button"
+                pButton
+                class="p-button-outlined p-button-sm"
+                (click)="exportCsv()"
+                [disabled]="exporting()"
+              >
+                <tabler-icon [icon]="icons['download']" [size]="15" />
+                {{ exporting() ? 'Exporting…' : 'Export' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="to-adm__search">
+            <tabler-icon [icon]="icons['search']" [size]="15" />
+            <input
+              pInputText
+              type="search"
+              [formControl]="rowSearchControl"
+              (search)="searchRows()"
+              (keyup.enter)="searchRows()"
+              placeholder="Search code, sequence or description"
+              aria-label="Search activities"
+            />
+          </div>
+
+          @if (rowsLoading()) {
+            <div class="to-adm__card">
+              @for (r of skeletonRows; track r) {
+                <div class="to-adm__skeleton-row">
+                  <to-skeleton width="30%" height="12px" />
+                  <to-skeleton width="40%" height="12px" />
+                </div>
+              }
+            </div>
+          } @else if (rows().length === 0) {
+            <to-empty-state icon="inbox" heading="No activities match" />
+          } @else {
+            <div class="to-adm__table-wrap">
+              <table class="to-adm__table">
+                <thead>
+                  <tr>
+                    <th scope="col" class="to-adm__th to-own__th-check">
+                      <input
+                        type="checkbox"
+                        class="to-own__checkbox"
+                        [checked]="allVisibleSelected()"
+                        (change)="toggleAllVisible()"
+                        aria-label="Select all on this page"
+                      />
+                    </th>
+                    <th scope="col" class="to-adm__th">Activity</th>
+                    <th scope="col" class="to-adm__th">Claim type</th>
+                    <th scope="col" class="to-adm__th">Period</th>
+                    <th scope="col" class="to-adm__th">Chain</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of rows(); track keyOf(row)) {
+                    <tr class="to-adm__row" [class.to-adm__row--attention]="row.ownershipDrifted">
+                      <td class="to-adm__td">
+                        <input
+                          type="checkbox"
+                          class="to-own__checkbox"
+                          [checked]="selection().has(keyOf(row))"
+                          (change)="toggleRow(row)"
+                          [attr.aria-label]="'Select ' + row.mpCode"
+                        />
+                      </td>
+                      <td class="to-adm__td">
+                        <span class="to-own__code">{{ row.mpCode }} · {{ row.seqId }}</span>
+                        @if (row.description) {
+                          <span class="to-own__desc">{{ row.description }}</span>
+                        }
+                      </td>
+                      <td class="to-adm__td to-adm__td--muted">{{ row.claimType || '—' }}</td>
+                      <td class="to-adm__td to-adm__td--muted to-numeric">
+                        {{ formatDate(row.periodFrom) }} – {{ formatDate(row.periodTo) }}
+                      </td>
+                      <td class="to-adm__td">
+                        @if (row.ownershipDrifted) {
+                          <span
+                            class="to-adm__flag to-adm__flag--warn"
+                            pTooltip="The owner and the approval chain disagree on this activity."
+                            tooltipPosition="left"
+                          >
+                            drifted
+                          </span>
+                        } @else if (row.approvalStarted) {
+                          <span class="to-adm__flag">in approval</span>
+                        } @else {
+                          <span class="to-adm__td--muted">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="to-adm__pager">
+              <span class="to-adm__pager-range to-numeric">
+                {{ selection().size }} selected on this page
+                @if (resultsTruncated()) {
+                  · results truncated
+                }
+              </span>
+              <div class="to-adm__pager-buttons">
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="!pagerState().hasPrevious"
+                  (click)="previousPage()"
+                >
+                  <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="!pagerState().hasNext"
+                  (click)="nextPage()"
+                >
+                  Next
+                  <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+                </button>
+              </div>
+            </div>
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Step 4 — destination -->
+    <aside class="to-adm__panel">
+      <div class="to-adm__card to-adm__card--pad">
+        <h2 class="to-adm__subtitle">3 · Move them to</h2>
+
+        @if (!currentOwner()) {
+          <p class="to-adm__note">Pick a current owner first.</p>
+        } @else {
+          <div class="to-own__count">
+            <span class="to-numeric to-own__count-figure">{{ selection().size }}</span>
+            selected
+          </div>
+
+          <div class="to-adm__field">
+            <label class="to-adm__label" for="newOwner">New owner</label>
+            <input
+              pInputText
+              id="newOwner"
+              type="text"
+              list="to-own-candidates"
+              [formControl]="newOwnerControl"
+              placeholder="Login name"
+            />
+            <datalist id="to-own-candidates">
+              @for (c of candidates(); track c.userId) {
+                <option [value]="c.userId">{{ ownerLabel(c) }}</option>
+              }
+            </datalist>
+          </div>
+
+          @if (candidatesWidened()) {
+            <p class="to-adm__hint">
+              No peers were found for this owner, so the list widened to every active user.
+            </p>
+          }
+
+          <button
+            type="button"
+            pButton
+            class="p-button-sm to-own__transfer"
+            [disabled]="!canTransfer()"
+            (click)="confirming.set(true)"
+          >
+            {{ transferring() ? 'Moving…' : 'Transfer ownership' }}
+          </button>
+
+          <p class="to-adm__hint">
+            Approval rows move with the activities. The transfer is guarded on the count
+            above — if the set changes first, nothing is applied.
+          </p>
+        }
+      </div>
+    </aside>
+  </div>
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming()"
+  (visibleChange)="confirming.set(false)"
+  title="Transfer these activities?"
+  [message]="confirmMessage()"
+  confirmLabel="Transfer"
+  (confirmed)="confirmTransfer()"
+  (cancelled)="confirming.set(false)"
+/>

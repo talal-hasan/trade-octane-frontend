@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -42,6 +43,7 @@ import { AdminMenusApi } from '../../services/admin-menus.api';
   selector: 'to-menu-list',
   standalone: true,
   imports: [
+    RouterLink,
     ReactiveFormsModule,
     TablerIconComponent,
     ButtonModule,

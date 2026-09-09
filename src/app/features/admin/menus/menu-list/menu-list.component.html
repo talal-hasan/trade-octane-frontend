@@ -3,17 +3,22 @@
   subtitle="The menu catalogue both portals render from."
   [breadcrumbs]="[{ label: 'Administration' }, { label: 'Menus' }]"
 >
-  <button
-    actions
-    type="button"
-    pButton
-    class="p-button-outlined p-button-sm"
-    (click)="exportCsv()"
-    [disabled]="exporting() || loading()"
-  >
-    <tabler-icon [icon]="icons['download']" [size]="15" />
-    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
-  </button>
+  <div actions class="to-ml__header-actions">
+    <button
+      type="button"
+      pButton
+      class="p-button-outlined p-button-sm"
+      (click)="exportCsv()"
+      [disabled]="exporting() || loading()"
+    >
+      <tabler-icon [icon]="icons['download']" [size]="15" />
+      {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+    </button>
+    <a pButton routerLink="/admin/menus/new" class="p-button-sm">
+      <tabler-icon [icon]="icons['plus']" [size]="15" />
+      New menu item
+    </a>
+  </div>
 </to-page-header>
 
 <div class="to-ml">
@@ -124,12 +129,12 @@
                    first-class column here rather than a hidden detail. -->
               <td class="to-ml__td to-ml__td--mono to-numeric">{{ menu.menuId }}</td>
               <td class="to-ml__td">
-                <span class="to-ml__name">
+                <a class="to-ml__name to-ml__name--link" [routerLink]="['/admin/menus', menuId(menu)]">
                   @if (+menu.parentId > 0) {
                     <span class="to-ml__indent" aria-hidden="true">›</span>
                   }
                   {{ menu.menuName }}
-                </span>
+                </a>
                 @if (!menu.isReachable) {
                   <span
                     class="to-ml__flag to-ml__flag--warn"

@@ -1,0 +1,281 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-int__main {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-int__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-int__th-check {
+  width: 40px;
+}
+
+.to-int__checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+// ─── Runs ─────────────────────────────────────────────────────────────────────
+
+.to-int__runs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  overflow: hidden;
+}
+
+.to-int__run {
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-int__run-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  width: 100%;
+  padding: t.$to-space-3;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+}
+
+.to-int__run-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-int__run-title {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-int__run-meta {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-int__run-side {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  flex-shrink: 0;
+}
+
+.to-int__run-count {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// Tone is driven by a data attribute rather than four classes, because the mapping lives
+// in one place in the component (stateTone) and this just renders it.
+.to-int__state {
+  padding: 1px t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  font-size: t.$to-font-size-2xs;
+  white-space: nowrap;
+
+  &[data-tone='ok'] {
+    border-color: var(--to-success);
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+
+  // Partial success is a warning, not a success: some rows did not post.
+  &[data-tone='warn'] {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+
+  &[data-tone='bad'] {
+    border-color: var(--to-danger);
+    background: var(--to-danger-subtle);
+    color: var(--to-danger);
+  }
+
+  &[data-tone='live'] {
+    border-color: var(--to-accent);
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+  }
+}
+
+.to-int__progress {
+  display: block;
+  height: 3px;
+  background: var(--to-bg-2);
+  overflow: hidden;
+}
+
+.to-int__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--to-accent);
+  @include u.motion(width);
+}
+
+.to-int__detail {
+  padding: t.$to-space-3;
+  background: var(--to-bg-2);
+  border-top: 1px solid var(--to-border);
+}
+
+.to-int__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-int__error {
+  margin: t.$to-space-2 0 0;
+  padding: t.$to-space-2;
+  border-radius: t.$to-radius-control;
+  background: var(--to-danger-subtle);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+.to-int__items {
+  max-height: 220px;
+  overflow-y: auto;
+  margin: t.$to-space-3 0 0;
+  padding: 0;
+  list-style: none;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-int__item {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 0;
+  font-size: t.$to-font-size-2xs;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-int__item-outcome {
+  flex-shrink: 0;
+  color: var(--to-text-secondary);
+}
+
+.to-int__item-detail {
+  @include u.truncate;
+  color: var(--to-text-muted);
+}
+
+// A single looping dot, matching the dashboard's "live" chip (CLAUDE.md §5 allows exactly
+// one looping animation; this reuses that same idiom rather than adding a second).
+.to-int__live {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-accent-text);
+}
+
+.to-int__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent);
+  animation: to-int-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes to-int-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .to-int__live-dot {
+    animation: none;
+  }
+}
+
+// ─── Start panel ──────────────────────────────────────────────────────────────
+
+.to-int__selected {
+  padding: t.$to-space-2 t.$to-space-3;
+  margin: t.$to-space-3 0;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-int__dry {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: t.$to-space-3 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+  cursor: pointer;
+}
+
+.to-int__start {
+  width: 100%;
+  justify-content: center;
+}
+
+.to-int__card-gap {
+  margin-top: t.$to-space-4;
+}

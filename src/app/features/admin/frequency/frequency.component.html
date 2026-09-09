@@ -1,0 +1,244 @@
+<to-page-header
+  title="Scheme Frequency"
+  subtitle="Accrual cadence per scheme, and how far back budgets and claims may be posted."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Scheme Frequency' }]"
+>
+  <button
+    actions
+    type="button"
+    pButton
+    class="p-button-outlined p-button-sm"
+    (click)="exportCsv()"
+    [disabled]="exporting() || loading()"
+  >
+    <tabler-icon [icon]="icons['download']" [size]="15" />
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</to-page-header>
+
+<div class="to-adm">
+  <div class="to-adm__filters">
+    <div class="to-adm__chipset" role="group" aria-label="Scheme group">
+      @for (g of groups(); track g.groupKey) {
+        <button
+          type="button"
+          class="to-adm__chip"
+          [class.to-adm__chip--on]="groupKey() === g.groupKey"
+          (click)="setGroup(g.groupKey)"
+        >
+          {{ g.schemeGroup || g.groupKey }}
+        </button>
+      }
+    </div>
+
+    <div class="to-adm__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="applyFilters()"
+        (keyup.enter)="applyFilters()"
+        placeholder="Search scheme"
+        aria-label="Search schemes"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-adm__table-wrap">
+      @for (r of skeletonRows; track r) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="30%" height="12px" />
+          <to-skeleton width="15%" height="12px" />
+          <to-skeleton width="15%" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load the configuration"
+      description="This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (rows().length === 0) {
+    <to-empty-state icon="calendar-repeat" heading="No schemes match" />
+  } @else {
+    <div class="to-adm__split">
+      <div>
+        <div class="to-adm__table-wrap">
+          <table class="to-adm__table">
+            <thead>
+              <tr>
+                <th scope="col" class="to-adm__th to-frq__th-check">
+                  <input
+                    type="checkbox"
+                    class="to-frq__checkbox"
+                    [checked]="allSelected()"
+                    (change)="toggleAll()"
+                    aria-label="Select all schemes"
+                  />
+                </th>
+                <th scope="col" class="to-adm__th">Scheme</th>
+                <th scope="col" class="to-adm__th to-adm__th--right">GT</th>
+                <th scope="col" class="to-adm__th to-adm__th--right">FSD</th>
+                <th scope="col" class="to-adm__th">Accruals</th>
+                <th scope="col" class="to-adm__th to-adm__th--right">Prior months</th>
+                <th scope="col" class="to-adm__th to-adm__th--right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.schemeId) {
+                <tr class="to-adm__row" [class.to-frq__row--saving]="savingScheme() === row.schemeId">
+                  <td class="to-adm__td">
+                    <input
+                      type="checkbox"
+                      class="to-frq__checkbox"
+                      [checked]="selection().has(row.schemeId)"
+                      (change)="toggleRowSelection(row)"
+                      [attr.aria-label]="'Select ' + row.schemeId"
+                    />
+                  </td>
+                  <td class="to-adm__td">
+                    <span class="to-frq__name">{{ row.description || row.schemeId }}</span>
+                    <span class="to-frq__meta">
+                      {{ row.schemeId }}
+                      @if (row.schemeGroup) {
+                        · {{ row.schemeGroup }}
+                      }
+                      @if (!isActive(row)) {
+                        <span class="to-adm__flag to-adm__flag--warn">inactive</span>
+                      }
+                    </span>
+                  </td>
+                  <!-- Edited in place: setting a cadence means comparing it against the
+                       rows either side, which a modal would hide. -->
+                  <td class="to-adm__td to-adm__td--right">
+                    <input
+                      class="to-frq__num to-numeric"
+                      type="number"
+                      min="0"
+                      [value]="valueFor(row, 'frequencyGt')"
+                      (input)="onEdit(row, 'frequencyGt', $any($event.target).value)"
+                      [attr.aria-label]="'GT frequency for ' + row.schemeId"
+                    />
+                  </td>
+                  <td class="to-adm__td to-adm__td--right">
+                    <input
+                      class="to-frq__num to-numeric"
+                      type="number"
+                      min="0"
+                      [value]="valueFor(row, 'frequencyFsd')"
+                      (input)="onEdit(row, 'frequencyFsd', $any($event.target).value)"
+                      [attr.aria-label]="'FSD frequency for ' + row.schemeId"
+                    />
+                  </td>
+                  <td class="to-adm__td">
+                    <button
+                      type="button"
+                      class="to-frq__toggle"
+                      [class.to-frq__toggle--on]="feedsAccruals(row)"
+                      [disabled]="savingScheme() !== null"
+                      (click)="toggleAccrual(row)"
+                    >
+                      {{ feedsAccruals(row) ? 'Yes' : 'No' }}
+                    </button>
+                  </td>
+                  <td class="to-adm__td to-adm__td--right to-adm__td--muted to-numeric">
+                    B {{ row.budgetPriorMonths }} · C {{ row.claimPriorMonths }}
+                  </td>
+                  <td class="to-adm__td to-adm__td--right">
+                    @if (isDirty(row)) {
+                      <button
+                        type="button"
+                        pButton
+                        class="p-button-sm"
+                        [disabled]="savingScheme() !== null"
+                        (click)="saveRow(row)"
+                      >
+                        Save
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bulk, not per-row: the API takes schemeIds[] for these, and in practice one
+           policy is applied across many schemes at once. -->
+      <aside class="to-adm__panel">
+        <div class="to-adm__card to-adm__card--pad">
+          <h2 class="to-adm__subtitle">Prior-month windows</h2>
+          <p class="to-adm__note">
+            How far back a budget or a claim may be posted. Applied to the schemes ticked in
+            the table.
+          </p>
+
+          <div class="to-frq__selected to-numeric">{{ selection().size }} selected</div>
+
+          <div class="to-adm__field to-frq__bulk-field">
+            <label class="to-adm__label" for="budgetMonths">Budget prior months</label>
+            <div class="to-frq__bulk-row">
+              <input
+                pInputText
+                id="budgetMonths"
+                type="number"
+                min="0"
+                [formControl]="budgetMonthsControl"
+              />
+              <button
+                type="button"
+                pButton
+                class="p-button-sm p-button-outlined"
+                [disabled]="selection().size === 0 || bulkSaving()"
+                (click)="confirmingBulk.set('budget')"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+
+          <div class="to-adm__field to-frq__bulk-field">
+            <label class="to-adm__label" for="claimMonths">Claim prior months</label>
+            <div class="to-frq__bulk-row">
+              <input
+                pInputText
+                id="claimMonths"
+                type="number"
+                min="0"
+                [formControl]="claimMonthsControl"
+              />
+              <button
+                type="button"
+                pButton
+                class="p-button-sm p-button-outlined"
+                [disabled]="selection().size === 0 || bulkSaving()"
+                (click)="confirmingBulk.set('claim')"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="confirmingBulk() !== null"
+  (visibleChange)="confirmingBulk.set(null)"
+  title="Change the posting window?"
+  [message]="bulkMessage()"
+  confirmLabel="Apply"
+  (confirmed)="applyBulk()"
+  (cancelled)="confirmingBulk.set(null)"
+/>

@@ -1,0 +1,113 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-mf__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .to-mf__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-mf__aside {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  position: sticky;
+  top: 0;
+}
+
+.to-mf__field {
+  margin-bottom: t.$to-space-3;
+
+  &--narrow {
+    max-width: 120px;
+  }
+}
+
+.to-mf__row {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-3;
+
+  > * {
+    flex: 1;
+  }
+}
+
+.to-mf__hint-inline {
+  margin-left: t.$to-space-2;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-mf__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+// Native select rather than PrimeNG's: this form is signal-free reactive, and p-select
+// wants its own value accessor plumbing for no gain on a plain id list.
+.to-mf__select {
+  width: 100%;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: var(--to-accent);
+    box-shadow: 0 0 0 2px var(--to-accent-subtle);
+  }
+}
+
+// Accent rail: this is context the admin needs before saving, not a warning about
+// something being wrong.
+.to-mf__notice {
+  border-left: 3px solid var(--to-accent);
+}
+
+.to-mf__list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding-left: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-mf__grants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-mf__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}

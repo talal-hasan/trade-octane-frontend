@@ -1,0 +1,277 @@
+<to-page-header
+  title="Approval Routing"
+  subtitle="Move pending approvals off someone who cannot action them."
+  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Approval Routing' }]"
+>
+  <button
+    actions
+    type="button"
+    pButton
+    class="p-button-outlined p-button-sm"
+    (click)="exportCsv()"
+    [disabled]="exporting() || loading()"
+  >
+    <tabler-icon [icon]="icons['download']" [size]="15" />
+    {{ exporting() ? 'Exporting…' : 'Export CSV' }}
+  </button>
+</to-page-header>
+
+<div class="to-adm">
+  <!-- The census. `stuckPendingRows` is the number this screen exists for: approvals held
+       by someone who cannot act, so the queue can never drain on its own. -->
+  <div class="to-adm__census">
+    <div class="to-adm__census-item">
+      <span class="to-adm__census-label">Pending approvals</span>
+      <span class="to-adm__census-value to-numeric">{{ totalPending().toLocaleString() }}</span>
+    </div>
+    <div class="to-adm__census-item to-adm__census-item--warn" [class.to-adm__census-item--clear]="stuckPending() === 0">
+      <span class="to-adm__census-label">Stuck with a non-actionable holder</span>
+      <span class="to-adm__census-value to-numeric">{{ stuckPending().toLocaleString() }}</span>
+    </div>
+    <button
+      type="button"
+      class="to-adm__census-action"
+      [class.to-adm__census-action--on]="stuckOnly()"
+      (click)="toggleStuckOnly()"
+    >
+      {{ stuckOnly() ? 'Showing stuck only' : 'Show stuck only' }}
+    </button>
+  </div>
+
+  <div class="to-adm__filters">
+    <div class="to-adm__chipset" role="group" aria-label="Approval table">
+      @for (t of tables; track t) {
+        <button
+          type="button"
+          class="to-adm__chip"
+          [class.to-adm__chip--on]="table() === t"
+          (click)="setTable(t)"
+        >
+          {{ tableLabels[t] }}
+        </button>
+      }
+    </div>
+
+    <div class="to-adm__chipset" role="group" aria-label="Stage">
+      @for (s of stages; track s) {
+        <button
+          type="button"
+          class="to-adm__chip"
+          [class.to-adm__chip--on]="stage() === s"
+          (click)="setStage(s)"
+        >
+          {{ stageLabels[s] }}
+        </button>
+      }
+    </div>
+
+    <div class="to-adm__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        (search)="onSearch()"
+        (keyup.enter)="onSearch()"
+        placeholder="Search holder"
+        aria-label="Search holder"
+      />
+    </div>
+  </div>
+
+  <div class="to-adm__split">
+    <!-- ── Queues ─────────────────────────────────────────────────────────── -->
+    <div class="to-ar__queues">
+      @if (loading()) {
+        <div class="to-adm__card">
+          @for (row of skeletonRows; track row) {
+            <div class="to-adm__skeleton-row">
+              <to-skeleton width="40%" height="12px" />
+              <to-skeleton width="20%" height="12px" />
+            </div>
+          }
+        </div>
+      } @else if (failed()) {
+        <to-empty-state
+          icon="alert-triangle"
+          heading="Could not load the queues"
+          description="The census did not respond. This is usually temporary."
+        >
+          <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+            <tabler-icon [icon]="icons['refresh']" [size]="15" />
+            Try again
+          </button>
+        </to-empty-state>
+      } @else if (queues().length === 0) {
+        <to-empty-state
+          icon="route"
+          [heading]="stuckOnly() ? 'Nothing is stuck' : 'No queues match'"
+          [description]="
+            stuckOnly()
+              ? 'Every pending approval is sitting with somebody who can action it.'
+              : 'Try a different table, stage, or clear the search.'
+          "
+        />
+      } @else {
+        <ul class="to-ar__list">
+          @for (queue of queues(); track queue.table + queue.stage + queue.holder) {
+            <li>
+              <button
+                type="button"
+                class="to-ar__queue"
+                [class.to-ar__queue--active]="selected()?.holder === queue.holder && selected()?.stage === queue.stage && selected()?.table === queue.table"
+                [class.to-ar__queue--stuck]="!queue.isActionable"
+                (click)="select(queue)"
+              >
+                <span class="to-ar__queue-main">
+                  <span class="to-ar__queue-holder">{{ holderLabel(queue) }}</span>
+                  <span class="to-ar__queue-meta">
+                    {{ tableLabels[queue.table] }} · {{ stageLabels[queue.stage] }}
+                    @if (queue.oldestInitiatedOn) {
+                      · oldest {{ formatDate(queue.oldestInitiatedOn) }}
+                    }
+                  </span>
+                </span>
+                <span class="to-ar__queue-side">
+                  @if (!queue.isActionable) {
+                    <span
+                      class="to-adm__flag to-adm__flag--warn"
+                      [pTooltip]="queue.holderStatus === 'NotAUser' ? 'The stored approver is not a user account — this queue cannot drain.' : 'The holder is deactivated and cannot action these.'"
+                      tooltipPosition="left"
+                    >
+                      {{ queue.holderStatus === 'NotAUser' ? 'not a user' : 'deactivated' }}
+                    </span>
+                  }
+                  <span class="to-ar__queue-count to-numeric">{{ queue.pendingCount }}</span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+
+        <div class="to-adm__pager">
+          <button
+            type="button"
+            pButton
+            class="p-button-sm p-button-text"
+            [disabled]="!pagerState().hasPrevious"
+            (click)="previousPage()"
+          >
+            <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+            Previous
+          </button>
+          <button
+            type="button"
+            pButton
+            class="p-button-sm p-button-text"
+            [disabled]="!pagerState().hasNext"
+            (click)="nextPage()"
+          >
+            Next
+            <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- ── Preview + transfer ─────────────────────────────────────────────── -->
+    <aside class="to-adm__panel">
+      @if (selected(); as queue) {
+        <div class="to-adm__card to-adm__card--pad">
+          <header class="to-ar__panel-head">
+            <div>
+              <h2 class="to-ar__panel-title">{{ holderLabel(queue) }}</h2>
+              <p class="to-ar__panel-sub">
+                {{ tableLabels[queue.table] }} · {{ stageLabels[queue.stage] }}
+              </p>
+            </div>
+            <button type="button" class="to-ar__close" (click)="clearSelection()" aria-label="Close">
+              <tabler-icon [icon]="icons['x']" [size]="16" />
+            </button>
+          </header>
+
+          <div class="to-ar__count-line">
+            <span class="to-numeric to-ar__count-figure">{{ previewCount() }}</span>
+            pending {{ previewCount() === 1 ? 'approval' : 'approvals' }} would move
+          </div>
+
+          <div class="to-adm__field">
+            <label class="to-adm__label" for="newHolder">Move to</label>
+            <input
+              pInputText
+              id="newHolder"
+              type="text"
+              list="to-adm-holders"
+              [formControl]="newHolderControl"
+              placeholder="Login name"
+            />
+            <datalist id="to-adm-holders">
+              @for (option of holderOptions(); track option.userId) {
+                <option [value]="option.userId">{{ option.fullName }}</option>
+              }
+            </datalist>
+            <span class="to-adm__hint">
+              The new holder is validated against the user list — the point is to hand work
+              to someone who can act on it.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            pButton
+            class="p-button-sm to-ar__transfer"
+            [disabled]="!canTransfer()"
+            (click)="confirming.set(true)"
+          >
+            {{ transferring() ? 'Moving…' : 'Re-route approvals' }}
+          </button>
+
+          <!-- The preview. `expectedCount` for the transfer comes from this, which is why
+               it is shown rather than merely fetched. -->
+          <h3 class="to-ar__preview-title">Rows that would move</h3>
+          @if (previewLoading()) {
+            <to-skeleton width="100%" height="120px" />
+          } @else if (preview().length === 0) {
+            <p class="to-adm__hint">Nothing pending at this stage.</p>
+          } @else {
+            <ul class="to-ar__preview">
+              @for (row of preview(); track row.key) {
+                <li class="to-ar__preview-row">
+                  <span class="to-ar__preview-ref">{{ row.reference || row.key }}</span>
+                  <span class="to-ar__preview-meta">
+                    @if (row.initiatedBy) {
+                      by {{ row.initiatedBy }}
+                    }
+                    @if (row.initiatedOn) {
+                      · {{ formatDate(row.initiatedOn) }}
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+            @if (previewTruncated()) {
+              <p class="to-adm__hint">
+                Showing the first {{ preview().length }}. All {{ previewCount() }} will move.
+              </p>
+            }
+          }
+        </div>
+      } @else {
+        <div class="to-adm__card to-ar__placeholder">
+          <tabler-icon [icon]="icons['route']" [size]="22" />
+          <p>Pick a queue to preview what would move.</p>
+        </div>
+      }
+    </aside>
+  </div>
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming()"
+  (visibleChange)="confirming.set(false)"
+  title="Re-route these approvals?"
+  [message]="confirmMessage()"
+  confirmLabel="Re-route"
+  (confirmed)="confirmTransfer()"
+  (cancelled)="confirming.set(false)"
+/>
