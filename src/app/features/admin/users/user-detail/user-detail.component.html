@@ -234,8 +234,25 @@
                 </button>
               </div>
 
+              <div class="to-ud__toolbar">
+                <div class="to-ud__search">
+                  <tabler-icon [icon]="icons['search']" [size]="15" />
+                  <input
+                    pInputText
+                    type="search"
+                    [value]="roleSearch()"
+                    (input)="onRoleSearch($any($event.target).value)"
+                    placeholder="Search roles"
+                    aria-label="Search roles"
+                  />
+                </div>
+                <span class="to-ud__count to-numeric">
+                  {{ roleSelection().size }} of {{ allRoles().length }} assigned
+                </span>
+              </div>
+
               <ul class="to-ud__list">
-                @for (role of allRoles(); track role.roleId) {
+                @for (role of visibleRoles(); track role.roleId) {
                   <li class="to-ud__list-row" [class.to-ud__list-row--retired]="!role.isActive">
                     <input
                       type="checkbox"
@@ -257,6 +274,8 @@
                       <span class="to-numeric">{{ role.assignedUserCount }} users</span>
                     </span>
                   </li>
+                } @empty {
+                  <li class="to-ud__list-empty">No roles match that search.</li>
                 }
               </ul>
             </section>
@@ -287,8 +306,33 @@
                 </button>
               </div>
 
+              <div class="to-ud__toolbar">
+                <div class="to-ud__search">
+                  <tabler-icon [icon]="icons['search']" [size]="15" />
+                  <input
+                    pInputText
+                    type="search"
+                    [value]="regionSearch()"
+                    (input)="onRegionSearch($any($event.target).value)"
+                    placeholder="Search regions"
+                    aria-label="Search regions"
+                  />
+                </div>
+                <!-- Acts on what is visible, not the whole catalogue — see
+                     allVisibleRegionsSelected. -->
+                <button type="button" class="to-ud__bulk" (click)="toggleAllRegions()">
+                  {{ allVisibleRegionsSelected() ? 'Clear all' : 'Select all' }}
+                  @if (regionSearch()) {
+                    <span class="to-ud__bulk-scope">shown</span>
+                  }
+                </button>
+                <span class="to-ud__count to-numeric">
+                  {{ regionSelection().size }} of {{ allRegions().length }} selected
+                </span>
+              </div>
+
               <div class="to-ud__chips">
-                @for (region of allRegions(); track region.code) {
+                @for (region of visibleRegions(); track region.code) {
                   <button
                     type="button"
                     class="to-ud__chip"
@@ -297,13 +341,14 @@
                     (click)="toggleRegion(region.code)"
                     [attr.aria-pressed]="regionSelection().has(region.code)"
                   >
-                    {{ region.name }}
+                    <span class="to-ud__chip-name">{{ region.name }}</span>
+                    <span class="to-ud__chip-code">{{ region.code }}</span>
                     @if (!region.isActive) {
                       <span class="to-ud__chip-note">retired</span>
                     }
                   </button>
                 } @empty {
-                  <p class="to-ud__section-note">No regions in the catalogue.</p>
+                  <p class="to-ud__section-note">No regions match that search.</p>
                 }
               </div>
             </section>
@@ -335,8 +380,31 @@
                 </button>
               </div>
 
+              <div class="to-ud__toolbar">
+                <div class="to-ud__search">
+                  <tabler-icon [icon]="icons['search']" [size]="15" />
+                  <input
+                    pInputText
+                    type="search"
+                    [value]="brandSearch()"
+                    (input)="onBrandSearch($any($event.target).value)"
+                    placeholder="Search brands"
+                    aria-label="Search brands"
+                  />
+                </div>
+                <button type="button" class="to-ud__bulk" (click)="toggleAllBrands()">
+                  {{ allVisibleBrandsSelected() ? 'Clear all' : 'Select all' }}
+                  @if (brandSearch()) {
+                    <span class="to-ud__bulk-scope">shown</span>
+                  }
+                </button>
+                <span class="to-ud__count to-numeric">
+                  {{ brandSelection().size }} of {{ allBrands().length }} selected
+                </span>
+              </div>
+
               <div class="to-ud__chips">
-                @for (brand of allBrands(); track brand.code) {
+                @for (brand of visibleBrands(); track brand.code) {
                   <button
                     type="button"
                     class="to-ud__chip"
@@ -345,13 +413,14 @@
                     (click)="toggleBrand(brand.code)"
                     [attr.aria-pressed]="brandSelection().has(brand.code)"
                   >
-                    {{ brand.name }}
+                    <span class="to-ud__chip-name">{{ brand.name }}</span>
+                    <span class="to-ud__chip-code">{{ brand.code }}</span>
                     @if (!brand.hasMasterSku) {
                       <span class="to-ud__chip-note">no SKU</span>
                     }
                   </button>
                 } @empty {
-                  <p class="to-ud__section-note">No brands in the catalogue.</p>
+                  <p class="to-ud__section-note">No brands match that search.</p>
                 }
               </div>
             </section>

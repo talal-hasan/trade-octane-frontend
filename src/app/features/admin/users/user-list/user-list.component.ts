@@ -27,6 +27,7 @@ import {
   USER_STATUS_PILL,
   UserRowStatus,
   initialsOf,
+  resignationLabel,
   userStatusOf,
 } from '../user.util';
 
@@ -72,6 +73,7 @@ export class UserListComponent {
   protected readonly statusLabels = USER_STATUS_LABELS;
   protected readonly statusPill = USER_STATUS_PILL;
   protected readonly initialsOf = initialsOf;
+  protected readonly resignationLabel = resignationLabel;
   protected readonly skeletonRows = Array.from({ length: 8 }, (_, index) => index);
 
   protected readonly loading = signal(true);

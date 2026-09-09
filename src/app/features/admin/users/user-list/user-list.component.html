@@ -110,6 +110,7 @@
               }
             </th>
             <th scope="col" class="to-users__th">Status</th>
+            <th scope="col" class="to-users__th">Resigned</th>
             <th scope="col" class="to-users__th">Password set</th>
             <th scope="col" class="to-users__th to-users__th--actions">Actions</th>
           </tr>
@@ -135,6 +136,16 @@
                   [status]="statusPill[statusOf(user)]"
                   [label]="statusLabels[statusOf(user)]"
                 />
+              </td>
+              <!-- Resignation is an HR fact, not a sign-in state: someone can have
+                   resigned and still hold a working account, and collapsing the two hid
+                   exactly that case. -->
+              <td class="to-users__td to-numeric" [class.to-users__td--muted]="!user.resignationDate">
+                @if (user.resignationDate) {
+                  <span class="to-users__resigned">{{ resignationLabel(user.resignationDate) }}</span>
+                } @else {
+                  —
+                }
               </td>
               <td class="to-users__td to-users__td--muted to-numeric">
                 {{ formatDate(user.passwordSetAtUtc) }}

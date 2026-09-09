@@ -15,27 +15,24 @@ export const MENU_RESIGNATION = 133;
 export const MENU_ACCESS_BY_ROLE = 142;
 
 /**
- * A user's state, collapsed to the one thing worth showing in a list.
+ * A user's sign-in state.
  *
- * `UserResponse` reports four independent booleans — `isActive`, `isLocked`,
- * `mustChangePassword`, plus a `resignationDate`. Rendering four indicators per row would
- * be unreadable, so they collapse to the most actionable one. The order matters and is
- * the point:
+ * Deliberately **does not** consider `resignationDate`. Resignation is an HR fact, not an
+ * account state: someone can have resigned and still hold a live, active login, which is
+ * precisely the situation an administrator needs to see rather than have collapsed into a
+ * single "Resigned" pill. Folding it into the status hid whether the account still worked.
+ * It is now reported in its own column.
  *
- *   resigned  the person has left. Nothing else about the account matters.
- *   inactive  cannot sign in at all, so a lock on top of it is irrelevant.
- *   locked    can sign in once an admin clears the lock — the actionable state.
- *   pending   provisioned, never used. Distinct from active for onboarding follow-up.
- *   active    normal.
+ * The remaining order matters and is the point:
  *
- * The detail screen shows the raw flags; a list needs one answer.
+ *   inactive  cannot sign in at all, so a lock on top of it is irrelevant
+ *   locked    can sign in once an admin clears the lock — the actionable state
+ *   pending   provisioned, never used. Distinct from active for onboarding follow-up
+ *   active    normal
  */
-export type UserRowStatus = 'resigned' | 'inactive' | 'locked' | 'pending' | 'active';
+export type UserRowStatus = 'inactive' | 'locked' | 'pending' | 'active';
 
 export function userStatusOf(user: UserResponse): UserRowStatus {
-  if (user.resignationDate) {
-    return 'resigned';
-  }
   if (!user.isActive) {
     return 'inactive';
   }
@@ -50,7 +47,6 @@ export function userStatusOf(user: UserResponse): UserRowStatus {
 }
 
 export const USER_STATUS_LABELS: Record<UserRowStatus, string> = {
-  resigned: 'Resigned',
   inactive: 'Inactive',
   locked: 'Locked',
   pending: 'Pending first sign-in',
@@ -63,12 +59,26 @@ export const USER_STATUS_LABELS: Record<UserRowStatus, string> = {
  * clears, not a judgement on the account.
  */
 export const USER_STATUS_PILL: Record<UserRowStatus, StatusPillStatus> = {
-  resigned: 'rejected',
   inactive: 'draft',
   locked: 'overdue',
   pending: 'pending',
   active: 'approved',
 };
+
+/** Formats a resignation date for its own column. Blank means "still employed". */
+export function resignationLabel(value: string | null | undefined): string {
+  if (!value) {
+    return '—';
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('en-PK', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(date);
+}
 
 /** Initials for the avatar chip. Falls back to the login name when there is no full name. */
 export function initialsOf(user: Pick<UserResponse, 'fullName' | 'userId'>): string {

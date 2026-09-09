@@ -246,6 +246,17 @@
 
 // ─── Skeleton & pager ─────────────────────────────────────────────────────────
 
+// A recorded resignation on a still-active account is the thing worth noticing here, so
+// it is tinted rather than left as plain text.
+.to-users__resigned {
+  display: inline-block;
+  padding: 0 t.$to-space-1;
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  color: var(--to-warning);
+  font-size: t.$to-font-size-xs;
+}
+
 .to-users__skeleton-row {
   display: flex;
   align-items: center;

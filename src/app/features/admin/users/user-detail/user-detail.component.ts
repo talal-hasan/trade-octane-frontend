@@ -1,5 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
@@ -331,39 +333,80 @@ export class UserDetailComponent {
   protected readonly rolesLoading = signal(false);
   protected readonly assignedRoles = signal<readonly RoleResponse[]>([]);
   protected readonly availableRoles = signal<readonly RoleResponse[]>([]);
+  /** The whole role catalogue, so an empty `available` cannot blank the tab. */
+  protected readonly catalogueRoles = signal<readonly RoleResponse[]>([]);
+  protected readonly roleSearch = signal('');
   protected readonly roleSelection = signal<ReadonlySet<number>>(new Set<number>());
   protected readonly savingRoles = signal(false);
 
+  /**
+   * Loads the assignment **and** the full role catalogue.
+   *
+   * `UserRoleAssignmentResponse.available` is meant to carry the roles a user could hold,
+   * but it came back empty against the live API, which left the tab showing nothing at all
+   * — an admin cannot grant a role they cannot see. The catalogue is authoritative for
+   * "what exists"; the assignment is authoritative for "what they hold". Reading both and
+   * merging means the tab is correct whichever way the backend populates `available`.
+   *
+   * The catalogue call is non-fatal: if it fails we still render whatever the assignment
+   * returned rather than showing an empty screen.
+   */
   private loadRoles(userId: string): void {
     this.rolesLoading.set(true);
-    this.rolesApi
-      .userRoles(userId)
+    forkJoin({
+      assignment: this.rolesApi.userRoles(userId),
+      catalogue: this.rolesApi.listRoles({ status: 'All' }).pipe(catchError(() => of([]))),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (assignment) => {
-          this.assignedRoles.set(assignment.assigned);
-          this.availableRoles.set(assignment.available);
-          this.roleSelection.set(new Set(assignment.assigned.map((role) => int(role.roleId))));
+        next: ({ assignment, catalogue }) => {
+          this.assignedRoles.set(assignment.assigned ?? []);
+          this.catalogueRoles.set(catalogue);
+          this.availableRoles.set(assignment.available ?? []);
+          this.roleSelection.set(
+            new Set((assignment.assigned ?? []).map((role) => int(role.roleId))),
+          );
           this.rolesLoading.set(false);
           this.rolesLoaded.set(true);
         },
-        error: () => this.rolesLoading.set(false),
+        error: () => {
+          this.rolesLoading.set(false);
+          this.rolesLoaded.set(true);
+        },
       });
   }
 
-  /** Assigned + available, so one list shows the whole catalogue with its state. */
+  /**
+   * One list showing every role with its state. Assigned entries win on a collision so a
+   * role the user holds is never hidden because the catalogue omitted it.
+   */
   protected readonly allRoles = computed<readonly RoleResponse[]>(() => {
-    const seen = new Set<number>();
-    const merged: RoleResponse[] = [];
-    for (const role of [...this.assignedRoles(), ...this.availableRoles()]) {
-      const id = int(role.roleId);
-      if (!seen.has(id)) {
-        seen.add(id);
-        merged.push(role);
-      }
+    const byId = new Map<number, RoleResponse>();
+    for (const role of [...this.catalogueRoles(), ...this.availableRoles()]) {
+      byId.set(int(role.roleId), role);
     }
-    return merged.sort((a, b) => a.roleName.localeCompare(b.roleName));
+    for (const role of this.assignedRoles()) {
+      byId.set(int(role.roleId), role);
+    }
+    return [...byId.values()].sort((a, b) => a.roleName.localeCompare(b.roleName));
   });
+
+  /** Roles matching the tab's search box. */
+  protected readonly visibleRoles = computed<readonly RoleResponse[]>(() => {
+    const term = this.roleSearch().trim().toLowerCase();
+    if (!term) {
+      return this.allRoles();
+    }
+    return this.allRoles().filter(
+      (role) =>
+        role.roleName.toLowerCase().includes(term) ||
+        (role.roleDescription ?? '').toLowerCase().includes(term),
+    );
+  });
+
+  protected onRoleSearch(value: string): void {
+    this.roleSearch.set(value);
+  }
 
   protected readonly rolesDirty = computed(() => {
     const original = new Set(this.assignedRoles().map((role) => int(role.roleId)));
@@ -485,6 +528,58 @@ export class UserDetailComponent {
       byCode.set(entry.code, entry);
     }
     return [...byCode.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // ─── Chip filtering & bulk selection ───────────────────────────────────────
+  // A user can hold 16 regions and 22 brands. Hunting for one in an unordered wall of
+  // chips is the slow part of the job, and "give this person everything" was previously
+  // 22 individual clicks.
+  protected readonly regionSearch = signal('');
+  protected readonly brandSearch = signal('');
+
+  protected readonly visibleRegions = computed(() =>
+    filterByName(this.allRegions(), this.regionSearch()),
+  );
+  protected readonly visibleBrands = computed(() =>
+    filterByName(this.allBrands(), this.brandSearch()),
+  );
+
+  protected onRegionSearch(value: string): void {
+    this.regionSearch.set(value);
+  }
+
+  protected onBrandSearch(value: string): void {
+    this.brandSearch.set(value);
+  }
+
+  /**
+   * Select-all acts on what is **visible**, not on the whole catalogue.
+   *
+   * That is the only safe reading when a filter is active: a button labelled "Select all"
+   * sitting above six filtered chips must not silently grant the other sixteen.
+   */
+  protected readonly allVisibleRegionsSelected = computed(() => {
+    const visible = this.visibleRegions();
+    const selected = this.regionSelection();
+    return visible.length > 0 && visible.every((region) => selected.has(region.code));
+  });
+
+  protected readonly allVisibleBrandsSelected = computed(() => {
+    const visible = this.visibleBrands();
+    const selected = this.brandSelection();
+    return visible.length > 0 && visible.every((brand) => selected.has(brand.code));
+  });
+
+  protected toggleAllRegions(): void {
+    const visible = this.visibleRegions().map((region) => region.code);
+    const selectAll = !this.allVisibleRegionsSelected();
+    this.regionSelection.update((current) => applyBulk(current, visible, selectAll));
+  }
+
+  protected toggleAllBrands(): void {
+    const visible = this.visibleBrands().map((brand) => brand.code);
+    const selectAll = !this.allVisibleBrandsSelected();
+    this.brandSelection.update((current) => applyBulk(current, visible, selectAll));
   }
 
   protected toggleRegion(code: string): void {
@@ -725,4 +820,38 @@ export class UserDetailComponent {
   protected retry(): void {
     this.loadUser(this.userId());
   }
+}
+
+/** Case-insensitive match on name, short name or code. */
+function filterByName<T extends { code: string; name: string; shortName: string }>(
+  entries: readonly T[],
+  term: string,
+): readonly T[] {
+  const needle = term.trim().toLowerCase();
+  if (!needle) {
+    return entries;
+  }
+  return entries.filter(
+    (entry) =>
+      entry.name.toLowerCase().includes(needle) ||
+      (entry.shortName ?? '').toLowerCase().includes(needle) ||
+      entry.code.toLowerCase().includes(needle),
+  );
+}
+
+/** Adds or removes a set of codes without disturbing anything outside that set. */
+function applyBulk(
+  current: ReadonlySet<string>,
+  codes: readonly string[],
+  select: boolean,
+): ReadonlySet<string> {
+  const next = new Set(current);
+  for (const code of codes) {
+    if (select) {
+      next.add(code);
+    } else {
+      next.delete(code);
+    }
+  }
+  return next;
 }
