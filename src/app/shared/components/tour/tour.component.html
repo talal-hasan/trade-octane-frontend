@@ -1,0 +1,45 @@
+@if (tour.activeStep(); as step) {
+  <div class="to-tour" role="dialog" aria-modal="true" [attr.aria-label]="step.title">
+    <!-- One element with a huge outward shadow, not four dimming panels: four panels grow
+         hairline seams when the target lands on a fractional pixel. `pointer-events: none`
+         so the spotlight never blocks the control it is pointing at. -->
+    <div class="to-tour__spotlight" [style]="spotlightStyle()"></div>
+
+    <div class="to-tour__card" [style]="cardStyle()">
+      <header class="to-tour__head">
+        <span class="to-tour__progress">{{ progressLabel() }}</span>
+        <button type="button" class="to-tour__close" (click)="tour.dismiss()" aria-label="Close tour">
+          <tabler-icon [icon]="icons['x']" [size]="15" />
+        </button>
+      </header>
+
+      <h2 class="to-tour__title">{{ step.title }}</h2>
+      <p class="to-tour__body">{{ step.body }}</p>
+
+      <div class="to-tour__dots" aria-hidden="true">
+        @for (i of [].constructor(tour.totalSteps()); track $index) {
+          <span class="to-tour__dot" [class.to-tour__dot--on]="$index === tour.stepIndex()"></span>
+        }
+      </div>
+
+      <footer class="to-tour__foot">
+        <!-- Distinct from closing: this records completion so it never auto-starts again,
+             while the × just defers it. -->
+        <button type="button" class="to-tour__skip" (click)="tour.dismissForever()">
+          Do not show again
+        </button>
+
+        <div class="to-tour__nav">
+          @if (!tour.isFirst()) {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="tour.back()">
+              Back
+            </button>
+          }
+          <button type="button" pButton class="p-button-sm" (click)="tour.next()">
+            {{ tour.isLast() ? 'Got it' : 'Next' }}
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+}

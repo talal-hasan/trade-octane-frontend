@@ -1,6 +1,6 @@
 <div class="to-own">
   <!-- Step 1 — period. Nothing below exists until this is chosen, so it leads. -->
-  <div class="to-adm__filters">
+  <div class="to-adm__filters" data-tour="activity-period">
     @if (filtersLoading()) {
       <to-skeleton width="320px" height="30px" />
     } @else {
@@ -25,22 +25,21 @@
         }
       </div>
 
-      <div class="to-adm__chipset" role="group" aria-label="Claim type">
-        @for (c of claimTypes(); track c.code) {
-          <button
-            type="button"
-            class="to-adm__chip"
-            [class.to-adm__chip--on]="claimType() === c.code"
-            (click)="setClaimType(c.code)"
-          >
-            {{ c.description || c.code }}
-          </button>
-        }
-      </div>
+      <!-- A picker rather than a chipset: the claim-type catalogue is long enough that
+           laying it out flat would repeat the wall of chips this screen just lost. -->
+      <to-multi-select-picker
+        label="Claim type"
+        [options]="claimTypeOptions()"
+        [selected]="claimTypeSelection()"
+        [single]="true"
+        emptyLabel="All claim types"
+        searchPlaceholder="Search claim types"
+        (changed)="setClaimTypeFromPicker($event)"
+      />
     }
   </div>
 
-  <div class="to-adm__census">
+  <div class="to-adm__census" data-tour="activity-census">
     <div class="to-adm__census-item">
       <span class="to-adm__census-label">Activities in period</span>
       <span class="to-adm__census-value to-numeric">{{ totalActivities().toLocaleString() }}</span>
@@ -60,7 +59,7 @@
     <div class="to-own__main">
       <!-- Step 2 — current owner -->
       <section class="to-adm__card to-adm__card--pad">
-        <h2 class="to-adm__subtitle">1 · Whose activities are moving?</h2>
+        <h2 class="to-adm__subtitle" data-tour="activity-owner">1 · Whose activities are moving?</h2>
         <div class="to-adm__search to-own__owner-search">
           <tabler-icon [icon]="icons['search']" [size]="15" />
           <input
@@ -112,7 +111,7 @@
       @if (currentOwner()) {
         <section class="to-adm__card to-adm__card--pad">
           <div class="to-own__rows-head">
-            <h2 class="to-adm__subtitle">2 · Pick the activities</h2>
+            <h2 class="to-adm__subtitle" data-tour="activity-rows">2 · Pick the activities</h2>
             <div class="to-own__rows-actions">
               @if (driftedCount() > 0) {
                 <button
@@ -262,7 +261,7 @@
     <!-- Step 4 — destination -->
     <aside class="to-adm__panel">
       <div class="to-adm__card to-adm__card--pad">
-        <h2 class="to-adm__subtitle">3 · Move them to</h2>
+        <h2 class="to-adm__subtitle" data-tour="activity-destination">3 · Move them to</h2>
 
         @if (!currentOwner()) {
           <p class="to-adm__note">Pick a current owner first.</p>

@@ -20,6 +20,10 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
+import {
+  MultiSelectPickerComponent,
+  PickerOption,
+} from '../../../../shared/components/multi-select-picker/multi-select-picker.component';
 import { AdminOperationsApi } from '../../services/admin-operations.api';
 
 /**
@@ -47,6 +51,7 @@ import { AdminOperationsApi } from '../../services/admin-operations.api';
     EmptyStateComponent,
     SkeletonComponent,
     ConfirmDialogComponent,
+    MultiSelectPickerComponent,
   ],
   // Shares the ownership chrome in the global `_admin.scss` partial.
   templateUrl: './budget-ownership.component.html',
@@ -105,14 +110,38 @@ export class BudgetOwnershipComponent {
     this.loadScope();
   }
 
-  protected toggleScheme(code: string): void {
-    this.selectedSchemes.update((current) => toggle(current, code));
+  /** Catalogue entries as picker options, with the code kept visible as the hint. */
+  protected readonly schemeOptions = computed<PickerOption[]>(() =>
+    this.schemeTypes().map((s) => ({
+      value: s.code,
+      label: s.description || s.code,
+      hint: s.description ? s.code : undefined,
+    })),
+  );
+
+  protected readonly regionOptions = computed<PickerOption[]>(() =>
+    this.regions().map((r) => ({
+      value: r.code,
+      label: r.description || r.code,
+      hint: r.description ? r.code : undefined,
+    })),
+  );
+
+  protected setSchemes(next: ReadonlySet<string>): void {
+    this.selectedSchemes.set(next);
     this.resetDownstream();
     this.loadScope();
   }
 
-  protected toggleRegion(code: string): void {
-    this.selectedRegions.update((current) => toggle(current, code));
+  protected setRegions(next: ReadonlySet<string>): void {
+    this.selectedRegions.set(next);
+    this.resetDownstream();
+    this.loadScope();
+  }
+
+  protected clearScopeFilters(): void {
+    this.selectedSchemes.set(new Set<string>());
+    this.selectedRegions.set(new Set<string>());
     this.resetDownstream();
     this.loadScope();
   }

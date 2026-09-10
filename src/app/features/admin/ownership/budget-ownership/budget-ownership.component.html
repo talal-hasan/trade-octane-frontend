@@ -1,5 +1,5 @@
 <div class="to-own">
-  <div class="to-adm__filters">
+  <div class="to-adm__filters" data-tour="budget-period">
     @if (filtersLoading()) {
       <to-skeleton width="360px" height="30px" />
     } @else {
@@ -27,36 +27,36 @@
   </div>
 
   @if (!filtersLoading()) {
-    <div class="to-adm__filters">
-      <div class="to-adm__chipset" role="group" aria-label="Scheme type">
-        @for (s of schemeTypes(); track s.code) {
-          <button
-            type="button"
-            class="to-adm__chip"
-            [class.to-adm__chip--on]="selectedSchemes().has(s.code)"
-            (click)="toggleScheme(s.code)"
-          >
-            {{ s.description || s.code }}
-          </button>
-        }
-      </div>
+    <div class="to-adm__filters" data-tour="budget-scope">
+      <!-- Pickers, not chipsets: the scheme-type catalogue runs to ~60 entries and as a
+           chipset it filled half the viewport, pushing the actual work below the fold. -->
+      <to-multi-select-picker
+        label="Scheme type"
+        [options]="schemeOptions()"
+        [selected]="selectedSchemes()"
+        emptyLabel="All scheme types"
+        searchPlaceholder="Search scheme types"
+        (changed)="setSchemes($event)"
+      />
 
-      <div class="to-adm__chipset" role="group" aria-label="Region">
-        @for (r of regions(); track r.code) {
-          <button
-            type="button"
-            class="to-adm__chip"
-            [class.to-adm__chip--on]="selectedRegions().has(r.code)"
-            (click)="toggleRegion(r.code)"
-          >
-            {{ r.description || r.code }}
-          </button>
-        }
-      </div>
+      <to-multi-select-picker
+        label="Region"
+        [options]="regionOptions()"
+        [selected]="selectedRegions()"
+        emptyLabel="All regions"
+        searchPlaceholder="Search regions"
+        (changed)="setRegions($event)"
+      />
+
+      @if (selectedSchemes().size + selectedRegions().size > 0) {
+        <button type="button" class="to-adm__census-action" (click)="clearScopeFilters()">
+          Clear filters
+        </button>
+      }
     </div>
   }
 
-  <div class="to-adm__census">
+  <div class="to-adm__census" data-tour="budget-census">
     <div class="to-adm__census-item">
       <span class="to-adm__census-label">Budget shells in scope</span>
       <span class="to-adm__census-value to-numeric">{{ totalShells().toLocaleString() }}</span>
@@ -77,6 +77,7 @@
       <!-- Step 1 — dimension table. Budgets live in several, and a shell exists in one. -->
       <section class="to-adm__card to-adm__card--pad">
         <h2 class="to-adm__subtitle">1 · Which budget table?</h2>
+        <span data-tour="budget-table"></span>
         @if (scopeLoading()) {
           <to-skeleton width="100%" height="60px" />
         } @else if (tables().length === 0) {
@@ -108,6 +109,7 @@
       @if (table()) {
         <section class="to-adm__card to-adm__card--pad">
           <h2 class="to-adm__subtitle">2 · Whose budgets are moving?</h2>
+          <span data-tour="budget-owner"></span>
           <div class="to-adm__search to-own__owner-search">
             <tabler-icon [icon]="icons['search']" [size]="15" />
             <input
@@ -158,7 +160,7 @@
       @if (currentOwner()) {
         <section class="to-adm__card to-adm__card--pad">
           <div class="to-own__rows-head">
-            <h2 class="to-adm__subtitle">3 · Pick the budget shells</h2>
+            <h2 class="to-adm__subtitle" data-tour="budget-shells">3 · Pick the budget shells</h2>
             <div class="to-own__rows-actions">
               @if (driftedCount() > 0) {
                 <button
@@ -311,7 +313,7 @@
 
     <aside class="to-adm__panel">
       <div class="to-adm__card to-adm__card--pad">
-        <h2 class="to-adm__subtitle">4 · Move them to</h2>
+        <h2 class="to-adm__subtitle" data-tour="budget-destination">4 · Move them to</h2>
 
         @if (!currentOwner()) {
           <p class="to-adm__note">Pick a budget table and a current owner first.</p>

@@ -1,0 +1,75 @@
+<div class="to-msp" [class.to-msp--open]="open()">
+  <button
+    type="button"
+    class="to-msp__trigger"
+    [class.to-msp__trigger--active]="selected().size > 0"
+    [disabled]="disabled()"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="listbox"
+    (click)="toggleOpen()"
+  >
+    <span class="to-msp__trigger-label">{{ label() }}</span>
+    <span class="to-msp__trigger-value">{{ summary() }}</span>
+    <tabler-icon [icon]="icons['chevron-down']" [size]="14" class="to-msp__caret" />
+  </button>
+
+  @if (open()) {
+    <div class="to-msp__panel" role="dialog" [attr.aria-label]="label()">
+      <div class="to-msp__search">
+        <tabler-icon [icon]="icons['search']" [size]="14" />
+        <input
+          pInputText
+          type="search"
+          [value]="search()"
+          (input)="onSearch($any($event.target).value)"
+          [placeholder]="searchPlaceholder()"
+          [attr.aria-label]="searchPlaceholder()"
+        />
+      </div>
+
+      @if (!single()) {
+      <div class="to-msp__actions">
+        <button type="button" class="to-msp__action" (click)="toggleAllVisible()">
+          {{ allVisibleSelected() ? 'Clear' : 'Select all' }}
+          @if (search()) {
+            <!-- Names the scope while filtering: this button does not touch the options
+                 the search is hiding. -->
+            <span class="to-msp__scope">shown</span>
+          }
+        </button>
+        @if (selected().size > 0) {
+          <button type="button" class="to-msp__action to-msp__action--muted" (click)="clearAll()">
+            Clear all ({{ selected().size }})
+          </button>
+        }
+      </div>
+      }
+
+      <ul class="to-msp__list" role="listbox" [attr.aria-multiselectable]="!single()">
+        @for (option of visible(); track option.value) {
+          <li>
+            <label class="to-msp__option" [class.to-msp__option--on]="isSelected(option.value)">
+              <input
+                class="to-msp__checkbox"
+                [type]="single() ? 'radio' : 'checkbox'"
+                [checked]="isSelected(option.value)"
+                (change)="toggle(option.value)"
+              />
+              <span class="to-msp__option-text">
+                <span class="to-msp__option-label">{{ option.label }}</span>
+                @if (option.hint) {
+                  <span class="to-msp__option-hint">{{ option.hint }}</span>
+                }
+              </span>
+              @if (option.count !== undefined && option.count !== null) {
+                <span class="to-msp__option-count to-numeric">{{ option.count }}</span>
+              }
+            </label>
+          </li>
+        } @empty {
+          <li class="to-msp__empty">No matches.</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

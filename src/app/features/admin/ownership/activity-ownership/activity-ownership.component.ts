@@ -19,6 +19,10 @@ import { ConfirmDialogComponent } from '../../../../shared/components/confirm-di
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
+import {
+  MultiSelectPickerComponent,
+  PickerOption,
+} from '../../../../shared/components/multi-select-picker/multi-select-picker.component';
 import { AdminOperationsApi } from '../../services/admin-operations.api';
 
 /**
@@ -47,6 +51,7 @@ import { AdminOperationsApi } from '../../services/admin-operations.api';
     EmptyStateComponent,
     SkeletonComponent,
     ConfirmDialogComponent,
+    MultiSelectPickerComponent,
   ],
   // No stylesheet of its own: the ownership flow's chrome is shared with budget
   // ownership and lives in the global `_admin.scss` partial.
@@ -100,6 +105,27 @@ export class ActivityOwnershipComponent {
 
   protected setMonth(value: number | null): void {
     this.month.set(this.month() === value ? null : value);
+    this.resetDownstream();
+    this.loadOwners();
+  }
+
+  protected readonly claimTypeOptions = computed<PickerOption[]>(() =>
+    this.claimTypes().map((c) => ({
+      value: c.code,
+      label: c.description || c.code,
+      hint: c.description ? c.code : undefined,
+    })),
+  );
+
+  /** The picker speaks in sets; this screen filters on a single optional value. */
+  protected readonly claimTypeSelection = computed<ReadonlySet<string>>(() => {
+    const current = this.claimType();
+    return current ? new Set([current]) : new Set<string>();
+  });
+
+  protected setClaimTypeFromPicker(next: ReadonlySet<string>): void {
+    const [only] = next;
+    this.claimType.set(only ?? null);
     this.resetDownstream();
     this.loadOwners();
   }

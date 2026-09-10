@@ -1,0 +1,232 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+.to-msp {
+  position: relative;
+  display: inline-block;
+}
+
+// ─── Trigger ──────────────────────────────────────────────────────────────────
+// The whole point of this control: one line tall no matter how long the catalogue is.
+
+.to-msp__trigger {
+  display: inline-flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  max-width: 280px;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(border-color, background-color, box-shadow);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border-strong);
+  }
+
+  // Active means "this filter is narrowing the results", which is worth seeing from
+  // across the row without reading the value.
+  &--active {
+    border-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 8%, var(--to-bg-1));
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--to-accent);
+    box-shadow: 0 0 0 2px var(--to-accent-subtle);
+  }
+}
+
+.to-msp__trigger-label {
+  flex-shrink: 0;
+  color: var(--to-text-muted);
+}
+
+.to-msp__trigger-value {
+  @include u.truncate;
+  color: var(--to-text-primary);
+}
+
+.to-msp__caret {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--to-text-muted);
+  @include u.motion(transform);
+
+  .to-msp--open & {
+    transform: rotate(180deg);
+  }
+}
+
+// ─── Panel ────────────────────────────────────────────────────────────────────
+
+.to-msp__panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 320px;
+  max-width: 90vw;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  overflow: hidden;
+  @include u.enter(to-msp-in, 140ms);
+}
+
+@keyframes to-msp-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.to-msp__search {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-bottom: 1px solid var(--to-border);
+  color: var(--to-text-muted);
+
+  input {
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: t.$to-font-size-xs;
+
+    &:focus {
+      outline: none;
+      box-shadow: none;
+    }
+  }
+}
+
+.to-msp__actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-bottom: 1px solid var(--to-border);
+  background: var(--to-bg-2);
+}
+
+.to-msp__action {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &--muted {
+    margin-left: auto;
+    color: var(--to-text-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-msp__scope {
+  padding: 0 4px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-muted);
+}
+
+.to-msp__list {
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: t.$to-space-1;
+  list-style: none;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-msp__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2;
+  border-radius: t.$to-radius-control;
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+  }
+
+  &--on {
+    background: color-mix(in srgb, var(--to-accent) 10%, var(--to-bg-1));
+  }
+}
+
+.to-msp__checkbox {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+}
+
+.to-msp__option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.to-msp__option-label {
+  @include u.truncate;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+}
+
+.to-msp__option-hint {
+  @include u.truncate;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-msp__option-count {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-msp__empty {
+  padding: t.$to-space-4;
+  text-align: center;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}

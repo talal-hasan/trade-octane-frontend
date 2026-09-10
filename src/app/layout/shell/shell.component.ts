@@ -10,6 +10,7 @@ import { ToastModule } from 'primeng/toast';
 
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
+import { TourComponent } from '../../shared/components/tour/tour.component';
 import { DensityService } from '../../core/services/density.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -32,6 +33,7 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     PopoverModule,
     ScrollTopModule,
     ToastModule,
+    TourComponent,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
