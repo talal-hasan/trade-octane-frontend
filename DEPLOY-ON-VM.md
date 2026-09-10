@@ -144,10 +144,20 @@ configuration — optimised, minified, content-hashed filenames, `useMocks: fals
 Output lands in:
 
 ```
-dist\trade-octane-frontend\browser\
+dist\trade-octane-frontend\
+├── browser\                  ←  THIS folder's CONTENTS are the deployable
+│   ├── index.html
+│   ├── web.config
+│   ├── assets\  media\  chunk-*.js  ...
+├── 3rdpartylicenses.txt      ←  build metadata, do not deploy
+└── prerendered-routes.json   ←  build metadata, do not deploy
 ```
 
-That folder — its whole contents, including `web.config` — is what gets deployed.
+**Deploy the contents of `browser\`, not the folder above it.** Copying
+`dist\trade-octane-frontend\*` puts `index.html` and `web.config` one level too deep, and
+IIS — pointed at a directory containing only a `browser` folder — answers
+[403.14](#http-error-40314--forbidden-on-the-application-root). It is the single easiest
+mistake to make here, because the wrong folder looks plausible in Explorer.
 
 > **Run this in PowerShell, not Git Bash.** Git Bash rewrites anything that looks like a
 > Unix path, so `--base-href /portal/` silently becomes
@@ -209,10 +219,22 @@ Remove-Item "$target\*" -Recurse -Force -ErrorAction SilentlyContinue
 Copy-Item 'dist\trade-octane-frontend\browser\*' $target -Recurse -Force
 ```
 
-Confirm `web.config` made it — the copy is the step where it gets missed:
+Confirm the copy landed at the right level. **Both must be `True`**, and they are only
+`True` when the contents of `browser\` — rather than its parent — were copied:
 
 ```powershell
+Test-Path "$target\index.html"   # must be True
 Test-Path "$target\web.config"   # must be True
+Test-Path "$target\browser"      # must be False — if True, you copied one level too high
+```
+
+To correct a copy that went in one level too deep, without rebuilding:
+
+```powershell
+Move-Item "$target\browser\*" $target -Force
+Remove-Item "$target\browser" -Recurse -Force
+Remove-Item "$target\3rdpartylicenses.txt", "$target\prerendered-routes.json" `
+            -Force -ErrorAction SilentlyContinue
 ```
 
 ### Step 3 — create the IIS application
@@ -433,6 +455,33 @@ Two causes, in order of likelihood:
    `<system.webServer>` is not inside a `<location path="." inheritInChildApplications="false">`
    element, that is the bug. **That file belongs to the API team — ask Zeeshan rather than
    editing it**, since a mistake there takes the API down, not just the portal.
+
+### `HTTP Error 403.14 — Forbidden` on the application root
+
+```
+Module  DirectoryListingModule   Handler  StaticFile   Error Code  0x00000000
+```
+
+IIS found the folder, found **no default document** (`index.html`) in it, and directory
+browsing is off — so it refused rather than listing the contents.
+
+This is almost always the `browser\` level: `dist\trade-octane-frontend\*` was copied
+instead of `dist\trade-octane-frontend\browser\*`, leaving the real application one folder
+deeper than IIS is looking. Check with:
+
+```powershell
+Get-ChildItem 'C:\inetpub\TradeOctanePortal' -Name
+```
+
+A `browser` entry in that listing confirms it. The fix — moving the contents up a level — is
+in [Step 2](#step-2--put-the-files-somewhere-iis-can-read).
+
+**Do not "fix" this by enabling Directory Browsing.** That turns a clear error into a
+file listing of the deployment, and still does not serve the app.
+
+Pointing the application's physical path at the `browser` sub-folder also works, but leave
+the layout matching Step 2 instead — the redeploy commands, and everyone else following
+this document, assume the app is at the folder root.
 
 ### `HTTP Error 404.0` with `Handler: StaticFile` on a route like `/login`
 
