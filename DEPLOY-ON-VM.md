@@ -434,6 +434,74 @@ Two causes, in order of likelihood:
    element, that is the bug. **That file belongs to the API team — ask Zeeshan rather than
    editing it**, since a mistake there takes the API down, not just the portal.
 
+### `HTTP Error 404.0` with `Handler: StaticFile` on a route like `/login`
+
+The tell is the handler, and it is worth learning to read:
+
+```
+Module     IIS Web Core          Handler     StaticFile
+Notification MapRequestHandler   Error Code  0x80070002
+```
+
+`StaticFile` + `0x80070002` means IIS looked for a **literal file named `login` on disk**,
+did not find one, and never involved the rewrite rule at all. The app is fine; the request
+was never routed to `index.html`.
+
+Three causes, in the order worth checking:
+
+1. **`web.config` is not in the deployed folder.** The most common. Without it there is no
+   rewrite rule, so every route 404s exactly like this.
+
+   ```powershell
+   Test-Path 'C:\inetpub\wwwroot\TradeOctanePortal\web.config'
+   ```
+
+2. **URL Rewrite is not installed.** Usually this announces itself as 500.19 rather than
+   404 — IIS cannot parse a `<rewrite>` section it has no module for — so a 404 points at
+   cause 1. Check anyway, since it is one command:
+
+   ```powershell
+   Get-WebGlobalModule | Where-Object Name -like '*Rewrite*'
+   ```
+
+3. **The URL is outside the application.** `/login` is the *site root*, not the `/portal`
+   application. If the app is at `/portal` and its rewrite rule lives in the app's
+   `web.config`, a request to `/login` is handled by whatever sits at the site root — which
+   has its own configuration, or none. Load `https://<host>/portal/` and let the app route
+   itself rather than typing a bare route.
+
+### The portal was created as its own site instead of an application
+
+Symptom in IIS Manager: `TradeOctanePortal` appears under **Sites**, at the same level as
+`Default Web Site` and `TradeOctaneWebAPI`, rather than as an entry *inside*
+`TradeOctaneWebAPI`.
+
+It will appear to work, and it defeats the reason the hosting shape was chosen. A separate
+site is a **separate origin** — different binding, so `apiBase: ''` now resolves `/api/v1/...`
+against the portal's own site, where the API does not exist. Every call 404s, and making it
+work means putting a host in `apiBase` and a CORS policy on the API: exactly the
+[cross-origin shape described as the thing to avoid](#the-one-decision-where-it-sits-relative-to-the-api).
+
+Browsing `https://localhost/...` is the same mistake wearing a different hat: `localhost`
+resolves to whichever site holds that binding, and the API is bound to `10.10.30.17:443`
+specifically.
+
+To correct it, in IIS Manager:
+
+1. **Sites** → right-click the **`TradeOctanePortal` site** → **Remove**. Confirm you are
+   removing the site you created, not `TradeOctaneWebAPI`. Removing a site deletes the IIS
+   configuration entry only — the files on disk are untouched, and any applications nested
+   inside it go with it.
+2. Right-click **`TradeOctaneWebAPI`** → **Add Application…**, exactly as in
+   [Step 3](#step-3--create-the-iis-application).
+3. Browse **`https://10.10.30.17/portal/`** — not `localhost`, and with the trailing slash.
+
+> **While you are in there, check for stray applications.** An application pointed at a
+> checked-out repository serves the *whole working tree* over HTTP — `src/`, `node_modules/`,
+> and `.git/`, which contains the full history. Remove any application whose physical path
+> is a source folder rather than `dist\...\browser`. Only the build output is meant to be
+> published.
+
 ### A blank page with 404s for the JS files
 
 The base href is wrong. Check `index.html` as in Step 1 — it must be `/portal/`, matching
