@@ -40,6 +40,27 @@ import {
 
 export type UserTab = 'profile' | 'roles' | 'regions' | 'brands' | 'access' | 'resignation';
 
+/** Which slice of the role catalogue the Roles tab is showing. */
+export type RoleFilter = 'all' | 'assigned' | 'available';
+
+/**
+ * Legacy "Assign Role to User". Holding this row is what authorises changing someone's
+ * roles.
+ *
+ * **Today this is always true wherever the Roles tab renders**, because 136 is the only
+ * blueprint row mapping to `tab: 'roles'` and `availableTabs` derives the tab strip from
+ * exactly that mapping — so an admin who cannot assign roles never sees the tab, and the
+ * read-only branch below never draws. That is deliberate: hiding matches legacy, where
+ * this was its own menu item, and showing it read-only would reveal to more people than
+ * the legacy system did.
+ *
+ * The check is kept rather than dropped because the two facts are only coincidentally
+ * equal. If a second menu row is ever mapped to this tab, the guard keeps the writes
+ * honest and the banner explains why the controls are inert — instead of leaving
+ * checkboxes that silently do nothing.
+ */
+const ASSIGN_ROLE_MENU_ID = 136;
+
 const TAB_LABELS: Record<UserTab, string> = {
   profile: 'Profile',
   roles: 'Roles',
@@ -336,8 +357,14 @@ export class UserDetailComponent {
   /** The whole role catalogue, so an empty `available` cannot blank the tab. */
   protected readonly catalogueRoles = signal<readonly RoleResponse[]>([]);
   protected readonly roleSearch = signal('');
+  protected readonly roleFilter = signal<RoleFilter>('all');
   protected readonly roleSelection = signal<ReadonlySet<number>>(new Set<number>());
   protected readonly savingRoles = signal(false);
+
+  /** Whether this admin may change roles, as opposed to only reading them. */
+  protected readonly canManageRoles = computed(() =>
+    this.menuAccess.hasMenu(ASSIGN_ROLE_MENU_ID),
+  );
 
   /**
    * Loads the assignment **and** the full role catalogue.
@@ -391,21 +418,50 @@ export class UserDetailComponent {
     return [...byId.values()].sort((a, b) => a.roleName.localeCompare(b.roleName));
   });
 
-  /** Roles matching the tab's search box. */
+  /**
+   * The roles currently ticked, as full records rather than ids — this is what the
+   * "Assigned" strip renders, so it stays in step with the checkboxes while the admin is
+   * still deciding, rather than lagging behind until Save.
+   */
+  protected readonly selectedRoles = computed<readonly RoleResponse[]>(() => {
+    const selection = this.roleSelection();
+    return this.allRoles().filter((role) => selection.has(int(role.roleId)));
+  });
+
+  /** Roles matching both the Show filter and the search box. */
   protected readonly visibleRoles = computed<readonly RoleResponse[]>(() => {
     const term = this.roleSearch().trim().toLowerCase();
-    if (!term) {
-      return this.allRoles();
-    }
-    return this.allRoles().filter(
-      (role) =>
+    const filter = this.roleFilter();
+    const selection = this.roleSelection();
+
+    return this.allRoles().filter((role) => {
+      if (filter === 'assigned' && !selection.has(int(role.roleId))) {
+        return false;
+      }
+      if (filter === 'available' && selection.has(int(role.roleId))) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      return (
         role.roleName.toLowerCase().includes(term) ||
-        (role.roleDescription ?? '').toLowerCase().includes(term),
-    );
+        (role.roleDescription ?? '').toLowerCase().includes(term)
+      );
+    });
   });
+
+  /** How many roles each Show tab would reveal, so the counts are visible before clicking. */
+  protected readonly availableCount = computed(
+    () => this.allRoles().length - this.roleSelection().size,
+  );
 
   protected onRoleSearch(value: string): void {
     this.roleSearch.set(value);
+  }
+
+  protected setRoleFilter(filter: RoleFilter): void {
+    this.roleFilter.set(filter);
   }
 
   protected readonly rolesDirty = computed(() => {
@@ -423,6 +479,9 @@ export class UserDetailComponent {
   });
 
   protected toggleRole(roleId: number): void {
+    if (!this.canManageRoles()) {
+      return;
+    }
     this.roleSelection.update((current) => {
       const next = new Set(current);
       if (!next.delete(roleId)) {
@@ -432,9 +491,14 @@ export class UserDetailComponent {
     });
   }
 
+  /** Puts the selection back to what the server holds, abandoning unsaved ticks. */
+  protected discardRoleChanges(): void {
+    this.roleSelection.set(new Set(this.assignedRoles().map((role) => int(role.roleId))));
+  }
+
   protected saveRoles(): void {
     const user = this.user();
-    if (!user || this.savingRoles()) {
+    if (!user || this.savingRoles() || !this.canManageRoles()) {
       return;
     }
     this.savingRoles.set(true);

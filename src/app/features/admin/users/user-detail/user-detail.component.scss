@@ -532,3 +532,23 @@
     flex: 1;
   }
 }
+
+// ─── Roles tab ────────────────────────────────────────────────────────────────
+
+.to-ud__section-actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  flex-shrink: 0;
+}
+
+// A ticked row, so the selection is legible while scanning the list and not only from the
+// checkbox glyph.
+.to-ud__list-row--on {
+  background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+
+  .to-ud__list-name {
+    color: var(--to-text-primary);
+    font-weight: 500;
+  }
+}

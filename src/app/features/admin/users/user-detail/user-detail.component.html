@@ -207,12 +207,16 @@
           </div>
         }
 
-        <!-- ── Roles ────────────────────────────────────────────────────────── -->
+        <!-- ── Roles ─────────────────────────────────────────────────── -->
         @case ('roles') {
           @if (rolesLoading()) {
             <to-skeleton width="100%" height="180px" />
           } @else if (allRoles().length === 0) {
-            <to-empty-state icon="shield-lock" heading="No roles in the catalogue" />
+            <to-empty-state
+              icon="shield-lock"
+              heading="No roles in the catalogue"
+              description="Nothing can be assigned until roles exist. Create them under Roles."
+            />
           } @else {
             <section class="to-ud__section">
               <div class="to-ud__section-head">
@@ -223,18 +227,97 @@
                     reach, which is shown on the Access tab.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  pButton
-                  class="p-button-sm"
-                  [disabled]="!rolesDirty() || savingRoles()"
-                  (click)="saveRoles()"
-                >
-                  {{ savingRoles() ? 'Saving…' : 'Save roles' }}
-                </button>
+                @if (canManageRoles()) {
+                  <div class="to-ud__section-actions">
+                    <button
+                      type="button"
+                      pButton
+                      class="p-button-sm p-button-text"
+                      [disabled]="!rolesDirty() || savingRoles()"
+                      (click)="discardRoleChanges()"
+                    >
+                      Discard
+                    </button>
+                    <button
+                      type="button"
+                      pButton
+                      class="p-button-sm"
+                      [disabled]="!rolesDirty() || savingRoles()"
+                      (click)="saveRoles()"
+                    >
+                      {{ savingRoles() ? 'Saving…' : 'Save roles' }}
+                    </button>
+                  </div>
+                }
+              </div>
+
+              @if (!canManageRoles()) {
+                <p class="to-adm__readonly">
+                  <tabler-icon [icon]="icons['info-circle']" [size]="15" />
+                  You can see this person's roles but not change them. Assigning roles needs
+                  the &quot;Assign Role to User&quot; grant.
+                </p>
+              }
+
+              <!--
+                The assigned set, stated once and up front. Without this an admin has to
+                infer "what does this person hold" by scanning every checkbox for a tick.
+              -->
+              <div class="to-adm__assigned">
+                <span class="to-adm__assigned-label">Assigned</span>
+                <ul class="to-adm__pills">
+                  @for (role of selectedRoles(); track role.roleId) {
+                    <li class="to-adm__pill" [class.to-adm__pill--retired]="!role.isActive">
+                      <span class="to-adm__pill-name">{{ role.roleName }}</span>
+                      @if (canManageRoles()) {
+                        <button
+                          type="button"
+                          class="to-adm__pill-remove"
+                          [attr.aria-label]="'Remove ' + role.roleName"
+                          (click)="toggleRole(+role.roleId)"
+                        >
+                          <tabler-icon [icon]="icons['circle-x']" [size]="14" />
+                        </button>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="to-adm__pills-empty">
+                      None yet — tick a role below to assign it.
+                    </li>
+                  }
+                </ul>
               </div>
 
               <div class="to-ud__toolbar">
+                <div class="to-adm__segmented" role="group" aria-label="Filter roles">
+                  <button
+                    type="button"
+                    class="to-adm__segment"
+                    [class.to-adm__segment--on]="roleFilter() === 'all'"
+                    [attr.aria-pressed]="roleFilter() === 'all'"
+                    (click)="setRoleFilter('all')"
+                  >
+                    All <span class="to-numeric">{{ allRoles().length }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="to-adm__segment"
+                    [class.to-adm__segment--on]="roleFilter() === 'assigned'"
+                    [attr.aria-pressed]="roleFilter() === 'assigned'"
+                    (click)="setRoleFilter('assigned')"
+                  >
+                    Assigned <span class="to-numeric">{{ roleSelection().size }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="to-adm__segment"
+                    [class.to-adm__segment--on]="roleFilter() === 'available'"
+                    [attr.aria-pressed]="roleFilter() === 'available'"
+                    (click)="setRoleFilter('available')"
+                  >
+                    Available <span class="to-numeric">{{ availableCount() }}</span>
+                  </button>
+                </div>
                 <div class="to-ud__search">
                   <tabler-icon [icon]="icons['search']" [size]="15" />
                   <input
@@ -246,19 +329,21 @@
                     aria-label="Search roles"
                   />
                 </div>
-                <span class="to-ud__count to-numeric">
-                  {{ roleSelection().size }} of {{ allRoles().length }} assigned
-                </span>
               </div>
 
               <ul class="to-ud__list">
                 @for (role of visibleRoles(); track role.roleId) {
-                  <li class="to-ud__list-row" [class.to-ud__list-row--retired]="!role.isActive">
+                  <li
+                    class="to-ud__list-row"
+                    [class.to-ud__list-row--retired]="!role.isActive"
+                    [class.to-ud__list-row--on]="roleSelection().has(+role.roleId)"
+                  >
                     <input
                       type="checkbox"
                       class="to-ud__checkbox"
                       [id]="'role-' + role.roleId"
                       [checked]="roleSelection().has(+role.roleId)"
+                      [disabled]="!canManageRoles()"
                       (change)="toggleRole(+role.roleId)"
                     />
                     <label class="to-ud__list-label" [for]="'role-' + role.roleId">
@@ -275,7 +360,13 @@
                     </span>
                   </li>
                 } @empty {
-                  <li class="to-ud__list-empty">No roles match that search.</li>
+                  <li class="to-ud__list-empty">
+                    @if (roleFilter() === 'assigned') {
+                      No roles assigned yet.
+                    } @else {
+                      No roles match that search.
+                    }
+                  </li>
                 }
               </ul>
             </section>

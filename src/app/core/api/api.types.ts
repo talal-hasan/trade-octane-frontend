@@ -107,3 +107,34 @@ export interface ProblemDetails {
   detail?: string | null;
   instance?: string | null;
 }
+
+// ─── Scalar-vs-collection drift ───────────────────────────────────────────────
+// A second, separate inconsistency from the `{ data: ... }` envelope above: some
+// collection fields arrive as a **bare object** when they happen to hold one item.
+//
+// `UserRoleAssignmentResponse.assigned` is declared as an array and documented as one,
+// but the live API returns `"assigned": { "roleId": 2, ... }` for a user holding a single
+// role. This is the same underlying defect as `UserRoleWriteRequest`'s scalar `roleId` —
+// the backend models "a user's role" as singular in places and plural in others.
+//
+// The failure mode is nasty because it is silent at compile time and loud at runtime:
+// `assigned.map(...)` is a TypeError thrown inside a subscribe callback, which aborts the
+// handler mid-way, leaves the loading flag set, and renders a screen that is simply blank
+// with no error shown. That is exactly how the Roles tab presented.
+
+/**
+ * Normalises a field that should be a list but may arrive as a single item or as null.
+ *
+ * Returns a real array in every case, so callers can `.map` without a type guard. A bare
+ * object is wrapped; null/undefined becomes empty; an array passes through unchanged.
+ *
+ * Apply this at the API boundary, not in components — one call site per endpoint means a
+ * component can trust its types, and it is the single place to delete when the backend is
+ * fixed.
+ */
+export function asList<T>(value: readonly T[] | T | null | undefined): T[] {
+  if (value === null || value === undefined) {
+    return [];
+  }
+  return Array.isArray(value) ? [...value] : [value as T];
+}

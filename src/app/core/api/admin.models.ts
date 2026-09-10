@@ -125,12 +125,38 @@ export interface RoleResponse {
   assignedUserCount: ApiInt;
 }
 
+/**
+ * A user's roles, split into what they hold and what they could hold.
+ *
+ * This is the **normalised** shape. `AdminRolesApi` guarantees both lists are real arrays;
+ * see `UserRoleAssignmentWire` for what the server actually sends.
+ */
 export interface UserRoleAssignmentResponse {
   userId: string;
   fullName: string;
   userIsActive: boolean;
   assigned: RoleResponse[];
   available: RoleResponse[];
+}
+
+/**
+ * [CONTRACT BUG — raised with Zeeshan] The same payload as it comes off the wire.
+ *
+ * `assigned` is declared as an array but is returned as a **bare object** when the user
+ * holds exactly one role:
+ *
+ *     "assigned": { "roleId": 2, "roleName": "RSM", ... }
+ *
+ * `available` is typed permissively for the same reason, on the assumption that whatever
+ * serialises one of them this way can do it to the other. Normalise with `asList` at the
+ * API boundary and nothing downstream has to know.
+ */
+export interface UserRoleAssignmentWire {
+  userId: string;
+  fullName: string;
+  userIsActive: boolean;
+  assigned: RoleResponse[] | RoleResponse | null;
+  available: RoleResponse[] | RoleResponse | null;
 }
 
 export interface UserRoleResponse {
@@ -167,6 +193,15 @@ export interface UserRoleWriteResponse {
   removed: ApiInt[];
   unchanged: ApiInt[];
   assignment: UserRoleAssignmentResponse;
+}
+
+/** `UserRoleWriteResponse` as it comes off the wire — see `UserRoleAssignmentWire`. */
+export interface UserRoleWriteWire {
+  userId: string;
+  added: ApiInt[];
+  removed: ApiInt[];
+  unchanged: ApiInt[];
+  assignment: UserRoleAssignmentWire;
 }
 
 // ─── Regions & brands (tags: User Region / User Brand Mapping) ────────────────

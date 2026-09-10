@@ -581,3 +581,156 @@
   margin-top: t.$to-space-3;
   justify-content: center;
 }
+
+// ─── Assigned-set summary, read-only notice, segmented filter ─────────────────
+//
+// Shared Administration chrome. These live here rather than in a component because they
+// are emitted once for the whole app and every assignment tab needs the same three:
+// "what does this person hold", "you may only look", and "show me all / held / free".
+//
+// Reminder — this file is emitted once via main.scss and must NEVER be @use'd by a
+// component; importing it duplicates the whole stylesheet into that component's bundle.
+
+// Read-only notice. Informational, not an error: the admin has done nothing wrong, they
+// simply hold a different grant.
+.to-adm__readonly {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: 0 0 t.$to-space-4;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-accent);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// The answer to "what does this person hold", stated once rather than inferred from a
+// column of ticks. Distinct from the region/brand `.to-adm__chips` grid: those chips are
+// the control surface, these are a summary of a selection made below.
+.to-adm__assigned {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-4;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  background: var(--to-bg-2);
+}
+
+.to-adm__assigned-label {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-adm__pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-adm__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: 2px t.$to-space-1 2px t.$to-space-2;
+  border: 1px solid var(--to-accent);
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 10%, var(--to-bg-1));
+  font-size: t.$to-font-size-xs;
+  line-height: 1.7;
+  color: var(--to-text-primary);
+
+  // A retired role someone still holds is a live mapping. It stays visible and removable.
+  &--retired {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+  }
+}
+
+.to-adm__pill-remove {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(color);
+
+  &:hover {
+    color: var(--to-danger);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+    border-radius: 50%;
+  }
+}
+
+.to-adm__pills-empty {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// All / Assigned / Available. One control, three mutually exclusive states.
+//
+// A recessed track with a raised selected segment, rather than a filled accent one: the
+// page tabs above already own the filled/underlined "you are here" idiom, and a second
+// accent-coloured selection on the same screen competes with it. This reads as a filter,
+// which is what it is.
+.to-adm__segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+}
+
+.to-adm__segment {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: t.$to-space-1 t.$to-space-3;
+  border: 1px solid transparent;
+  border-radius: calc(#{t.$to-radius-control} - 2px);
+  background: transparent;
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.8;
+  color: var(--to-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    border-color: var(--to-border);
+    background: var(--to-bg-1);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -1px;
+  }
+
+  .to-numeric {
+    color: var(--to-text-muted);
+  }
+}

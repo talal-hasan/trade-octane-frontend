@@ -1,4 +1,4 @@
-import { int, intList, intSet, unwrapData } from './api.types';
+import { asList, int, intList, intSet, unwrapData } from './api.types';
 
 describe('unwrapData', () => {
   it('unwraps a single-key data envelope', () => {
@@ -78,5 +78,37 @@ describe('intList / intSet', () => {
   it('handles null and undefined', () => {
     expect(intList(null)).toEqual([]);
     expect(intSet(undefined).size).toBe(0);
+  });
+});
+
+describe('asList', () => {
+  const rsm = { roleId: 2, roleName: 'RSM' };
+
+  // The live shape that blanked the Roles tab: a user holding one role gets a bare object
+  // where the contract declares an array, so `.map` threw inside the subscriber and the
+  // screen rendered nothing at all.
+  it('wraps a single object into a one-element list', () => {
+    expect(asList(rsm)).toEqual([rsm]);
+  });
+
+  it('passes an array through unchanged', () => {
+    expect(asList([rsm])).toEqual([rsm]);
+  });
+
+  it('returns an empty list for null and undefined', () => {
+    expect(asList(null)).toEqual([]);
+    expect(asList(undefined)).toEqual([]);
+  });
+
+  it('copies rather than aliasing, so callers cannot mutate the response', () => {
+    const source = [rsm];
+    const result = asList(source);
+    result.push({ roleId: 3, roleName: 'ASM' });
+    expect(source.length).toBe(1);
+  });
+
+  // An empty array must stay empty — treating it as "one falsy item" would invent a role.
+  it('does not wrap an empty array', () => {
+    expect(asList([])).toEqual([]);
   });
 });

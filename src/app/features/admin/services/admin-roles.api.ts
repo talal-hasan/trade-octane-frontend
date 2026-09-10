@@ -2,14 +2,16 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, concat, defer, last, map, of, switchMap } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
-import { int, unwrapData } from '../../../core/api/api.types';
+import { asList, int, unwrapData } from '../../../core/api/api.types';
 import {
   RoleResponse,
   RoleStatusFilter,
   UserRoleAssignmentResponse,
+  UserRoleAssignmentWire,
   UserRolePageResponse,
   UserRoleSortField,
   UserRoleWriteResponse,
+  UserRoleWriteWire,
 } from '../../../core/api/admin.models';
 
 export interface UserRoleGridQuery {
@@ -21,6 +23,26 @@ export interface UserRoleGridQuery {
   desc?: boolean;
   pageSize?: number;
   cursor?: string | null;
+}
+
+/**
+ * Forces the assignment's two collections to be real arrays.
+ *
+ * One call site per endpoint, at the boundary, so every component downstream can trust the
+ * declared type. Delete this and its `UserRoleAssignmentWire` type together once the
+ * backend serialises a single role as a one-element array.
+ */
+function normaliseAssignment(wire: UserRoleAssignmentWire): UserRoleAssignmentResponse {
+  return {
+    ...wire,
+    assigned: asList(wire?.assigned),
+    available: asList(wire?.available),
+  };
+}
+
+/** The write responses embed the same assignment, so they need the same treatment. */
+function normaliseWrite(wire: UserRoleWriteWire): UserRoleWriteResponse {
+  return { ...wire, assignment: normaliseAssignment(wire?.assignment) };
 }
 
 /** `Administration 1.0 / Assign Role To User`. */
@@ -35,13 +57,20 @@ export class AdminRolesApi {
       .pipe(map(unwrapData));
   }
 
-  /** The roles one user holds, and the roles they could hold. */
+  /**
+   * The roles one user holds, and the roles they could hold.
+   *
+   * Both lists are normalised through `asList` because the server sends `assigned` as a
+   * bare object when the user holds exactly one role. Without this, `assigned.map(...)`
+   * throws inside the subscriber, the Roles tab aborts mid-render and shows nothing —
+   * which is precisely what it did. See `UserRoleAssignmentWire`.
+   */
   userRoles(userId: string): Observable<UserRoleAssignmentResponse> {
     return this.api
-      .get<UserRoleAssignmentResponse | { data: UserRoleAssignmentResponse }>(
+      .get<UserRoleAssignmentWire | { data: UserRoleAssignmentWire }>(
         `/admin/users/${encodeURIComponent(userId)}/roles`,
       )
-      .pipe(map(unwrapData));
+      .pipe(map(unwrapData), map(normaliseAssignment));
   }
 
   assignRole(
@@ -49,17 +78,21 @@ export class AdminRolesApi {
     roleId: number,
     allowInactiveRoles = false,
   ): Observable<UserRoleWriteResponse> {
-    return this.api.post<UserRoleWriteResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/roles`,
-      { roleId },
-      { allowInactiveRoles },
-    );
+    return this.api
+      .post<UserRoleWriteWire>(
+        `/admin/users/${encodeURIComponent(userId)}/roles`,
+        { roleId },
+        { allowInactiveRoles },
+      )
+      .pipe(map(normaliseWrite));
   }
 
   removeRole(userId: string, roleId: number): Observable<UserRoleWriteResponse> {
-    return this.api.delete<UserRoleWriteResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/roles/${roleId}`,
-    );
+    return this.api
+      .delete<UserRoleWriteWire>(
+        `/admin/users/${encodeURIComponent(userId)}/roles/${roleId}`,
+      )
+      .pipe(map(normaliseWrite));
   }
 
   /**
