@@ -193,16 +193,8 @@
     width: 100%;
   }
 
-  // PrimeNG renders p-password as a wrapper around its own input, so both need the width
-  // or the field sits narrow with the reveal icon stranded to its right.
-  :is(p-password, .p-password) {
-    display: block;
-    width: 100%;
-  }
-
-  :is(p-password, .p-password) input {
-    width: 100%;
-  }
+  // Password field width is handled globally in _primeng-overrides.scss — PrimeNG's inner
+  // input is out of reach of this stylesheet.
 }
 
 .to-ud__label {

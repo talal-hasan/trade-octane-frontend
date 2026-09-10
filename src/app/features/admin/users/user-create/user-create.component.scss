@@ -180,10 +180,7 @@
     width: 100%;
   }
 
-  :is(p-password, .p-password) {
-    display: block;
-    width: 100%;
-  }
+  // See _primeng-overrides.scss for the password field width.
 }
 
 .to-uc__label {

@@ -298,17 +298,12 @@
   color: var(--to-text-secondary);
 }
 
-.to-login__field input,
-.to-login__field :is(.to-login__password) input {
+.to-login__field input {
   width: 100%;
 }
 
-// PrimeNG's password wraps its input in a span; without this the field is narrower than
-// the username field beside it and the form reads misaligned.
-.to-login__field :is(p-password, .p-password) {
-  width: 100%;
-  display: block;
-}
+// The password field's width is handled globally in _primeng-overrides.scss: PrimeNG
+// renders its own inner input, which emulated encapsulation cannot reach from here.
 
 .to-login__error {
   font-size: t.$to-font-size-2xs;

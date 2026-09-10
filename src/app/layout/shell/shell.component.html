@@ -77,6 +77,9 @@
           <button type="button" class="to-shell__avatar-btn" (click)="userMenu.toggle($event)" aria-label="Account menu">
             <p-avatar [label]="userInitials()" shape="circle" class="to-shell__avatar" />
           </button>
+          <!-- Positioning is corrected in _primeng-overrides.scss: the panel is pinned to
+               the right edge of this container rather than opening rightwards from an
+               avatar that is already at the edge of the screen. -->
           <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
         </div>
       </header>

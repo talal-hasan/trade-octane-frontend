@@ -203,3 +203,56 @@ a.p-button-success.p-button-outlined {
 .p-toast-message-error {
   border-left-color: var(--to-danger-solid);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PrimeNG internals we cannot reach from a component stylesheet.
+//
+// Emulated encapsulation tags only the elements written in *our* templates. Anything
+// PrimeNG renders inside its own template carries no such attribute, so a rule like
+// `.to-login__field p-password input { … }` in a component silently matches nothing. These
+// have to live here, globally, or not at all.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Password fields fill their container, like every other input.
+//
+// `p-password` is a wrapper around its own `<input>`, so widening only the wrapper leaves
+// the field narrower than the text input beside it with the reveal icon stranded to its
+// right — which is exactly how the sign-in form looked.
+p-password {
+  display: block;
+  width: 100%;
+
+  .p-password {
+    display: block;
+    width: 100%;
+  }
+
+  .p-password-input,
+  input {
+    width: 100%;
+  }
+}
+
+// A popup panel must never be the reason the page scrolls sideways.
+//
+// PrimeNG positions an inline popup by writing an inline `left` derived from its trigger.
+// For the avatar menu that trigger already sits at the right edge of the screen, so the
+// panel opened rightwards past the viewport and stretched the document — the page gained a
+// horizontal scrollbar and the menu's own labels were clipped.
+//
+// `appendTo="body"` is the usual remedy but stops the menu opening at all in v21, so the
+// fix is to overrule the inline `left` and anchor the panel to the right edge of its own
+// container. `!important` is load-bearing here: it is competing with an inline style, and
+// nothing else can win against one.
+.to-shell__topbar-right {
+  .p-menu-overlay,
+  .p-menu {
+    left: auto !important;
+    right: 0;
+  }
+}
+
+.p-menu-overlay,
+.p-popover {
+  max-width: calc(100vw - #{t.$to-space-4});
+}
