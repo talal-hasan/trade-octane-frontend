@@ -21,7 +21,7 @@
       account, and fills in the rest of this form if the directory knows them.
     </p>
 
-    <div class="to-uc__check-row">
+    <div class="to-uc__check-row" data-tour="create-check">
       <div class="to-uc__field to-uc__field--grow">
         <label class="to-uc__label" for="email">Email</label>
         <input pInputText id="email" type="email" formControlName="email" autocomplete="off" />
@@ -84,7 +84,7 @@
       </div>
 
       <div class="to-uc__field">
-        <label class="to-uc__label" for="loginName">
+        <label class="to-uc__label" for="loginName" data-tour="create-login">
           Login name
           <span class="to-uc__hint">Cannot be changed later without breaking history</span>
         </label>
@@ -118,7 +118,7 @@
   </section>
 
   <aside class="to-uc__aside">
-    <div class="to-uc__summary">
+    <div class="to-uc__summary" data-tour="create-summary">
       <h2 class="to-uc__summary-title">This account</h2>
 
       <dl class="to-uc__summary-list">

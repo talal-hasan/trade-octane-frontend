@@ -45,6 +45,21 @@ export class TourService {
   private readonly definition = signal<TourDefinition | null>(null);
   private readonly index = signal(0);
 
+  /**
+   * Tours dismissed in this browsing session.
+   *
+   * "Not now" and "never" are different answers, but so is "not now" and "ask me again in
+   * eight seconds". Changing a tab writes a query parameter, which is a navigation, which
+   * re-offers the tour — so without this, closing one and clicking a tab brought it
+   * straight back and the close button looked broken. Held in memory only: a new session
+   * is a fair time to offer again.
+   */
+  private readonly dismissedThisSession = new Set<string>();
+
+  /** The tour on offer for whatever screen is showing. Drives the help button. */
+  private readonly offered = signal<TourDefinition | null>(null);
+  readonly offeredTour = this.offered.asReadonly();
+
   readonly activeTour = this.definition.asReadonly();
   readonly stepIndex = this.index.asReadonly();
 
@@ -61,11 +76,42 @@ export class TourService {
   readonly isLast = computed(() => this.index() >= this.totalSteps() - 1);
   readonly isRunning = computed(() => this.definition() !== null);
 
+  /**
+   * Declares which tour this screen offers, and auto-starts it if the user has not seen it.
+   *
+   * Called from the shell on every navigation, so a screen needs no tour code of its own —
+   * only `data-tour` attributes. A screen with several flows (ownership has one per tab)
+   * calls this itself to override what the route registry resolved.
+   *
+   * Deliberately a method rather than an effect: `startIfUnseen` reads the running state,
+   * and an effect that reads it would re-run when a tour closes and immediately reopen it.
+   * That bug shipped once already.
+   */
+  setOfferedTour(tour: TourDefinition | null): void {
+    this.offered.set(tour);
+    if (tour) {
+      this.startIfUnseen(tour);
+    } else {
+      // Navigating to a screen with no tour should not leave the previous one open.
+      this.definition.set(null);
+    }
+  }
+
+  /** Replays whatever the current screen offers. The help button. */
+  replayOffered(): void {
+    const tour = this.offered();
+    if (tour) {
+      this.start(tour);
+    }
+  }
+
   /** Starts regardless of whether it was completed before. The replay path. */
   start(tour: TourDefinition): void {
     if (tour.steps.length === 0) {
       return;
     }
+    // An explicit replay clears the session dismissal — the user is asking for it now.
+    this.dismissedThisSession.delete(tour.id);
     this.index.set(0);
     this.definition.set(tour);
   }
@@ -78,7 +124,7 @@ export class TourService {
    * underneath the user.
    */
   startIfUnseen(tour: TourDefinition): void {
-    if (this.isRunning() || this.hasCompleted(tour.id)) {
+    if (this.isRunning() || this.hasCompleted(tour.id) || this.dismissedThisSession.has(tour.id)) {
       return;
     }
     this.start(tour);
@@ -115,6 +161,10 @@ export class TourService {
    * the wrong inference from a single dismissal.
    */
   dismiss(): void {
+    const tour = this.definition();
+    if (tour) {
+      this.dismissedThisSession.add(tour.id);
+    }
     this.definition.set(null);
   }
 

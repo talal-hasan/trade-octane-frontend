@@ -277,12 +277,14 @@ export class UserListComponent {
       return '—';
     }
     const date = new Date(value);
+    // Two-digit year: the table has seven columns and a four-digit year was the difference
+    // between fitting and a horizontal scrollbar. Nothing here spans centuries.
     return Number.isNaN(date.getTime())
       ? '—'
       : new Intl.DateTimeFormat('en-PK', {
           day: '2-digit',
           month: 'short',
-          year: 'numeric',
+          year: '2-digit',
         }).format(date);
   }
 

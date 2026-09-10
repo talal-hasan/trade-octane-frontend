@@ -25,7 +25,7 @@
       { label: currentUser.fullName || currentUser.userId },
     ]"
   >
-    <div actions class="to-ud__header-actions">
+    <div actions class="to-ud__header-actions" data-tour="user-header-actions">
       @if (currentUser.isLocked) {
         <button
           type="button"
@@ -65,7 +65,7 @@
   <!-- Identity strip. The login name is shown as prominently as the display name: every
        API path segment and every audit row keys on it, so it is the identifier an admin
        actually needs when cross-referencing anything. -->
-  <div class="to-ud__identity">
+  <div class="to-ud__identity" data-tour="user-identity">
     <span class="to-ud__avatar" aria-hidden="true">{{ initialsOf(currentUser) }}</span>
     <dl class="to-ud__facts">
       <div class="to-ud__fact">
@@ -100,7 +100,7 @@
   } @else {
     <!-- Each tab is a legacy menu row. Only the rows this admin holds are rendered, so
          consolidating six menu items into one screen did not widen anyone's access. -->
-    <div class="to-ud__tabs" role="tablist" aria-label="User sections">
+    <div class="to-ud__tabs" data-tour="user-tabs" role="tablist" aria-label="User sections">
       @for (tab of availableTabs(); track tab) {
         <button
           type="button"
@@ -342,10 +342,12 @@
                     [attr.aria-pressed]="regionSelection().has(region.code)"
                   >
                     <span class="to-ud__chip-name">{{ region.name }}</span>
-                    <span class="to-ud__chip-code">{{ region.code }}</span>
-                    @if (!region.isActive) {
-                      <span class="to-ud__chip-note">retired</span>
-                    }
+                    <span class="to-ud__chip-meta">
+                      <span class="to-ud__chip-code">{{ region.code }}</span>
+                      @if (!region.isActive) {
+                        <span class="to-ud__chip-note">retired</span>
+                      }
+                    </span>
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No regions match that search.</p>
@@ -414,10 +416,12 @@
                     [attr.aria-pressed]="brandSelection().has(brand.code)"
                   >
                     <span class="to-ud__chip-name">{{ brand.name }}</span>
-                    <span class="to-ud__chip-code">{{ brand.code }}</span>
-                    @if (!brand.hasMasterSku) {
-                      <span class="to-ud__chip-note">no SKU</span>
-                    }
+                    <span class="to-ud__chip-meta">
+                      <span class="to-ud__chip-code">{{ brand.code }}</span>
+                      @if (!brand.hasMasterSku) {
+                        <span class="to-ud__chip-note">no SKU</span>
+                      }
+                    </span>
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No brands match that search.</p>

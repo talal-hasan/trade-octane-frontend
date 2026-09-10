@@ -45,7 +45,7 @@
   <!-- Reach, stated before the edit rather than after it. Editing a role is the highest
        blast-radius action in Administration and the only one where the person making the
        change is not the person affected. -->
-  <div class="to-ra__reach" [class.to-ra__reach--wide]="+role.activeUserCount >= 10">
+  <div data-tour="role-reach" class="to-ra__reach" [class.to-ra__reach--wide]="+role.activeUserCount >= 10">
     <tabler-icon [icon]="icons['users-group']" [size]="16" />
     <span>
       <strong class="to-numeric">{{ role.activeUserCount }}</strong> active
@@ -74,7 +74,7 @@
     </div>
   }
 
-  <div class="to-ra__filter">
+  <div class="to-ra__filter" data-tour="role-filter">
     <tabler-icon [icon]="icons['search']" [size]="15" />
     <input
       pInputText
@@ -90,6 +90,7 @@
   <!-- No `inherited` set: a role is the source of inherited access, never a recipient,
        so every row here is editable. -->
   <to-access-tree
+    data-tour="role-tree"
     [tree]="role.tree"
     [selected]="selection()"
     [filter]="filter()"

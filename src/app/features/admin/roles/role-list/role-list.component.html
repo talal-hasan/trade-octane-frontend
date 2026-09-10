@@ -6,7 +6,7 @@
 
 <div class="to-roles">
   <div class="to-roles__toolbar">
-    <div class="to-roles__tabs" role="tablist" aria-label="Filter by status">
+    <div class="to-roles__tabs" data-tour="roles-tabs" role="tablist" aria-label="Filter by status">
       @for (tab of tabs; track tab.key) {
         <button
           type="button"
@@ -58,7 +58,7 @@
       description="Try a different status, or clear the search."
     />
   } @else {
-    <ul class="to-roles__grid">
+    <ul class="to-roles__grid" data-tour="roles-grid">
       @for (role of filtered(); track role.roleId) {
         <li>
           <a class="to-roles__card" [routerLink]="['/admin/roles', roleId(role)]">

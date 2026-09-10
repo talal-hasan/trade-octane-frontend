@@ -18,7 +18,7 @@
 
 <div class="to-adm">
   <div class="to-adm__filters">
-    <div class="to-adm__chipset" role="group" aria-label="Actor group">
+    <div class="to-adm__chipset" data-tour="logs-groups" role="group" aria-label="Actor group">
       @for (g of groups; track g) {
         <button
           type="button"
@@ -60,7 +60,7 @@
       </datalist>
     </div>
 
-    <div class="to-alg__dates">
+    <div class="to-alg__dates" data-tour="logs-dates">
       <input pInputText type="date" [formControl]="fromControl" (change)="applyFilters()" aria-label="From date" />
       <span class="to-alg__dash">to</span>
       <input pInputText type="date" [formControl]="toControl" (change)="applyFilters()" aria-label="To date" />
@@ -102,7 +102,7 @@
             <th scope="col" class="to-adm__th">When</th>
             <th scope="col" class="to-adm__th">Who</th>
             <th scope="col" class="to-adm__th">Activity</th>
-            <th scope="col" class="to-adm__th">Record</th>
+            <th scope="col" class="to-adm__th" data-tour="logs-record">Record</th>
           </tr>
         </thead>
         <tbody>

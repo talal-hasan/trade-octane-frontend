@@ -76,7 +76,7 @@ export function resignationLabel(value: string | null | undefined): string {
     : new Intl.DateTimeFormat('en-PK', {
         day: '2-digit',
         month: 'short',
-        year: 'numeric',
+        year: '2-digit',
       }).format(date);
 }
 

@@ -40,7 +40,7 @@
   <div class="to-acct">
     <section class="to-acct__section">
       <h2 class="to-acct__title">You</h2>
-      <dl class="to-acct__facts">
+      <dl class="to-acct__facts" data-tour="account-facts">
         <div class="to-acct__fact">
           <dt>Login</dt>
           <dd class="to-acct__mono">{{ acct.loginName }}</dd>
@@ -76,7 +76,7 @@
         too.
       </p>
 
-      <form class="to-acct__form" [formGroup]="form" (ngSubmit)="submit()">
+      <form class="to-acct__form" data-tour="account-form" [formGroup]="form" (ngSubmit)="submit()">
         <div class="to-acct__field">
           <label class="to-acct__label" for="fullName">Full name</label>
           <input pInputText id="fullName" type="text" formControlName="fullName" />

@@ -100,7 +100,7 @@
 
 .to-users__th {
   @include u.table-head;
-  padding: t.$to-space-3 t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-3;
   text-align: left;
   font-weight: 500;
   font-size: t.$to-font-size-xs;
@@ -110,6 +110,10 @@
   &--sortable {
     cursor: pointer;
     user-select: none;
+    // Reserve the arrow's width so the header does not shift as sorting moves between
+    // columns — a header that jumps on click reads as a glitch.
+    padding-right: t.$to-space-6;
+    position: relative;
 
     &:hover {
       color: var(--to-accent-text);
@@ -117,12 +121,19 @@
   }
 
   &--actions {
+    position: sticky;
+    right: 0;
+    z-index: 2;
     text-align: right;
   }
 }
 
 .to-users__row {
   border-top: 1px solid var(--to-border);
+  height: 52px;
+  // The sticky actions cell inherits this, so it needs to be opaque rather than the
+  // default transparent.
+  background: var(--to-bg-1);
   @include u.motion(background-color, opacity);
 
   &:hover {
@@ -137,9 +148,12 @@
   }
 }
 
+// One line per cell — see the note on `.to-adm__td`. Dates were breaking as "10-Jan-" /
+// "2026", which doubled those rows and made the whole table look ragged.
 .to-users__td {
-  padding: t.$to-space-3 t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-3;
   vertical-align: middle;
+  white-space: nowrap;
   color: var(--to-text-primary);
 
   &--muted {
@@ -152,9 +166,15 @@
     color: var(--to-text-secondary);
   }
 
+  // Pinned right so the actions stay reachable if a narrow window does force a scroll —
+  // a clipped "Deactivate" is both ugly and unusable.
   &--actions {
+    position: sticky;
+    right: 0;
+    z-index: 1;
     text-align: right;
     white-space: nowrap;
+    background: inherit;
   }
 }
 
@@ -192,6 +212,8 @@
 }
 
 .to-users__name {
+  @include u.truncate;
+  max-width: 190px;
   @include u.motion(color);
 }
 
@@ -209,9 +231,9 @@
 .to-users__action {
   display: inline-flex;
   align-items: center;
-  gap: t.$to-space-1;
+  gap: 4px;
   padding: t.$to-space-1 t.$to-space-2;
-  margin-left: t.$to-space-1;
+  margin-left: 4px;
   border: 1px solid transparent;
   border-radius: t.$to-radius-control;
   background: transparent;
@@ -255,6 +277,23 @@
   background: var(--to-warning-subtle);
   color: var(--to-warning);
   font-size: t.$to-font-size-xs;
+}
+
+// Pinned into the padding reserved above, so the header text never moves.
+.to-users__sort {
+  position: absolute;
+  right: t.$to-space-3;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--to-accent);
+}
+
+// The one genuinely long value in the row. Truncating it keeps every other column at a
+// predictable width instead of letting one address stretch the table.
+.to-users__td--email {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .to-users__skeleton-row {

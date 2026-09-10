@@ -58,14 +58,32 @@ describe('TourService', () => {
 
   // The distinction that matters: closing a tour to deal with an interruption is not the
   // same as having learned the screen, so it must come back.
-  it('dismiss does NOT record completion, so the tour returns', () => {
+  it('dismiss does NOT record completion, so the tour returns next session', () => {
     service.start(TOUR);
     service.dismiss();
 
     expect(service.isRunning()).toBe(false);
     expect(service.hasCompleted(TOUR.id)).toBe(false);
+  });
+
+  // Switching a tab writes a query parameter, which is a navigation, which re-offers the
+  // tour. Without a session-level dismissal the close button appeared not to work.
+  it('dismiss holds for the rest of the session', () => {
+    service.start(TOUR);
+    service.dismiss();
 
     service.startIfUnseen(TOUR);
+    expect(service.isRunning()).toBe(false);
+
+    service.setOfferedTour(TOUR);
+    expect(service.isRunning()).toBe(false);
+  });
+
+  it('an explicit replay overrides the session dismissal', () => {
+    service.start(TOUR);
+    service.dismiss();
+
+    service.start(TOUR);
     expect(service.isRunning()).toBe(true);
   });
 

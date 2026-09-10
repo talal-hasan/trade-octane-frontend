@@ -9,7 +9,7 @@
     <div class="to-int__main">
       <!-- ── Batch status ─────────────────────────────────────────────────── -->
       <section class="to-adm__card to-adm__card--pad">
-        <div class="to-int__head">
+        <div class="to-int__head" data-tour="int-sap">
           <h2 class="to-adm__subtitle">Batch status</h2>
           @if (batches(); as summary) {
             @if (!summary.sapAvailable) {
@@ -42,7 +42,7 @@
         } @else if (!batches() || (batches()?.rows ?? []).length === 0) {
           <to-empty-state icon="inbox" heading="No batches in the lookback window" />
         } @else {
-          <div class="to-adm__table-wrap">
+          <div class="to-adm__table-wrap" data-tour="int-batches">
             <table class="to-adm__table">
               <thead>
                 <tr>
@@ -112,7 +112,7 @@
         } @else if (runs().length === 0) {
           <to-empty-state icon="plug-connected" heading="No runs yet" />
         } @else {
-          <ul class="to-int__runs">
+          <ul class="to-int__runs" data-tour="int-runs">
             @for (run of runs(); track run.runId) {
               <li class="to-int__run">
                 <button type="button" class="to-int__run-head" (click)="toggleRun(run.runId)">
@@ -187,7 +187,7 @@
 
         <div class="to-int__selected to-numeric">{{ batchSelection().size }} selected</div>
 
-        <label class="to-int__dry">
+        <label class="to-int__dry" data-tour="int-dry">
           <input type="checkbox" class="to-int__checkbox" [checked]="batchDryRun()" (change)="batchDryRun.set(!batchDryRun())" />
           <span>Dry run — evaluate only, post nothing</span>
         </label>

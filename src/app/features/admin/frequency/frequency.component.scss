@@ -18,8 +18,17 @@
   }
 }
 
+// The scheme column carries the two longest strings on the screen. Both truncate on one
+// line so every row is the same height; the full name is on the title attribute.
+.to-frq__scheme-cell {
+  max-width: 280px;
+}
+
 .to-frq__name {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--to-text-primary);
 }
 
@@ -27,6 +36,8 @@
   display: flex;
   align-items: center;
   gap: t.$to-space-1;
+  overflow: hidden;
+  white-space: nowrap;
   font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   font-size: t.$to-font-size-2xs;
   color: var(--to-text-muted);

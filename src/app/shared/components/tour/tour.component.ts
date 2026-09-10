@@ -50,27 +50,46 @@ export class TourComponent implements AfterViewInit {
   protected readonly icons = ICON_REGISTRY;
   protected readonly spotlight = signal<Spotlight | null>(null);
 
+  /**
+   * The step we have already scrolled into view.
+   *
+   * Scrolling belongs to a *step change*, never to a measurement. `measure()` runs on every
+   * scroll event, and a smooth `scrollIntoView` emits a stream of them — so scrolling from
+   * inside `measure()` re-entered itself mid-animation and pegged the renderer until the
+   * tab stopped responding. Scroll once, then only ever read.
+   */
+  private scrolledForStep = -1;
+
+  /** Coalesces bursts of scroll/resize events into one measurement per frame. */
+  private measureHandle: number | null = null;
+
   constructor() {
-    // Re-measure whenever the step changes. `activeStep` is read so the effect tracks it.
+    // Re-measure whenever the step changes. Reading both signals is what makes the effect
+    // track them.
     effect(() => {
       const step = this.tour.activeStep();
+      const index = this.tour.stepIndex();
       if (!step) {
         this.spotlight.set(null);
+        this.scrolledForStep = -1;
         return;
       }
-      // Defer past the change that revealed the target, and past any scrolling it causes.
-      queueMicrotask(() => this.measure());
+      // Defer past the change that revealed the target.
+      queueMicrotask(() => {
+        this.ensureVisible(index);
+        this.measure();
+      });
     });
 
     fromEvent(window, 'resize')
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.measure());
+      .subscribe(() => this.scheduleMeasure());
 
     // Capture phase: the page scrolls inside `.to-shell__content`, not on window, so a
     // bubbling listener on window would never fire.
     fromEvent(this.document, 'scroll', { capture: true })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.measure());
+      .subscribe(() => this.scheduleMeasure());
 
     fromEvent<KeyboardEvent>(this.document, 'keydown')
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -92,6 +111,40 @@ export class TourComponent implements AfterViewInit {
     this.measure();
   }
 
+  /** One measurement per animation frame, however many events arrive. */
+  private scheduleMeasure(): void {
+    if (this.measureHandle !== null) {
+      return;
+    }
+    this.measureHandle = requestAnimationFrame(() => {
+      this.measureHandle = null;
+      this.measure();
+    });
+  }
+
+  /**
+   * Brings the step's target on screen — **once per step**.
+   *
+   * Never call this from `measure()`: see the note on `scrolledForStep`.
+   */
+  private ensureVisible(index: number): void {
+    if (this.scrolledForStep === index) {
+      return;
+    }
+    this.scrolledForStep = index;
+
+    const target = this.tour.activeStep()?.target;
+    const element = target ? this.document.querySelector(target) : null;
+    if (!element) {
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > window.innerHeight) {
+      element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+
+  /** Pure read. Never scrolls, never writes to the DOM. */
   private measure(): void {
     const step = this.tour.activeStep();
     if (!step?.target) {
@@ -106,12 +159,6 @@ export class TourComponent implements AfterViewInit {
     }
 
     const rect = element.getBoundingClientRect();
-    // A target scrolled out of view is worse than no target — bring it into the middle
-    // before measuring, then re-measure on the scroll event that follows.
-    if (rect.top < 0 || rect.bottom > window.innerHeight) {
-      element.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-
     this.spotlight.set({
       top: rect.top - PADDING,
       left: rect.left - PADDING,

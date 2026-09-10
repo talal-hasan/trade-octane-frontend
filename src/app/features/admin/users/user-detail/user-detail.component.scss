@@ -193,8 +193,14 @@
     width: 100%;
   }
 
+  // PrimeNG renders p-password as a wrapper around its own input, so both need the width
+  // or the field sits narrow with the reveal icon stranded to its right.
   :is(p-password, .p-password) {
     display: block;
+    width: 100%;
+  }
+
+  :is(p-password, .p-password) input {
     width: 100%;
   }
 }
@@ -392,9 +398,16 @@
 
 // ─── Region / brand chips ─────────────────────────────────────────────────────
 
+// A grid, not a wrapping flex row.
+//
+// Flex-wrapped chips size to their content, so a column of them never lines up and the
+// block reads as scattered. A grid with equal tracks gives aligned columns and — with
+// `grid-auto-rows` — equal heights, so a chip carrying a "retired" marker no longer stands
+// taller than its neighbours.
 .to-ud__chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  grid-auto-rows: 1fr;
   gap: t.$to-space-2;
 }
 
@@ -407,10 +420,11 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
-  min-width: 132px;
   padding: t.$to-space-2 t.$to-space-3;
   border: 1px solid var(--to-border);
-  border-radius: t.$to-radius-pill;
+  // Card radius, not a pill. A pill radius on a two-line control reads as a lozenge and is
+  // the single thing that made this block look unfinished.
+  border-radius: t.$to-radius-control;
   background: var(--to-bg-1);
   color: var(--to-text-secondary);
   font-family: inherit;
@@ -447,6 +461,14 @@
   line-height: 1.3;
 }
 
+.to-ud__chip-meta {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .to-ud__chip-code {
   font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   font-size: t.$to-font-size-2xs;
@@ -454,12 +476,20 @@
   color: var(--to-text-muted);
 }
 
-.to-ud__chip--on .to-ud__chip-code {
+.to-ud__chip--on .to-ud__chip-meta {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.to-ud__chip-code {
   color: color-mix(in srgb, var(--to-accent-text) 70%, transparent);
 }
 
 .to-ud__chip-note {
-  margin-top: 2px;
+  margin-left: t.$to-space-1;
   padding: 0 4px;
   border-radius: t.$to-radius-pill;
   background: var(--to-warning-subtle);

@@ -33,6 +33,22 @@
             <span class="to-shell__env-badge"><span class="to-shell__env-dot"></span>MOCK DATA</span>
           }
 
+          <!-- One consistent home for "how does this screen work", rather than a bespoke
+               button on whichever screens happened to get one. Hidden when the current
+               screen has no walkthrough, so it never promises help that does not exist. -->
+          @if (tourService.offeredTour(); as offered) {
+            <button
+              type="button"
+              class="to-shell__icon-btn"
+              (click)="tourService.replayOffered()"
+              [pTooltip]="offered.label"
+              tooltipPosition="bottom"
+              aria-label="Show me how this screen works"
+            >
+              <tabler-icon [icon]="icons['help']" [size]="18" />
+            </button>
+          }
+
           <button
             type="button"
             class="to-shell__icon-btn"

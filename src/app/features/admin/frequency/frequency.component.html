@@ -69,9 +69,9 @@
   } @else if (rows().length === 0) {
     <to-empty-state icon="calendar-repeat" heading="No schemes match" />
   } @else {
-    <div class="to-adm__split">
+    <div class="to-adm__split to-adm__split--wide">
       <div>
-        <div class="to-adm__table-wrap">
+        <div class="to-adm__table-wrap" data-tour="freq-table">
           <table class="to-adm__table">
             <thead>
               <tr>
@@ -87,7 +87,7 @@
                 <th scope="col" class="to-adm__th">Scheme</th>
                 <th scope="col" class="to-adm__th to-adm__th--right">GT</th>
                 <th scope="col" class="to-adm__th to-adm__th--right">FSD</th>
-                <th scope="col" class="to-adm__th">Accruals</th>
+                <th scope="col" class="to-adm__th" data-tour="freq-accruals">Accruals</th>
                 <th scope="col" class="to-adm__th to-adm__th--right">Prior months</th>
                 <th scope="col" class="to-adm__th to-adm__th--right"></th>
               </tr>
@@ -104,8 +104,8 @@
                       [attr.aria-label]="'Select ' + row.schemeId"
                     />
                   </td>
-                  <td class="to-adm__td">
-                    <span class="to-frq__name">{{ row.description || row.schemeId }}</span>
+                  <td class="to-adm__td to-adm__td--stacked to-frq__scheme-cell">
+                    <span class="to-frq__name" [title]="row.description || row.schemeId">{{ row.description || row.schemeId }}</span>
                     <span class="to-frq__meta">
                       {{ row.schemeId }}
                       @if (row.schemeGroup) {
@@ -174,7 +174,7 @@
 
       <!-- Bulk, not per-row: the API takes schemeIds[] for these, and in practice one
            policy is applied across many schemes at once. -->
-      <aside class="to-adm__panel">
+      <aside class="to-adm__panel" data-tour="freq-bulk">
         <div class="to-adm__card to-adm__card--pad">
           <h2 class="to-adm__subtitle">Prior-month windows</h2>
           <p class="to-adm__note">

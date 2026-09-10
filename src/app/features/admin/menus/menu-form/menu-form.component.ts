@@ -2,7 +2,6 @@ import { Component, DestroyRef, computed, effect, inject, input, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 
@@ -40,7 +39,6 @@ import { AdminMenusApi } from '../../services/admin-menus.api';
   imports: [
     RouterLink,
     ReactiveFormsModule,
-    TablerIconComponent,
     ButtonModule,
     InputTextModule,
     PageHeaderComponent,

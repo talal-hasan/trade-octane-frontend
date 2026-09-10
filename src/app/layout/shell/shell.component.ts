@@ -1,5 +1,5 @@
 import { Component, computed, inject, viewChild, ViewEncapsulation } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
@@ -10,7 +10,13 @@ import { ToastModule } from 'primeng/toast';
 
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
+import { TooltipModule } from 'primeng/tooltip';
 import { TourComponent } from '../../shared/components/tour/tour.component';
+import { TourService } from '../../core/services/tour.service';
+import { tourForRoute } from '../../core/tours/tour-registry';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs';
 import { DensityService } from '../../core/services/density.service';
 import { SidebarService } from '../../core/services/sidebar.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -34,12 +40,27 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     ScrollTopModule,
     ToastModule,
     TourComponent,
+    TooltipModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
   encapsulation: ViewEncapsulation.None,
 })
 export class ShellComponent {
+  protected readonly tourService = inject(TourService);
+  private readonly shellDestroyRef = inject(DestroyRef);
+
+  constructor() {
+    // One place decides which walkthrough a screen offers, so no feature component imports
+    // the tour service. Ownership overrides this per tab because it hosts two flows.
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.shellDestroyRef),
+      )
+      .subscribe((event) => this.tourService.setOfferedTour(tourForRoute(event.urlAfterRedirects)));
+  }
+
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly themeService = inject(ThemeService);

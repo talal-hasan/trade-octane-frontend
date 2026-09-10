@@ -140,8 +140,15 @@
   align-items: start;
 }
 
+// For a screen whose left side is a wide data table, the default 1.5:1 leaves the table
+// cramped while the panel has room to spare.
+.to-adm__split--wide {
+  grid-template-columns: minmax(0, 2.4fr) minmax(280px, 1fr);
+}
+
 @media (max-width: 1100px) {
-  .to-adm__split {
+  .to-adm__split,
+  .to-adm__split--wide {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -200,6 +207,9 @@
 
 .to-adm__row {
   border-top: 1px solid var(--to-border);
+  // A floor, not a fixed height: rows stay equal when their content is short, and a
+  // deliberately stacked cell can still grow the row without the others looking wrong.
+  height: 44px;
   @include u.motion(background-color);
 
   &:hover {
@@ -217,10 +227,36 @@
   }
 }
 
+// Every cell is a single line by default.
+//
+// This is the rule that stops a data table looking amateur. Left to wrap, a long product
+// name or a date that does not quite fit silently doubles its row height, and a table of
+// mixed row heights reads as broken layout rather than as data. Anything that genuinely
+// needs two lines opts in with `--stacked`.
 .to-adm__td {
   padding: t.$to-space-2 t.$to-space-4;
   vertical-align: middle;
   color: var(--to-text-primary);
+  white-space: nowrap;
+
+  // Long free text truncates rather than wrapping; the full value stays available as a
+  // title attribute at the call site.
+  &--wrapable {
+    white-space: normal;
+  }
+
+  &--truncate {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // Two deliberate lines — a name over its code. Fixed line-heights keep every such row
+  // the same height as every other.
+  &--stacked {
+    white-space: normal;
+    line-height: 1.35;
+  }
 
   &--muted {
     color: var(--to-text-secondary);
@@ -506,6 +542,7 @@
 
 .to-own__code {
   display: block;
+  white-space: nowrap;
   font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   font-size: t.$to-font-size-xs;
   color: var(--to-text-primary);
@@ -514,7 +551,7 @@
 .to-own__desc {
   @include u.truncate;
   display: block;
-  max-width: 340px;
+  max-width: 320px;
   font-size: t.$to-font-size-2xs;
   color: var(--to-text-muted);
 }

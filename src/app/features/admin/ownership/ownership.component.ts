@@ -4,8 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MenuAccessService } from '../../../core/services/menu-access.service';
 import { TourService } from '../../../core/services/tour.service';
 import { ACTIVITY_OWNERSHIP_TOUR, BUDGET_OWNERSHIP_TOUR } from './ownership.tours';
-import { TablerIconComponent } from '@tabler/icons-angular';
-import { ICON_REGISTRY } from '../../../shared/icon-registry';
+
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { ActivityOwnershipComponent } from './activity-ownership/activity-ownership.component';
@@ -25,7 +24,6 @@ type OwnershipTab = 'budget' | 'activity';
   selector: 'to-ownership',
   standalone: true,
   imports: [
-    TablerIconComponent,
     PageHeaderComponent,
     EmptyStateComponent,
     BudgetOwnershipComponent,
@@ -37,7 +35,6 @@ type OwnershipTab = 'budget' | 'activity';
 export class OwnershipComponent {
   private readonly menuAccess = inject(MenuAccessService);
   private readonly tour = inject(TourService);
-  protected readonly icons = ICON_REGISTRY;
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -74,19 +71,15 @@ export class OwnershipComponent {
     effect(() => {
       const tab = this.activeTab();
       untracked(() => {
+        // Overrides what the route registry resolved: this screen hosts two flows, and the
+        // help button must offer the one whose tab is showing.
         if (tab === 'budget') {
-          this.tour.startIfUnseen(BUDGET_OWNERSHIP_TOUR);
+          this.tour.setOfferedTour(BUDGET_OWNERSHIP_TOUR);
         } else if (tab === 'activity') {
-          this.tour.startIfUnseen(ACTIVITY_OWNERSHIP_TOUR);
+          this.tour.setOfferedTour(ACTIVITY_OWNERSHIP_TOUR);
         }
       });
     });
-  }
-
-  /** Replays the current tab's tour on demand — dismissing one should not be permanent. */
-  protected showHelp(): void {
-    const tab = this.activeTab();
-    this.tour.start(tab === 'activity' ? ACTIVITY_OWNERSHIP_TOUR : BUDGET_OWNERSHIP_TOUR);
   }
 
   protected select(tab: OwnershipTab): void {

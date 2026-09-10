@@ -5,6 +5,7 @@
 >
   <button
     actions
+    data-tour="ax-export"
     type="button"
     pButton
     class="p-button-outlined p-button-sm"
@@ -20,7 +21,7 @@
   <!-- The source toggle. Each option was its own screen in the legacy system; the legacy
        name is kept on the chip so someone trained there recognises what they are looking
        at rather than having to infer it. -->
-  <div class="to-ax__sources" role="tablist" aria-label="Mapping type">
+  <div class="to-ax__sources" data-tour="ax-sources" role="tablist" aria-label="Mapping type">
     @for (entry of sources; track entry.key) {
       <button
         type="button"
@@ -53,7 +54,7 @@
 
     <!-- The filter that makes this screen worth having: mappings that exist and authorise
          nothing. These are the rows an admin believes are working. -->
-    <label class="to-ax__toggle">
+    <label class="to-ax__toggle" data-tour="ax-dead">
       <input type="checkbox" class="to-ax__checkbox" [checked]="deadOnly()" (change)="toggleDeadOnly()" />
       <span>Only mappings that grant nothing</span>
     </label>

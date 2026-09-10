@@ -19,7 +19,7 @@
 <div class="to-adm">
   <!-- The census. `stuckPendingRows` is the number this screen exists for: approvals held
        by someone who cannot act, so the queue can never drain on its own. -->
-  <div class="to-adm__census">
+  <div class="to-adm__census" data-tour="ar-census">
     <div class="to-adm__census-item">
       <span class="to-adm__census-label">Pending approvals</span>
       <span class="to-adm__census-value to-numeric">{{ totalPending().toLocaleString() }}</span>
@@ -38,7 +38,7 @@
     </button>
   </div>
 
-  <div class="to-adm__filters">
+  <div class="to-adm__filters" data-tour="ar-filters">
     <div class="to-adm__chipset" role="group" aria-label="Approval table">
       @for (t of tables; track t) {
         <button
@@ -81,7 +81,7 @@
 
   <div class="to-adm__split">
     <!-- ── Queues ─────────────────────────────────────────────────────────── -->
-    <div class="to-ar__queues">
+    <div class="to-ar__queues" data-tour="ar-queues">
       @if (loading()) {
         <div class="to-adm__card">
           @for (row of skeletonRows; track row) {
@@ -175,7 +175,7 @@
     </div>
 
     <!-- ── Preview + transfer ─────────────────────────────────────────────── -->
-    <aside class="to-adm__panel">
+    <aside class="to-adm__panel" data-tour="ar-panel">
       @if (selected(); as queue) {
         <div class="to-adm__card to-adm__card--pad">
           <header class="to-ar__panel-head">

@@ -3,7 +3,7 @@
   subtitle="Everyone who can sign in to Trade Octane, and what they can reach."
   [breadcrumbs]="[{ label: 'Administration' }, { label: 'Users' }]"
 >
-  <div actions class="to-users__header-actions">
+  <div actions class="to-users__header-actions" data-tour="users-export">
     <button
       type="button"
       pButton
@@ -29,7 +29,7 @@
        values that an admin switches between constantly, where a dropdown would hide the
        current one behind a click. -->
   <div class="to-users__toolbar">
-    <div class="to-users__tabs" role="tablist" aria-label="Filter by status">
+    <div class="to-users__tabs" data-tour="users-tabs" role="tablist" aria-label="Filter by status">
       @for (tab of tabs; track tab.key) {
         <button
           type="button"
@@ -44,7 +44,7 @@
       }
     </div>
 
-    <div class="to-users__search">
+    <div class="to-users__search" data-tour="users-search">
       <tabler-icon [icon]="icons['search']" [size]="15" class="to-users__search-icon" />
       <input
         pInputText
@@ -94,25 +94,37 @@
             <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('FullName')">
               Name
               @if (sort() === 'FullName') {
-                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+                <tabler-icon
+                  class="to-users__sort"
+                  [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']"
+                  [size]="13"
+                />
               }
             </th>
             <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('UserId')">
               Login
               @if (sort() === 'UserId') {
-                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+                <tabler-icon
+                  class="to-users__sort"
+                  [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']"
+                  [size]="13"
+                />
               }
             </th>
             <th scope="col" class="to-users__th to-users__th--sortable" (click)="toggleSort('Email')">
               Email
               @if (sort() === 'Email') {
-                <tabler-icon [icon]="desc() ? icons['trending-down'] : icons['trending-up']" [size]="13" />
+                <tabler-icon
+                  class="to-users__sort"
+                  [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']"
+                  [size]="13"
+                />
               }
             </th>
-            <th scope="col" class="to-users__th">Status</th>
+            <th scope="col" class="to-users__th" data-tour="users-status">Status</th>
             <th scope="col" class="to-users__th">Resigned</th>
             <th scope="col" class="to-users__th">Password set</th>
-            <th scope="col" class="to-users__th to-users__th--actions">Actions</th>
+            <th scope="col" class="to-users__th to-users__th--actions" data-tour="users-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -130,7 +142,7 @@
                 </a>
               </td>
               <td class="to-users__td to-users__td--mono">{{ user.userId }}</td>
-              <td class="to-users__td to-users__td--muted">{{ user.email || '—' }}</td>
+              <td class="to-users__td to-users__td--muted to-users__td--email" [title]="user.email">{{ user.email || '—' }}</td>
               <td class="to-users__td">
                 <to-status-pill
                   [status]="statusPill[statusOf(user)]"

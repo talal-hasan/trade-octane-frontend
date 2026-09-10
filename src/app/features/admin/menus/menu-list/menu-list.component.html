@@ -14,7 +14,7 @@
       <tabler-icon [icon]="icons['download']" [size]="15" />
       {{ exporting() ? 'Exporting…' : 'Export CSV' }}
     </button>
-    <a pButton routerLink="/admin/menus/new" class="p-button-sm">
+    <a pButton routerLink="/admin/menus/new" class="p-button-sm" data-tour="menus-new">
       <tabler-icon [icon]="icons['plus']" [size]="15" />
       New menu item
     </a>
@@ -23,7 +23,7 @@
 
 <div class="to-ml">
   <div class="to-ml__toolbar">
-    <div class="to-ml__tabs" role="tablist" aria-label="Application">
+    <div class="to-ml__tabs" data-tour="menus-octane" role="tablist" aria-label="Application">
       @for (tab of octaneTabs; track tab.key) {
         <button
           type="button"
@@ -110,11 +110,11 @@
       <table class="to-ml__table">
         <thead>
           <tr>
-            <th scope="col" class="to-ml__th to-ml__th--id">ID</th>
+            <th scope="col" class="to-ml__th to-ml__th--id" data-tour="menus-id">ID</th>
             <th scope="col" class="to-ml__th">Name</th>
             <th scope="col" class="to-ml__th">Page</th>
             <th scope="col" class="to-ml__th">Grants</th>
-            <th scope="col" class="to-ml__th">Portal</th>
+            <th scope="col" class="to-ml__th" data-tour="menus-portal">Portal</th>
             <th scope="col" class="to-ml__th to-ml__th--actions">Visibility</th>
           </tr>
         </thead>

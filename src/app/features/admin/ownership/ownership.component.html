@@ -2,18 +2,7 @@
   title="Ownership Transfers"
   subtitle="Move budgets and activities off someone who can no longer action them."
   [breadcrumbs]="[{ label: 'Administration' }, { label: 'Ownership Transfers' }]"
->
-  <button
-    actions
-    type="button"
-    pButton
-    class="p-button-outlined p-button-sm"
-    (click)="showHelp()"
-  >
-    <tabler-icon [icon]="icons['help']" [size]="15" />
-    Show me how
-  </button>
-</to-page-header>
+/>
 
 @if (availableTabs().length === 0) {
   <to-empty-state
