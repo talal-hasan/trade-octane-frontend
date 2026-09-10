@@ -163,8 +163,40 @@ That folder — its whole contents, including `web.config` — is what gets depl
 
 ### Step 2 — put the files somewhere IIS can read
 
-Deploy **beside** the API's folder, not inside it — a child application nested in the
-parent's physical directory invites the parent's `web.config` to apply to it.
+Deploy to a folder of its own, **outside `C:\inetpub\wwwroot`**:
+
+```
+C:\inetpub\TradeOctanePortal
+```
+
+Two concrete reasons, neither of them about config inheritance:
+
+1. **`C:\inetpub\wwwroot` is the legacy site's document root.** Anything placed there is
+   also served by `Default Web Site` on port 80. A copy at
+   `C:\inetpub\wwwroot\TradeOctanePortal` is therefore reachable at
+   `http://10.10.30.17/TradeOctanePortal/` as plain static files — a second, subtly broken
+   instance of the app: no SPA rewrite, so deep links 404, and a different origin from the
+   API, so every call fails CORS. It looks like the portal and behaves like a bug report.
+2. **An API redeployment can delete it.** If the portal sits inside the API's own folder, a
+   `dotnet publish` or a "clean the target directory" copy takes the portal with it.
+
+> **Correcting something stated in an earlier revision of this document:** the reason is
+> *not* that physical nesting causes the parent's `web.config` to apply. IIS merges
+> configuration along the **virtual** path — site → application → virtual directory — so
+> the API site's root `web.config` applies to a `/portal` child application wherever its
+> files physically live. That inheritance is real, and it is the
+> [500.19 case](#http-50019-right-after-deploying), but moving folders does not affect it.
+
+If access rights on the VM only permit writing inside `wwwroot`, deploying there does work
+— the application is still created under the API's site and is still same-origin at
+`/portal`. Just know that the port-80 duplicate exists, and prefer moving it when rights
+allow:
+
+```powershell
+Move-Item 'C:\inetpub\wwwroot\TradeOctanePortal' 'C:\inetpub\TradeOctanePortal'
+```
+
+Substitute your actual folder for `$target` below and everywhere it appears in Step 3.
 
 ```powershell
 $target = 'C:\inetpub\TradeOctanePortal'
@@ -185,8 +217,131 @@ Test-Path "$target\web.config"   # must be True
 
 ### Step 3 — create the IIS application
 
-Once only. A dedicated app pool with **no managed code** (this is static content; there is
-no .NET runtime to load):
+Once only. Two objects: an **application pool** (the process identity and settings) and an
+**application** (the URL-to-folder mapping). Do them in that order — the application form
+asks for a pool that must already exist.
+
+Either route below produces the same result. Both need **administrator rights on the VM**.
+If you do not have them, this step belongs to whoever administers the machine; nothing here
+can work around it.
+
+<details open>
+<summary><b>Route A — IIS Manager (the GUI)</b></summary>
+
+#### Open IIS Manager elevated
+
+Press <kbd>Win</kbd>+<kbd>R</kbd>, type `inetmgr`, and press
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> to launch it as administrator. (Or Start
+menu → type "IIS" → right-click *Internet Information Services (IIS) Manager* → **Run as
+administrator**.)
+
+Opening it without elevation is a trap worth naming: it starts normally and shows the tree,
+but the *Add Application* and *Add Application Pool* commands are missing or fail on save.
+If those commands are absent, you are not elevated.
+
+#### Confirm URL Rewrite is installed
+
+In the left-hand **Connections** pane, click the **server node** — the top entry, named
+after the machine. The middle **Features View** pane should contain a **URL Rewrite** icon.
+
+No icon means the module is missing, and the application will answer **HTTP 500.19** for
+every request once `web.config` is in place. Install it before continuing — see
+[Prerequisites](#1-iis-url-rewrite-module--required-and-not-installed-by-default). After
+installing, close and reopen IIS Manager; the icon does not appear in a running instance.
+
+#### Create the application pool
+
+1. In **Connections**, expand the server node and click **Application Pools**.
+2. In the right-hand **Actions** pane, click **Add Application Pool…**.
+3. Fill the dialog:
+   - **Name:** `TradeOctanePortal`
+   - **.NET CLR version:** **No Managed Code**
+   - **Managed pipeline mode:** `Integrated`
+   - **Start application pool immediately:** ticked
+4. **OK**.
+
+**"No Managed Code" is the setting that matters.** This application is static files — HTML,
+JS, CSS. There is no .NET code to run, and loading a CLR to serve static content wastes
+memory and invites the parent site's ASP.NET handlers to take an interest in requests that
+are none of their business. It is also how the `TradeOctaneWebAPI` pool is configured, and
+for the same reason.
+
+The new pool should now be listed with **Status: Started**. If it shows *Stopped*, select it
+and click **Start** in the Actions pane.
+
+#### Create the application
+
+1. In **Connections**, expand **Sites**, and find **TradeOctaneWebAPI** — the site bound to
+   `10.10.30.17:443`. This is the API's site, and putting the portal inside it is what makes
+   the two same-origin.
+
+   > Not `Default Web Site`. That is the legacy ASP.NET Web Forms app on port 80. Deploying
+   > there would put the portal on a different origin from the API, which is the shape
+   > [described earlier as the one to avoid](#the-one-decision-where-it-sits-relative-to-the-api).
+
+2. **Right-click** the `TradeOctaneWebAPI` site → **Add Application…**.
+3. Fill the dialog:
+   - **Alias:** `portal`
+   - **Application pool:** click **Select…**, choose `TradeOctanePortal`, **OK**
+   - **Physical path:** `C:\inetpub\TradeOctanePortal`
+     — or wherever Step 2 actually put the files. Use the **…** browse button rather than
+     typing it; a path that does not exist is accepted here and fails later as a 404 with
+     no obvious cause.
+   - **Pass-through authentication:** leave as-is (do not set *Connect as…*)
+
+   **The alias must be exactly `portal`, lower-case.** It becomes the URL segment, and it
+   has to match the `--base-href /portal/` the app was built with. An alias of `Portal` will
+   work on a case-insensitive path but leaves `index.html` requesting its bundles from
+   `/portal/`, which on some configurations does not resolve — a blank page whose cause is
+   invisible.
+
+4. Click **Test Settings…**. *Path* and *Authentication* should both show a green tick. An
+   amber warning on **Authorization** ("cannot verify access to path") is normal with
+   pass-through authentication and is resolved by the permissions step below.
+5. **OK**.
+
+`portal` now appears under the site with a globe-and-gear icon, which is IIS's marker for an
+application as opposed to a plain virtual directory.
+
+#### Grant the pool read access to the folder
+
+The application pool runs as a virtual account, `IIS AppPool\TradeOctanePortal`, which must
+be able to read the deployed files.
+
+1. Open **File Explorer** at `C:\inetpub`.
+2. Right-click the **TradeOctanePortal** folder → **Properties** → **Security** tab.
+3. **Edit…** → **Add…**.
+4. **Click *Locations…* first and select the local computer** — the machine's own name, not
+   the domain. This is the step people miss: on a domain-joined VM the picker defaults to
+   the domain, where an IIS virtual account does not exist, and the name will not resolve no
+   matter how correctly it is typed.
+5. In the name box type:
+
+   ```
+   IIS AppPool\TradeOctanePortal
+   ```
+
+   Click **Check Names**. It should resolve and underline as `TradeOctanePortal`. If it does
+   not, the pool was not created, or its name differs — check the spelling against Step 3.
+6. **OK**. With the new entry selected, ensure **Read & execute**, **List folder contents**
+   and **Read** are ticked under *Allow*. Leave *Write* and *Modify* unticked — the web
+   server has no business writing to its own content.
+7. **OK** → **OK**.
+
+> This may already be satisfied by inheritance: `C:\inetpub` typically grants `IIS_IUSRS`
+> read access, which covers the pool identity. Setting it explicitly costs nothing and
+> removes a variable if the app later returns **HTTP 401.3** or **500.19 – cannot read
+> configuration file**, both of which are this permission.
+
+#### Open it
+
+Right-click the `portal` application → **Manage Application** → **Browse**. IIS opens the
+correct URL in the VM's browser, which also confirms the binding it thinks it is serving on.
+
+</details>
+
+<details>
+<summary><b>Route B — PowerShell</b></summary>
 
 ```powershell
 Import-Module WebAdministration
@@ -198,13 +353,18 @@ New-WebApplication -Site 'TradeOctaneWebAPI' `
                    -Name 'portal' `
                    -PhysicalPath 'C:\inetpub\TradeOctanePortal' `
                    -ApplicationPool 'TradeOctanePortal'
-```
 
-Grant the pool identity read access:
-
-```powershell
 icacls 'C:\inetpub\TradeOctanePortal' /grant 'IIS AppPool\TradeOctanePortal:(OI)(CI)(RX)' /T
 ```
+
+`managedRuntimeVersion = ''` is how "No Managed Code" is expressed in the API — an empty
+string, not the string `'None'`.
+
+Run in an elevated session. If script execution is blocked by policy, these are all cmdlets
+rather than a script file, so pasting them into an elevated prompt usually still works;
+otherwise use Route A.
+
+</details>
 
 ### Step 4 — verify
 
