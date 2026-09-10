@@ -449,6 +449,23 @@ Administration's 15 rows fold to 6 destinations; Users alone absorbs 7 rows as 6
   roles to exactly this set", whose response reports `added[]`/`removed[]`/`unchanged[]`.
   Every sibling write takes an array. `AdminRolesApi.replaceUserRoles` composes the set
   write from DELETE + POST meanwhile; swap it for one PUT when the contract grows `roleIds`.
+- **`UserRoleAssignmentResponse.assigned` is returned as a bare object, not an array**,
+  when the user holds exactly one role — `"assigned": { "roleId": 2, ... }`. Same root
+  cause as the scalar `roleId` above: the backend models "a user's role" as singular in
+  some places and plural in others. This is the defect that made the Roles tab render
+  *nothing*: `assigned.map(...)` threw inside the subscribe callback, which aborted the
+  handler before it cleared the loading flag, so the screen went blank with no error
+  shown. Compiles clean, fails only at runtime, and only for users with one role.
+
+  Normalised by `asList` in `AdminRolesApi` (both the GET and the embedded assignment on
+  the POST/DELETE write responses). `UserRoleAssignmentWire` documents the real shape;
+  delete it and the normalisers together once the backend sends a one-element array.
+
+  **The general lesson, worth applying beyond roles:** a collection field that is
+  serialised from a scalar is invisible to TypeScript and to the build. Normalise
+  list-shaped fields at the API boundary rather than trusting the declared type — and
+  when a screen renders blank, suspect a throw inside a subscriber before suspecting the
+  template.
 - **No `PUT /admin/users/{userId}`.** Profile edits go through the password endpoint with
   `newPassword: null` (supported — `profileUpdated` is reported separately). Wrapped as
   `AdminUsersApi.updateProfile` so call sites read as intent.
