@@ -146,27 +146,18 @@ serving on that binding.
 
 ---
 
-## Alternative: serve the built app from the same IIS site
+## Deploying it properly
 
-Better for a demo, and closer to how this eventually deploys. Same-origin, so no proxy and
-no CORS at all:
+Everything above is about *developing* against live data. To publish the app as a real
+hosted application — served by IIS, surviving a reboot, reachable by other people — see
+**[DEPLOY-ON-VM.md](DEPLOY-ON-VM.md)**.
 
-```powershell
-npm run build          # writes dist/trade-octane-frontend/browser
-```
+Short version: `npm run build:vm` produces static files, which are deployed as an IIS
+application at `https://10.10.30.17/portal`. Same origin as the API, so `apiBase` stays
+empty, no CORS is involved, and the API needs no change.
 
-Copy `dist/trade-octane-frontend/browser/*` into a sub-application of the existing IIS
-site (for example `/portal`), then:
-
-- Set `environment.prod.ts` → `apiBase: ''` (already the case) so requests go to
-  `/api/v1/...` on the same origin.
-- Add a URL Rewrite rule so deep links (`/portal/admin/users/jdoe`) fall back to
-  `index.html` — without it, refreshing any route returns an IIS 404. Angular is a
-  single-page app; IIS has to serve `index.html` for anything that is not a real file.
-- If the app is served from a sub-path rather than the site root, rebuild with
-  `--base-href /portal/`.
-
-No hot reload, so this is for demonstrating, not developing.
+`npm run start:live` is a development server and is not a way to host anything: it serves
+unminified code, recompiles constantly, and dies with the terminal that started it.
 
 ---
 

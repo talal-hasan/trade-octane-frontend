@@ -3,7 +3,9 @@
   "version": 1,
   "cli": {
     "packageManager": "npm",
-    "schematicCollections": ["angular-eslint"]
+    "schematicCollections": [
+      "angular-eslint"
+    ]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -30,7 +32,9 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles/main.scss"]
+            "styles": [
+              "src/styles/main.scss"
+            ]
           },
           "configurations": {
             "production": {
@@ -51,6 +55,18 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
+                }
+              ],
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": [
+                    "assets/TradeOctaneSwagger.json",
+                    "assets/response_menu.json",
+                    "assets/dashboard_mock.png",
+                    "assets/possible look.png"
+                  ]
                 }
               ]
             },
@@ -97,7 +113,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }
