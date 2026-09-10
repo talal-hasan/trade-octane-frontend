@@ -21,11 +21,68 @@ Consequences:
 - Therefore the dev-server proxy (`proxy.conf.js`) **cannot** reach the API from a laptop,
   and no amount of Windows Firewall configuration on the VM changes that.
 
-Two ways forward:
+Three ways forward:
 
-1. **Run the frontend on the VM** — everything below. Works today, no permission needed.
-2. **Ask for a second port forward on the gateway** (see the end of this document). Better
-   developer loop, but needs whoever administers that gateway.
+1. **Run the backend locally too** — [see below](#running-against-a-backend-on-your-own-machine).
+   The best loop by a distance if you can build the API: no RDP, hot reload, both sides
+   under your control, and nothing to ask anyone for.
+2. **Run the frontend on the VM** — the rest of this document. Works today, no permission
+   needed, but no practical hot-reload loop.
+3. **Ask for a second port forward on the gateway** (see the end of this document). Good
+   loop against the shared API, but needs whoever administers that gateway.
+
+---
+
+## Running against a backend on your own machine
+
+Nothing in the frontend needs changing. `proxy.conf.js` reads `TO_API_TARGET`, so pointing
+it at a local API is one environment variable:
+
+```powershell
+$env:TO_API_TARGET = 'http://localhost:5000'
+npm run start:live
+```
+
+Confirm the target on the startup line before debugging anything else:
+
+```
+[proxy] /api/* -> http://localhost:5000
+```
+
+**Find the port** in the API project's `Properties/launchSettings.json` — the
+`applicationUrl` field. ASP.NET Core usually binds both an HTTP and an HTTPS port.
+
+**Prefer the HTTP one.** The proxy sets `secure: false`, so an HTTPS endpoint with the
+ASP.NET Core development certificate works too, but locally it buys nothing and adds a
+thing that can go wrong.
+
+**Verify the API by itself first**, so a frontend symptom is never blamed on the wrong
+layer:
+
+```powershell
+curl.exe http://localhost:5000/api/v1/identity/login/sso
+```
+
+JSON back means the base is right. A 404 means the API is mounted under a path prefix —
+put it in the target and the proxy prepends it, exactly as with the sub-application case
+documented further down:
+
+```powershell
+$env:TO_API_TARGET = 'http://localhost:5000/TradeOctaneApi'
+```
+
+Two things that surprise people:
+
+- **The backend needs no CORS policy.** The dev server proxies server-side, so the browser
+  sees one origin. A policy allowing `http://localhost:4200` is harmless but does nothing.
+- **`$env:` lasts only for that terminal.** A new PowerShell window reverts to the VM
+  default in `proxy.conf.js`. Set it each session, or put it in your profile — and if data
+  looks wrong, read the `[proxy]` line before assuming the API is at fault.
+
+Use `npm run start:live`, never `npm start` — the latter serves mocks regardless of
+`TO_API_TARGET`, and the only visible difference is the amber **MOCK DATA** badge.
+
+---
 
 Re-test at any time:
 
