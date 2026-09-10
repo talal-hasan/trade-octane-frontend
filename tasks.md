@@ -497,3 +497,100 @@ Menus, My Account (doubles as the forced password change), legacy placeholder.
   coexist in `app.routes.ts` today, and the split is commented there.
 - `features/admin/user-management/` (the old invented-model screens) is superseded by
   `features/admin/users/` and should be deleted once Adil has signed off on the switch.
+
+---
+
+## Administration 1.0 — complete, live-wired, reviewed (2026-09-08 → 09-10)
+
+Branch `feature/phase-1-flows`, pushed through `1ba9259`. `ng lint` clean, `ng build`
+warning-free, 45 tests passing.
+
+### How to run it
+
+The API is **not reachable from a developer laptop** — see `RUN-ON-VM.md` for why (the VM's
+`10.10.30.17` is internal; RDP reaches it through a NAT gateway that forwards one port).
+Work happens on the VM:
+
+```powershell
+git pull
+npm run start:live      # NOT `npm start` — that is mocks, and shows a MOCK DATA badge
+```
+
+`proxy.conf.js` defaults to `https://10.10.30.17`. Two dead ends already ruled out, do not
+retry them: `http://10.10.30.17` is the **legacy Web Forms site**, and
+`http://10.10.30.17/TradeOctane` is that app's folder (returns `Handler: StaticFile`, i.e.
+IIS never routed to ASP.NET). The API is a separate IIS site, `TradeOctaneWebAPI`, on
+**HTTPS 443**, identified by its app pool reporting a blank managed runtime.
+
+### Screens
+
+All fifteen legacy Administration menu rows now have a built screen, folded to nine
+destinations: Users (7 rows as tabs), Roles, Role access, Access Explorer (5 grids in one),
+Menus + Add/Edit Menu, Approval Routing, Ownership Transfers (budget + activity tabs),
+Activity Logs, Scheme Frequency, Integration, My Account.
+
+### Contract facts that cost time — do not rediscover
+
+- **The deployment wraps responses in `{ data: … }`** where the contract declares the object
+  directly (`login_old`, `/identity/menu`). `unwrapData()` handles it and unwraps **only**
+  when `data` is the sole property — `UserPageResponse` is `{ data: [...], nextCursor, … }`
+  and unwrapping that would silently drop the cursor.
+- **Errors are RFC 7807** (`detail` / `title` / `errors`), never `.message`. Reading
+  `.message` made every failure render as a generic apology.
+- **Wire integers may be strings.** `["integer","string"]` in the contract, and
+  `/dashboard/tiles` returns every count as a string. Always `int()` / `intSet()`.
+- **`UserRoleWriteRequest` carries a scalar `roleId`** for a documented set-write.
+  `replaceUserRoles` composes DELETE + POST instead; swap for one PUT when fixed.
+- **No `PUT /admin/users/{id}`** — profile edits go through the password endpoint with
+  `newPassword: null` (`AdminUsersApi.updateProfile`).
+- **`UserRoleAssignmentResponse.available` came back empty** from the live API, so the Roles
+  tab loads the full catalogue alongside and merges.
+- Grids are **keyset-paginated** (Prev/Next via `CursorPager`), except **Activity Logs**,
+  which is offset-paged and gets real page numbers.
+
+### UI rules established
+
+- **`_admin.scss` and `_theme.scss` emit CSS and are imported by `main.scss` only.** A
+  component that `@use`s them stamps another copy into its own bundle.
+- **Any PrimeNG internal must be styled globally** in `_primeng-overrides.scss`. Emulated
+  encapsulation tags only elements in our templates, so a component rule targeting
+  PrimeNG's inner `<input>` matches nothing — silently. This bit the password field twice.
+- **Table cells are single-line by default** (`.to-adm__td`), with opt-in `--wrapable` /
+  `--truncate` / `--stacked`. Wrapping cells produce ragged row heights, which is the single
+  biggest "unfinished" signal on a data screen.
+- Long option lists use `to-multi-select-picker`, not a chipset. A chipset is right for
+  3–12 options; 60 scheme types filled half the viewport.
+- Select-all always acts on what is **visible**, and says "shown" while filtered.
+
+### Guided tours
+
+`core/tours/tour-registry.ts` maps route → walkthrough for every screen; the shell
+auto-starts unseen ones and renders the single help button. A screen needs only `data-tour`
+attributes. Three bugs already fixed here, all found by opening a browser:
+
+1. `startIfUnseen` reads the running state, so calling it in an `effect` made the effect
+   depend on it — closing reopened it. Needs `untracked`.
+2. Dismissal must hold for the **session**; a tab change writes a query param, which is a
+   navigation, which re-offered the tour.
+3. `measure()` must never scroll. Smooth `scrollIntoView` emits scroll events that
+   re-entered it and pegged the renderer — Frequency froze the tab outright.
+
+### Open with Zeeshan
+
+- `UserRoleWriteRequest` scalar vs array (above).
+- No `servers` block in the OpenAPI document — three rounds were lost to finding the base.
+- `LoginResponse` documented unwrapped, returned wrapped.
+- `POST /admin/users` and `POST /admin/menus` declare no response body.
+- 500 returned for an invalid bearer token; should be 401.
+- **menuId stability across dev/UAT/prod** — the blueprint's one hard dependency.
+
+### Not done
+
+- Resignation tab, and the Approval Hierarchy half of Approval Routing, are still legacy.
+- POC screens (budget, schemes, claims) remain on `PermissionGuard` + invented permission
+  strings; retire `PermissionService` as each moves to its real contract.
+- `features/admin/user-management/` is superseded by `features/admin/users/` — delete once
+  Adil signs off.
+- Visual review covered Users, User detail, Approval Routing, Frequency, Integration.
+  Access Explorer, Menus, Activity Logs, Menu form and Account were **not** re-checked after
+  the layout pass.
