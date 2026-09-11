@@ -1,0 +1,120 @@
+<to-page-header
+  title="New role"
+  subtitle="Add a role to the catalogue. Screen access is granted afterwards."
+  [breadcrumbs]="[
+    { label: 'Administration' },
+    { label: 'Roles', route: '/admin/roles' },
+    { label: 'New role' },
+  ]"
+/>
+
+<form class="to-rc" [formGroup]="form" (ngSubmit)="submit()">
+  <div class="to-rc__layout">
+    <section class="to-rc__section">
+      <h2 class="to-rc__title">Role details</h2>
+      <p class="to-rc__note">
+        The name is what every assignment screen shows and searches on, so make it one an
+        administrator will recognise months from now.
+      </p>
+
+      <div class="to-rc__grid">
+        <div class="to-rc__field">
+          <label class="to-rc__label" for="roleName">Role name</label>
+          <input
+            pInputText
+            id="roleName"
+            type="text"
+            formControlName="roleName"
+            autocomplete="off"
+          />
+          @if (form.controls.roleName.touched && form.controls.roleName.invalid) {
+            <span class="to-rc__error">A role name is required, and must be unique.</span>
+          }
+        </div>
+
+        <div class="to-rc__field">
+          <label class="to-rc__label" for="active">
+            Status
+            <span class="to-rc__hint">Retired roles grant nothing</span>
+          </label>
+          <div class="to-rc__toggle" role="radiogroup" aria-labelledby="active" id="active">
+            <button
+              type="button"
+              class="to-rc__toggle-btn"
+              [class.to-rc__toggle-btn--active]="form.controls.active.value"
+              [attr.aria-pressed]="form.controls.active.value"
+              (click)="setActive(true)"
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              class="to-rc__toggle-btn"
+              [class.to-rc__toggle-btn--active]="!form.controls.active.value"
+              [attr.aria-pressed]="!form.controls.active.value"
+              (click)="setActive(false)"
+            >
+              Retired
+            </button>
+          </div>
+        </div>
+
+        <div class="to-rc__field to-rc__field--wide">
+          <label class="to-rc__label" for="roleDesc">
+            Description <span class="to-rc__hint">Optional</span>
+          </label>
+          <textarea
+            pTextarea
+            id="roleDesc"
+            rows="3"
+            formControlName="roleDesc"
+            class="to-rc__textarea"
+          ></textarea>
+          @if (form.controls.roleDesc.touched && form.controls.roleDesc.invalid) {
+            <span class="to-rc__error">Keep the description under 255 characters.</span>
+          }
+        </div>
+      </div>
+    </section>
+
+    <aside class="to-rc__aside">
+      <div class="to-rc__summary" data-tour="role-create-summary">
+        <h2 class="to-rc__summary-title">This role</h2>
+
+        <dl class="to-rc__summary-list">
+          <div class="to-rc__summary-row">
+            <dt>Name</dt>
+            <dd>{{ form.controls.roleName.value || '—' }}</dd>
+          </div>
+          <div class="to-rc__summary-row">
+            <dt>Status</dt>
+            <dd>{{ form.controls.active.value ? 'Active' : 'Retired' }}</dd>
+          </div>
+        </dl>
+
+        <!-- The honest headline, same idea as New user: creation seeds a baseline, it does
+             not finish the job. -->
+        <div class="to-rc__next">
+          <h3 class="to-rc__next-title">After creation</h3>
+          <ul class="to-rc__next-list">
+            <li>
+              <strong>Seeded with baseline access.</strong> The configured parent menu and
+              the change-password screen beneath it, so it is not entirely inert.
+            </li>
+            <li>
+              <strong>Everything else is manual.</strong> Grant the rest through Access
+              Control | By Role, next.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="to-rc__actions">
+        <a pButton routerLink="/admin/roles" class="p-button-text p-button-sm">Cancel</a>
+        <button type="submit" pButton class="p-button-sm" [disabled]="submitting()">
+          {{ submitting() ? 'Creating…' : 'Create role' }}
+        </button>
+      </div>
+    </aside>
+  </div>
+</form>

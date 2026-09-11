@@ -126,6 +126,36 @@ export interface RoleResponse {
 }
 
 /**
+ * `POST /admin/roles`. Has no legacy counterpart — nothing in the Web Forms application
+ * could create a role, so the 43 existing rows were inserted by hand.
+ *
+ * `roleName` is required and must be unique, case-insensitively. `roleDesc` is optional.
+ * `status` is optional and defaults to `true` server-side: send `false` to create a
+ * retired role deliberately.
+ */
+export interface CreateRoleRequest {
+  roleName: string;
+  roleDesc: string | null;
+  status: boolean | null;
+}
+
+/**
+ * One baseline grant the new role was seeded with — the parent menu and the child beneath
+ * it (`Administration 1.0` / `Edit Password` by default), so the role can at least reach
+ * the change-password screen. A `null` `menuId` means the menu was not found by name and
+ * the grant was skipped; the role itself is still created either way.
+ */
+export interface BaselineMenuGrantResponse {
+  menuName: string;
+  menuId: ApiInt | null;
+}
+
+export interface CreateRoleResponse {
+  role: RoleResponse;
+  baselineGrants: BaselineMenuGrantResponse[];
+}
+
+/**
  * A user's roles, split into what they hold and what they could hold.
  *
  * This is the **normalised** shape. `AdminRolesApi` guarantees both lists are real arrays;

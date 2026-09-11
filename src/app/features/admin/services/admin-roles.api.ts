@@ -4,6 +4,8 @@ import { Observable, concat, defer, last, map, of, switchMap } from 'rxjs';
 import { ApiClient, Query } from '../../../core/api/api-client.service';
 import { asList, int, unwrapData } from '../../../core/api/api.types';
 import {
+  CreateRoleRequest,
+  CreateRoleResponse,
   RoleResponse,
   RoleStatusFilter,
   UserRoleAssignmentResponse,
@@ -55,6 +57,16 @@ export class AdminRolesApi {
     return this.api
       .get<RoleResponse[] | { data: RoleResponse[] }>('/admin/roles', options as Query)
       .pipe(map(unwrapData));
+  }
+
+  /**
+   * Create a role. `roleName` is required and unique, case-insensitively; `roleDesc` is
+   * optional; omit `status` to default to active. The role is seeded, in the same
+   * transaction, with the baseline menu grants a role needs to be usable at all — see
+   * `CreateRoleResponse.baselineGrants`.
+   */
+  createRole(request: CreateRoleRequest): Observable<CreateRoleResponse> {
+    return this.api.post<CreateRoleResponse>('/admin/roles', request);
   }
 
   /**

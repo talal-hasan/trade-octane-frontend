@@ -2,7 +2,14 @@
   title="Roles"
   subtitle="What each role can reach, and how many people that affects."
   [breadcrumbs]="[{ label: 'Administration' }, { label: 'Roles' }]"
-/>
+>
+  @if (canCreate()) {
+    <a actions pButton routerLink="/admin/roles/new" class="p-button-sm">
+      <tabler-icon [icon]="icons['plus']" [size]="15" />
+      New role
+    </a>
+  }
+</to-page-header>
 
 <div class="to-roles">
   <div class="to-roles__toolbar">

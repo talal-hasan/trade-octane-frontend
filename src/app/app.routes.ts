@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { MenuGuard } from './core/guards/menu.guard';
+import { AdminOnlyGuard, MenuGuard } from './core/guards/menu.guard';
 import { MocksOnlyGuard } from './core/guards/mocks-only.guard';
 import { PermissionGuard } from './core/guards/permission.guard';
 
@@ -83,6 +83,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/roles/role-list/role-list.component').then(
             (m) => m.RoleListComponent,
+          ),
+      },
+      {
+        // Ahead of ':roleId' so it isn't swallowed by it. Gated on AdminOnlyGuard, not just
+        // MenuGuard: 'Access Control | By Role' reaches the roles list and each role's
+        // access tree, but creating a role has no legacy menu row of its own — see
+        // AdminOnlyGuard.
+        path: 'admin/roles/new',
+        canActivate: [MenuGuard, AdminOnlyGuard],
+        loadComponent: () =>
+          import('./features/admin/roles/role-create/role-create.component').then(
+            (m) => m.RoleCreateComponent,
           ),
       },
       {

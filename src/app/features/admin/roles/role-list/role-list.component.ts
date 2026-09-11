@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 
 import { RoleResponse, RoleStatusFilter } from '../../../../core/api/admin.models';
 import { int } from '../../../../core/api/api.types';
+import { MenuAccessService } from '../../../../core/services/menu-access.service';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
@@ -43,9 +44,13 @@ import { AdminRolesApi } from '../../services/admin-roles.api';
 })
 export class RoleListComponent {
   private readonly rolesApi = inject(AdminRolesApi);
+  private readonly menuAccess = inject(MenuAccessService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly icons = ICON_REGISTRY;
+  // Role creation has no legacy menu row to gate on (see AdminOnlyGuard) — it is offered
+  // only to admins, the same signal "Add Menu" and "Frequency Configuration" use.
+  protected readonly canCreate = computed(() => this.menuAccess.isAdmin());
   protected readonly skeletonRows = Array.from({ length: 6 }, (_, index) => index);
 
   protected readonly loading = signal(true);

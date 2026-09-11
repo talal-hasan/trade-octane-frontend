@@ -39,6 +39,27 @@ export const MenuGuard: CanActivateFn = (route, state) => {
 };
 
 /**
+ * Gates a route on `MenuAccessService.isAdmin` rather than a menu grant.
+ *
+ * Needed for destinations that sit *underneath* a route with its own real grant, where
+ * `MenuGuard`'s prefix match would otherwise let anyone holding the parent through. Role
+ * creation is exactly that case: `/admin/roles/:roleId` is reachable by anyone granted
+ * "Access Control | By Role", but `POST /admin/roles` has no legacy counterpart at all —
+ * nothing in the Web Forms application could create a role — so there is no menu row to
+ * gate it on. `isAdmin` (holding any Administration 1.0 menu row) is the same signal
+ * `withAdminOnlyRoutes` uses for "Add Menu" and "Frequency Configuration"; see
+ * ADMINISTRATION_MENU_IDS for why it is derived rather than read off a flag.
+ *
+ * Combine with `MenuGuard` — this does not check authentication or the parent route.
+ */
+export const AdminOnlyGuard: CanActivateFn = () => {
+  const menuAccess = inject(MenuAccessService);
+  const router = inject(Router);
+
+  return menuAccess.isAdmin() ? true : router.createUrlTree(['/access-denied']);
+};
+
+/**
  * Tab gate. A screen composed from several legacy menu rows shows only the tabs whose row
  * the user actually holds — someone granted "User Brand Mapping" but not "Access Control"
  * gets the Users screen with a Brands tab and no Access tab.
