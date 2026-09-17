@@ -1,0 +1,504 @@
+<to-page-header
+  [title]="isEdit() ? displayName() || 'Edit distributor' : 'New distributor'"
+  [subtitle]="
+    isEdit()
+      ? 'Change where this distributor sits, how to reach them, or their password.'
+      : 'Give a distributor from the master a sign-in account.'
+  "
+  [breadcrumbs]="[
+    { label: 'Administration 2.0' },
+    { label: 'Distributors', route: route },
+    { label: isEdit() ? 'Edit' : 'New' },
+  ]"
+/>
+
+@if (notFound()) {
+  <to-empty-state
+    icon="truck-delivery"
+    heading="No distributor account with this ID"
+    [description]="'There is no account for ' + distributorId() + '. It may never have been created.'"
+  >
+    <a actions pButton [routerLink]="route" class="p-button-sm p-button-outlined">
+      <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+      Back to distributors
+    </a>
+  </to-empty-state>
+} @else if (accountLoading()) {
+  <div class="to-df__layout" aria-busy="true" aria-label="Loading distributor">
+    <div class="to-df__main">
+      <to-skeleton width="100%" height="140px" />
+      <to-skeleton width="100%" height="160px" />
+      <to-skeleton width="100%" height="220px" />
+    </div>
+    <to-skeleton width="100%" height="320px" />
+  </div>
+} @else {
+  <form class="to-df" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="to-df__layout">
+      <div class="to-df__main">
+        @if (catalogueFailed()) {
+          <div class="to-df__alert to-df__alert--warn" role="alert">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>Business types and locations did not load, so those pickers are empty.</span>
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="loadCatalogue()">
+              Try again
+            </button>
+          </div>
+        }
+
+        <!-- ─── Who ─────────────────────────────────────────────────────────── -->
+        <section class="to-adm__card to-adm__card--pad to-df__section" data-tour="df-distributor">
+          <h2 class="to-adm__subtitle">Distributor</h2>
+
+          @if (isEdit()) {
+            @if (account(); as current) {
+              <div class="to-df__identity">
+                <span class="to-df__identity-avatar" aria-hidden="true">
+                  <tabler-icon [icon]="icons['truck-delivery']" [size]="18" />
+                </span>
+                <span class="to-df__identity-text">
+                  <span class="to-df__identity-name">{{ current.name }}</span>
+                  <span class="to-df__identity-meta">
+                    Signs in as <span class="to-df__mono">{{ current.distributorId }}</span>
+                  </span>
+                </span>
+                <to-status-pill
+                  [status]="statusPill[accountStatus(current)]"
+                  [label]="statusLabels[accountStatus(current)]"
+                />
+              </div>
+              <p class="to-adm__hint">
+                The ID and name come from the distributor master and cannot be changed here.
+              </p>
+            }
+          } @else {
+            <div class="to-df__field">
+              <label class="to-df__label" for="distributorId">
+                Distributor
+                <span class="to-df__hint">Only distributors without an account are listed</span>
+              </label>
+              <p-select
+                class="to-df__select"
+                inputId="distributorId"
+                formControlName="distributorId"
+                [options]="candidateOptions()"
+                optionLabel="name"
+                optionValue="value"
+                [filter]="true"
+                filterBy="value,name"
+                filterPlaceholder="Search by ID or name"
+                emptyFilterMessage="No distributor without an account matches"
+                [emptyMessage]="candidatesLoading() ? 'Loading…' : 'Every distributor in the master already has an account'"
+                [placeholder]="candidatesLoading() ? 'Loading distributors…' : 'Select a distributor'"
+                [loading]="candidatesLoading()"
+                [virtualScroll]="true"
+                [virtualScrollItemSize]="40"
+                scrollHeight="320px"
+                [invalid]="showError(form.controls.distributorId)"
+                appendTo="body"
+                (onChange)="onDistributorChange()"
+              >
+                <ng-template #selectedItem let-option>
+                  <span class="to-df__option">
+                    <span class="to-df__mono to-df__option-id">{{ option.value }}</span>
+                    <span class="to-df__option-name">{{ option.name }}</span>
+                  </span>
+                </ng-template>
+                <ng-template #item let-option>
+                  <span class="to-df__option">
+                    <span class="to-df__mono to-df__option-id">{{ option.value }}</span>
+                    <span class="to-df__option-name">{{ option.name }}</span>
+                    @if (option.resigned) {
+                      <span class="to-df__option-flag">Resigned {{ option.resignedOn }}</span>
+                    }
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (showError(form.controls.distributorId)) {
+                <span class="to-df__error">Pick the distributor this account is for.</span>
+              } @else if (!candidatesLoading() && resignedCandidateCount() > 0) {
+                <span class="to-adm__hint to-numeric">
+                  {{ candidateOptions().length - resignedCandidateCount() }} still working ·
+                  {{ resignedCandidateCount() }} resigned, listed last
+                </span>
+              }
+            </div>
+
+            @if (selectedCandidate(); as candidate) {
+              @if (candidate.resigned) {
+                <div class="to-df__alert to-df__alert--warn" role="status">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>
+                    The master records <strong>{{ candidate.name }}</strong> as resigned on
+                    {{ candidate.resignedOn }}. An account lets them sign in regardless — check
+                    before creating one.
+                  </span>
+                </div>
+              }
+            }
+          }
+
+          <div class="to-df__field" data-tour="df-business-type">
+            <span class="to-df__label" id="businessTypeLabel">Business type</span>
+            @if (businessTypes().length > 0) {
+              <div class="to-adm__chipset to-df__chipset" role="radiogroup" aria-labelledby="businessTypeLabel">
+                @for (type of businessTypes(); track type.id) {
+                  <button
+                    type="button"
+                    role="radio"
+                    class="to-adm__chip"
+                    [class.to-adm__chip--on]="form.controls.businessTypeId.value === type.id"
+                    [attr.aria-checked]="form.controls.businessTypeId.value === type.id"
+                    (click)="setBusinessType(type.id)"
+                  >
+                    {{ type.name }}
+                  </button>
+                }
+              </div>
+            } @else if (!catalogueFailed()) {
+              <to-skeleton width="60%" height="30px" />
+            }
+            @if (showError(form.controls.businessTypeId)) {
+              <span class="to-df__error">Pick a business type.</span>
+            }
+          </div>
+        </section>
+
+        <!-- ─── Where ───────────────────────────────────────────────────────── -->
+        <section class="to-adm__card to-adm__card--pad to-df__section" data-tour="df-location">
+          <h2 class="to-adm__subtitle">Location</h2>
+
+          <div class="to-df__grid to-df__grid--thirds">
+            <div class="to-df__field">
+              <label class="to-df__label" for="regionCode">Region</label>
+              <p-select
+                class="to-df__select"
+                inputId="regionCode"
+                formControlName="regionCode"
+                [options]="regionOptions()"
+                optionLabel="name"
+                optionValue="code"
+                placeholder="Select region"
+                [loading]="!catalogue() && !catalogueFailed()"
+                [invalid]="showError(form.controls.regionCode)"
+                appendTo="body"
+                (onChange)="onRegionChange()"
+              >
+                <ng-template #item let-option>
+                  <span class="to-df__option">
+                    <span class="to-df__option-name">{{ option.name }}</span>
+                    @if (option.note) {
+                      <span class="to-df__option-flag">{{ option.note }}</span>
+                    }
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (showError(form.controls.regionCode)) {
+                <span class="to-df__error">Pick a region.</span>
+              }
+            </div>
+
+            <div class="to-df__field">
+              <label class="to-df__label" for="areaCode">Area</label>
+              <p-select
+                class="to-df__select"
+                inputId="areaCode"
+                formControlName="areaCode"
+                [options]="areaOptions()"
+                optionLabel="name"
+                optionValue="code"
+                [filter]="areaOptions().length > 8"
+                filterPlaceholder="Search areas"
+                [placeholder]="form.controls.regionCode.value ? 'Select area' : 'Pick a region first'"
+                emptyMessage="This region has no areas"
+                [invalid]="showError(form.controls.areaCode)"
+                appendTo="body"
+                (onChange)="onAreaChange()"
+              >
+                <ng-template #item let-option>
+                  <span class="to-df__option">
+                    <span class="to-df__option-name">{{ option.name }}</span>
+                    @if (option.note) {
+                      <span class="to-df__option-flag">{{ option.note }}</span>
+                    }
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (showError(form.controls.areaCode)) {
+                <span class="to-df__error">Pick an area.</span>
+              }
+            </div>
+
+            <div class="to-df__field">
+              <label class="to-df__label" for="territoryCode">Territory</label>
+              <p-select
+                class="to-df__select"
+                inputId="territoryCode"
+                formControlName="territoryCode"
+                [options]="territoryOptions()"
+                optionLabel="name"
+                optionValue="code"
+                [filter]="territoryOptions().length > 8"
+                filterPlaceholder="Search territories"
+                [placeholder]="form.controls.areaCode.value ? 'Select territory' : 'Pick an area first'"
+                emptyMessage="This area has no territories"
+                [invalid]="showError(form.controls.territoryCode)"
+                appendTo="body"
+              >
+                <ng-template #item let-option>
+                  <span class="to-df__option">
+                    <span class="to-df__option-name">{{ option.name }}</span>
+                    @if (option.note) {
+                      <span class="to-df__option-flag">{{ option.note }}</span>
+                    }
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (showError(form.controls.territoryCode)) {
+                <span class="to-df__error">Pick a territory.</span>
+              }
+            </div>
+          </div>
+
+          <div class="to-df__grid">
+            <div class="to-df__field">
+              <label class="to-df__label" for="city">City</label>
+              <input
+                pInputText
+                id="city"
+                type="text"
+                formControlName="city"
+                autocomplete="off"
+                [attr.maxlength]="limits.city"
+                [invalid]="showError(form.controls.city)"
+              />
+              @if (showError(form.controls.city)) {
+                <span class="to-df__error">A city is required.</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Contact and sign-in ─────────────────────────────────────────── -->
+        <section class="to-adm__card to-adm__card--pad to-df__section" data-tour="df-contact">
+          <h2 class="to-adm__subtitle">Contact and sign-in</h2>
+
+          <div class="to-df__grid">
+            <div class="to-df__field">
+              <label class="to-df__label" for="contact">
+                Contact number <span class="to-df__hint">Digits and + only</span>
+              </label>
+              <input
+                pInputText
+                id="contact"
+                type="tel"
+                inputmode="tel"
+                formControlName="contact"
+                autocomplete="off"
+                class="to-numeric"
+                [attr.maxlength]="limits.contact"
+                [invalid]="showError(form.controls.contact)"
+              />
+              @if (showError(form.controls.contact)) {
+                <span class="to-df__error">
+                  {{ form.controls.contact.hasError('required') ? 'A contact number is required.' : 'Use digits and + only — no spaces or dashes.' }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="to-df__grid">
+            <div class="to-df__field">
+              <label class="to-df__label" for="distributorEmail">Distributor email</label>
+              <input
+                pInputText
+                id="distributorEmail"
+                type="email"
+                formControlName="distributorEmail"
+                autocomplete="off"
+                [attr.maxlength]="limits.email"
+                [invalid]="showError(form.controls.distributorEmail)"
+              />
+              @if (showError(form.controls.distributorEmail)) {
+                <span class="to-df__error">{{ emailError(form.controls.distributorEmail) }}</span>
+              }
+            </div>
+
+            <div class="to-df__field">
+              <label class="to-df__label" for="kpoEmail">
+                KPO email <span class="to-df__hint">The distributor's data-entry operator</span>
+              </label>
+              <input
+                pInputText
+                id="kpoEmail"
+                type="email"
+                formControlName="kpoEmail"
+                autocomplete="off"
+                [attr.maxlength]="limits.email"
+                [invalid]="showError(form.controls.kpoEmail)"
+              />
+              @if (showError(form.controls.kpoEmail)) {
+                <span class="to-df__error">{{ emailError(form.controls.kpoEmail) }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="to-df__password" data-tour="df-password">
+            <div class="to-df__field">
+              <label class="to-df__label" for="password">
+                {{ isEdit() ? 'New password' : 'Password' }}
+                @if (isEdit()) {
+                  <span class="to-df__hint">Leave blank to keep the current password</span>
+                }
+              </label>
+              <p-password
+                inputId="password"
+                formControlName="password"
+                [toggleMask]="true"
+                [feedback]="false"
+                autocomplete="new-password"
+                [invalid]="showError(form.controls.password)"
+              />
+              @if (showError(form.controls.password)) {
+                <span class="to-df__error">
+                  {{ form.controls.password.hasError('requiredIf') ? 'Set a password for the first sign-in.' : 'The password does not meet every rule yet.' }}
+                </span>
+              }
+            </div>
+
+            <!-- Each rule turns green as it is met — the same rules the server applies, so
+                 a password that passes here is not refused on save. Hidden on edit until
+                 something is typed, because blank there is a valid answer. -->
+            @if (!isEdit() || form.controls.password.value) {
+              <ul class="to-df__rules" aria-label="Password rules">
+                @for (check of passwordChecks(); track check.key) {
+                  <li class="to-df__rule" [class.to-df__rule--met]="check.met">
+                    <tabler-icon [icon]="check.met ? icons['circle-check'] : icons['circle-dot']" [size]="14" />
+                    {{ check.label }}
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- ─── Summary and actions ───────────────────────────────────────────── -->
+      <aside class="to-df__aside">
+        <div class="to-df__summary" data-tour="df-summary">
+          <h2 class="to-df__summary-title">{{ isEdit() ? 'This account' : 'The new account' }}</h2>
+
+          <dl class="to-df__summary-list">
+            <div class="to-df__summary-row">
+              <dt>Signs in as</dt>
+              <dd class="to-df__mono">{{ signInId() || '—' }}</dd>
+            </div>
+            <div class="to-df__summary-row">
+              <dt>Name</dt>
+              <dd [title]="displayName()">{{ displayName() || '—' }}</dd>
+            </div>
+            <div class="to-df__summary-row">
+              <dt>Business type</dt>
+              <dd>{{ businessTypeName() || '—' }}</dd>
+            </div>
+            <div class="to-df__summary-row">
+              <dt>Location</dt>
+              <dd class="to-df__summary-location">
+                @if (territoryName()) {
+                  <span>{{ territoryName() }}</span>
+                  <span class="to-df__summary-sub">{{ regionName() }} · {{ areaName() }}</span>
+                } @else {
+                  {{ regionName() || '—' }}
+                  @if (areaName()) {
+                    · {{ areaName() }}
+                  }
+                }
+              </dd>
+            </div>
+            <div class="to-df__summary-row">
+              <dt>City</dt>
+              <dd>{{ form.controls.city.value || '—' }}</dd>
+            </div>
+          </dl>
+
+          @if (isEdit()) {
+            @if (account(); as current) {
+              <div class="to-df__summary-block">
+                <h3 class="to-df__summary-heading">
+                  {{ changes().length === 0 ? 'No changes yet' : changes().length === 1 ? '1 change to save' : changes().length + ' changes to save' }}
+                </h3>
+                @if (changes().length > 0) {
+                  <ul class="to-df__changes">
+                    @for (change of changes(); track change.label) {
+                      <li class="to-df__change">
+                        <span class="to-df__change-label">{{ change.label }}</span>
+                        @if (change.from) {
+                          <span class="to-df__change-values">
+                            <s>{{ change.from }}</s>
+                            <tabler-icon [icon]="icons['arrow-right']" [size]="12" />
+                            {{ change.to }}
+                          </span>
+                        } @else {
+                          <span class="to-df__change-values">{{ change.to }}</span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+
+              <div class="to-df__summary-block">
+                <h3 class="to-df__summary-heading">Account</h3>
+                <ul class="to-df__facts">
+                  <li>
+                    @if (!current.isActive) {
+                      <strong>Inactive.</strong> They cannot sign in. Saving does not reactivate the account.
+                    } @else if (current.isLocked) {
+                      <strong>Locked.</strong> Refused at SSO sign-in; password sign-in does not check the lock.
+                    } @else {
+                      <strong>Active.</strong> They can sign in.
+                    }
+                  </li>
+                  @if (current.passwordChangeRequired) {
+                    <li><strong>Reset pending.</strong> They must update their profile at next sign-in.</li>
+                  }
+                  <li>
+                    Created <span class="to-numeric">{{ formatDate(current.createdAt) }}</span> · password set
+                    <span class="to-numeric">{{ formatDate(current.passwordSetAt) }}</span>
+                  </li>
+                </ul>
+              </div>
+            }
+          } @else {
+            <div class="to-df__summary-block">
+              <h3 class="to-df__summary-heading">On create</h3>
+              <ul class="to-df__facts">
+                <li><strong>Active and unlocked.</strong> They can sign in straight away.</li>
+                <li><strong>The distributor ID is the sign-in name,</strong> with the password above.</li>
+                <li>The name is taken from the distributor master.</li>
+              </ul>
+            </div>
+          }
+        </div>
+
+        @if (attempted() && invalidCount() > 0) {
+          <p class="to-df__attention" role="status">
+            <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+            {{ invalidCount() === 1 ? '1 field needs' : invalidCount() + ' fields need' }} attention.
+          </p>
+        }
+
+        <div class="to-df__actions">
+          <a pButton [routerLink]="route" class="p-button-text p-button-sm">Cancel</a>
+          <button type="submit" pButton class="p-button-sm" [disabled]="!canSave()">
+            @if (saving()) {
+              {{ isEdit() ? 'Saving…' : 'Creating…' }}
+            } @else {
+              {{ isEdit() ? 'Save changes' : 'Create distributor' }}
+            }
+          </button>
+        </div>
+      </aside>
+    </div>
+  </form>
+}

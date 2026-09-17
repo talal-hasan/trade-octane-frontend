@@ -44,6 +44,22 @@ const FSD = node(
   'money',
 );
 
+// Administration 2.0 as the local Promo_Management.dbo.MenuItems holds it (catalog "2").
+const ADMINISTRATION_2 = node(
+  92,
+  'Administration 2.0',
+  [
+    node(87, 'Create Distributor'),
+    node(93, 'Distributor Access'),
+    node(88, 'Create Role'),
+    node(91, 'User Mapping'),
+    node(97, 'Access Control'),
+    node(154, 'Access Control | By Role'),
+    node(230, 'Activity Logs'),
+  ],
+  'cogs',
+);
+
 const DASHBOARD = node(65, 'Dashboard', [node(85, 'Perfect Store')], 'tachometer');
 const PERFECT_STORE = node(76, 'Perfect Store', [node(119, 'PS Portal Report')], 'shopping-cart');
 
@@ -137,6 +153,32 @@ describe('transformMenu', () => {
 
     // A module with no ported row anywhere stays pending and routes to the placeholder.
     expect(findItem(result.sections, '/legacy/196')?.pending).toBe(true);
+  });
+
+  it('gives Administration 2.0 its own group: Distributors, and one destination for the rest', () => {
+    const result = transformMenu([ADMINISTRATION_2]);
+    const section = result.sections.find((candidate) => candidate.label === 'Administration 2.0');
+
+    expect(section?.items.map((item) => item.route)).toEqual(['/admin2/distributors', '/legacy/92']);
+    expect(findItem(result.sections, '/admin2/distributors')?.pending).toBe(false);
+
+    const legacy = findItem(result.sections, '/legacy/92');
+    expect(legacy?.label).toBe('Legacy screens');
+    expect(legacy?.pending).toBe(true);
+    expect(legacy?.menuIds.sort((a, b) => a - b)).toEqual([88, 91, 93, 97, 154, 230]);
+    expect(result.unmapped).toEqual([]);
+    expect(result.sections.some((candidate) => candidate.label === 'More')).toBe(false);
+  });
+
+  it('keeps 2.0 rows that share a 1.0 name out of the 1.0 screens', () => {
+    // "Access Control" is 19 in 1.0 and 97 in 2.0. Without 19 in the payload, 97 must not
+    // name-match its way onto the Users screen's access tab.
+    const result = transformMenu([ADMINISTRATION_2]);
+
+    expect(result.nearMisses).toEqual([]);
+    expect(findItem(result.sections, '/admin/users')).toBeUndefined();
+    expect(findItem(result.sections, '/admin/roles')).toBeUndefined();
+    expect(findItem(result.sections, '/admin/activity-logs')).toBeUndefined();
   });
 });
 

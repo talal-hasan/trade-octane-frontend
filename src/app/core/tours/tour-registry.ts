@@ -301,6 +301,60 @@ export const ACCOUNT_TOUR: TourDefinition = {
   ],
 };
 
+export const DISTRIBUTORS_TOUR: TourDefinition = {
+  id: 'admin2-distributors',
+  label: 'How distributor accounts work',
+  steps: [
+    {
+      target: '[data-tour="dst-tabs"]',
+      title: 'Active is what can sign in',
+      body: 'Locked accounts are still active — the lock only stops the SSO sign-in. Inactive accounts were deactivated and cannot sign in at all.',
+    },
+    {
+      target: '[data-tour="dst-search"]',
+      title: 'Search is instant',
+      body: 'The whole directory is already loaded, so search, the business type filter and sorting never wait on the server.',
+    },
+    {
+      target: '[data-tour="dst-actions"]',
+      title: 'Lock is not a hard stop',
+      body: 'The password sign-in does not check the lock. To stop a distributor signing in at all, deactivate them — there is no screen to reactivate an account afterwards.',
+    },
+    {
+      target: '[data-tour="dst-new"]',
+      title: 'One account per distributor',
+      body: 'Only distributors from the master without an account are offered, so a duplicate cannot be started.',
+    },
+  ],
+};
+
+export const DISTRIBUTOR_FORM_TOUR: TourDefinition = {
+  id: 'admin2-distributor-form',
+  label: 'How to create a distributor account',
+  steps: [
+    {
+      target: '[data-tour="df-distributor"]',
+      title: 'Pick from the master',
+      body: 'The ID becomes the sign-in name and the name comes from the master. Distributors the master records as resigned are listed last and flagged.',
+    },
+    {
+      target: '[data-tour="df-location"]',
+      title: 'Region, then area, then territory',
+      body: 'Changing one clears what is below it, and a level with only one choice fills itself in.',
+    },
+    {
+      target: '[data-tour="df-password"]',
+      title: 'The rules turn green as you type',
+      body: 'They are the rules the server applies, including that the password must not contain the distributor ID. On edit, leave it blank to keep the current password.',
+    },
+    {
+      target: '[data-tour="df-summary"]',
+      title: 'Check the summary before saving',
+      body: 'It shows the account as it will be saved. When editing, it lists every change against what is stored.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -330,6 +384,11 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: startsWith('/admin/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
   { match: startsWith('/admin/frequency'), tour: FREQUENCY_TOUR },
   { match: startsWith('/admin/integration'), tour: INTEGRATION_TOUR },
+
+  // Only the create form has a tour: editing is the same form, already walked through.
+  { match: exact('/admin2/distributors/new'), tour: DISTRIBUTOR_FORM_TOUR },
+  { match: exact('/admin2/distributors'), tour: DISTRIBUTORS_TOUR },
+
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];
 

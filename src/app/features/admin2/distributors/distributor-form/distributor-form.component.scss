@@ -1,0 +1,390 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Two columns, as on New user and Add menu: the form at a readable measure, and a sticky
+// aside carrying the running summary and the actions. Below the tablet breakpoint the aside
+// drops underneath, where it reads as a review step before the submit button.
+.to-df__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@include u.respond-to(tablet) {
+  .to-df__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-df__main {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  min-width: 0;
+}
+
+.to-df__section {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-df__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: t.$to-space-3;
+
+  // Region, area and territory sit on one row: they are read as one path.
+  &--thirds {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+// ─── Fields ───────────────────────────────────────────────────────────────────
+
+.to-df__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  min-width: 0;
+
+  input {
+    width: 100%;
+  }
+}
+
+// The select's host element is in this template, so this reaches it without piercing
+// encapsulation. PrimeNG internals (the label, the panel) are left to the theme.
+.to-df__select {
+  width: 100%;
+}
+
+.to-df__label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-df__hint {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-df__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+.to-df__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+.to-df__chipset {
+  align-self: flex-start;
+}
+
+// ─── Picker options ───────────────────────────────────────────────────────────
+// Declared in this template, so these classes carry this component's encapsulation even
+// though PrimeNG stamps them inside its overlay. One line each: the candidate list is
+// virtual-scrolled at a fixed item height, and a wrapping option would break it.
+
+.to-df__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 0;
+  width: 100%;
+  line-height: 1.4;
+}
+
+.to-df__option-id {
+  flex-shrink: 0;
+  min-width: 56px;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-df__option-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-df__option-flag {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 t.$to-space-1;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-warning-subtle);
+  color: var(--to-warning);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+// ─── Identity (edit) ──────────────────────────────────────────────────────────
+
+.to-df__identity {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+}
+
+.to-df__identity-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+}
+
+.to-df__identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.to-df__identity-name {
+  @include u.truncate;
+  font-size: t.$to-font-size-md;
+  color: var(--to-text-primary);
+}
+
+.to-df__identity-meta {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+
+.to-df__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left-width: 3px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  button {
+    margin-left: auto;
+  }
+
+  strong {
+    font-weight: 500;
+  }
+
+  &--warn {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+}
+
+// ─── Password rules ───────────────────────────────────────────────────────────
+
+.to-df__password {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: t.$to-space-3;
+  align-items: start;
+}
+
+.to-df__rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: t.$to-space-1 t.$to-space-3;
+  margin: 0;
+  // Lines the first rule up with the input rather than its label.
+  padding: t.$to-space-6 0 0;
+  list-style: none;
+}
+
+.to-df__rule {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+  @include u.motion(color);
+
+  &--met {
+    color: var(--to-success);
+  }
+}
+
+// ─── Aside ────────────────────────────────────────────────────────────────────
+
+.to-df__aside {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  // Follows the form down the page — the summary is only useful while the fields it
+  // describes are still being filled.
+  position: sticky;
+  top: 0;
+}
+
+.to-df__summary {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-accent);
+  border-radius: t.$to-radius-card;
+}
+
+.to-df__summary-title {
+  margin: 0 0 t.$to-space-3;
+  font-size: t.$to-font-size-sm;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-df__summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+}
+
+.to-df__summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+
+  dt {
+    flex-shrink: 0;
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    @include u.truncate;
+    margin: 0;
+    min-width: 0;
+    text-align: right;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-df__summary-location {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.to-df__summary-sub {
+  @include u.truncate;
+  max-width: 100%;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-df__summary-block {
+  margin-top: t.$to-space-4;
+  padding-top: t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+}
+
+.to-df__summary-heading {
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-df__changes {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-df__change {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: t.$to-font-size-xs;
+}
+
+.to-df__change-label {
+  color: var(--to-text-primary);
+}
+
+.to-df__change-values {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+  color: var(--to-accent-text);
+  word-break: break-word;
+
+  s {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-df__facts {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  margin: 0;
+  padding-left: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-df__attention {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+.to-df__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}

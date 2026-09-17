@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { AdminOnlyGuard, MenuGuard } from './core/guards/menu.guard';
 import { MocksOnlyGuard } from './core/guards/mocks-only.guard';
 import { PermissionGuard } from './core/guards/permission.guard';
+import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two gates coexist here, deliberately, and the split is temporary.
@@ -175,6 +176,38 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/integration/integration.component').then(
             (m) => m.IntegrationComponent,
+          ),
+      },
+
+      // ─── Administration 2.0 ────────────────────────────────────────────────
+      // The CPS_* screens, over Promo_Management_2. Unported 2.0 rows fold into
+      // /legacy/92 — see ADMINISTRATION_2 in menu-blueprint.ts.
+      {
+        path: 'admin2/distributors',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin2/distributors/distributor-list/distributor-list.component').then(
+            (m) => m.DistributorListComponent,
+          ),
+      },
+      {
+        // Ahead of ':distributorId' so "new" is not read as an id. Create and edit are the
+        // same legacy menu row, so MenuGuard's prefix match on /admin2/distributors covers both.
+        path: 'admin2/distributors/new',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/distributors/distributor-form/distributor-form.component').then(
+            (m) => m.DistributorFormComponent,
+          ),
+      },
+      {
+        path: 'admin2/distributors/:distributorId',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/distributors/distributor-form/distributor-form.component').then(
+            (m) => m.DistributorFormComponent,
           ),
       },
 

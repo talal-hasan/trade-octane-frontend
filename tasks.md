@@ -611,3 +611,61 @@ attributes. Three bugs already fixed here, all found by opening a browser:
 - Visual review covered Users, User detail, Approval Routing, Frequency, Integration.
   Access Explorer, Menus, Activity Logs, Menu form and Account were **not** re-checked after
   the layout pass.
+
+---
+
+## Administration 2.0 — Create Distributor (2026-09-17)
+
+First Administration 2.0 screen on the frontend. Legacy `CPS_CreateDistributor.aspx`, menuId 87
+under "Administration 2.0" (92, catalog `"2"`), over `/api/v1/admin2/distributors`.
+
+### Built
+
+- `core/api/admin2.models.ts` — 2.0 contracts, kept apart from `admin.models.ts` (Promo_2 is a
+  different population; a 2.0 "role" is not a 1.0 role).
+- `features/admin2/services/admin2-distributors.api.ts` — the eight endpoints. The catalogue
+  (business types + region → area → territory) is cached for the session; candidates are not.
+- `features/admin2/services/distributor-accounts.store.ts` — the directory held as signals.
+  ~520 accounts, no cursor, so it loads once with `status=All`; tabs, business type, search,
+  sort and 50-row paging are all in memory. Returning from the form shows rows instantly and
+  revalidates behind them; writes patch the returned row.
+- `/admin2/distributors` — grid: status segments with counts (Active default, as legacy),
+  business type filter, search, sortable ID / name / type / location / city, Edit, Lock or
+  Unlock, Deactivate (confirmed). Rows whose stored region or territory no longer resolves are
+  flagged. The row just saved is brought into view and marked (`?saved=<id>`).
+- `/admin2/distributors/new` and `/:distributorId` — one form. Virtual-scrolled picker of
+  master distributors without an account (resigned ones last and flagged), business type
+  chips, cascading region → area → territory (a change clears below; a single choice fills
+  itself), live password rules, and a summary that lists every pending change on edit.
+  `UnsavedChangesGuard` on both routes.
+- `shared/validators/` — `legacyPasswordValidator` + `passwordRuleChecks`,
+  `legacyEmailValidator`, `contactNumberValidator`: the server's exact rules, with specs.
+- Menu blueprint: `NAV_GROUP_ADMIN_2`. Row 87 → Distributors; the eleven unported 2.0 rows
+  fold into one "Legacy screens" destination at `/legacy/92`. `BLUEPRINT_BY_NAME` is now
+  first-entry-wins. Tours for the list and the create form.
+
+### Contract facts worth keeping
+
+- **Lock is SSO-only.** The password sign-in's lock check is commented out in
+  `Proc_Authentication`; the UI says so on the button, the toast and the tour. Deactivate is
+  what stops every sign-in, and there is **no reactivation** endpoint — the confirm says so.
+- **Passwords are never returned.** Edit leaves the field blank; blank keeps the password.
+- **The API re-checks location only when part of it changes**, and some stored codes no longer
+  resolve. The form offers the stored region / area / territory as "Current · …" options so
+  such an account can still be edited without being forced to move.
+- `changedFields: []` means nothing was written — reported as info, never as success.
+- Master `REGION` is a bare number ("18"), not a region name, so picking a distributor cannot
+  pre-fill the region.
+
+### Fixed in passing
+
+- Without 2.0 blueprint entries, a user holding 2.0 "Access Control" (97) but not 1.0's (19)
+  had it name-matched onto the Users screen's Access tab. Covered by a spec now.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The other eleven 2.0 screens (backend exists for Roles, Level Of Authorities, Approval
+  Hierarchy, User Mapping, Distributor Access, Access Control, Access Control | By Role).
+- The mock identity fixture (`public/assets/response_menu.json`) has no 2.0 rows, so the
+  screen is reachable only with `npm run start:live`.

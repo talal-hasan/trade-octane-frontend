@@ -71,11 +71,12 @@ export interface MenuBlueprintEntry {
   hidden?: boolean;
 }
 
-export const NAV_GROUP_ADMIN = 'Administration';
+export const NAV_GROUP_ADMIN = 'Administration 1.0';
+export const NAV_GROUP_ADMIN_2 = 'Administration 2.0';
 export const NAV_GROUP_TRADE = 'Trade Marketing';
 export const NAV_GROUP_INSIGHTS = 'Insights';
 export const NAV_GROUP_OPERATIONS = 'Operations';
-export const NAV_GROUP_MORE = 'More';
+export const NAV_GROUP_MORE = '';
 
 // ─── Administration 1.0 ───────────────────────────────────────────────────────
 //
@@ -204,6 +205,65 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
   },
 ];
 
+// ─── Administration 2.0 ───────────────────────────────────────────────────────
+//
+// The CPS_* screens under menuId 92 (catalog "2"). They edit Promo_Management_2 — a
+// different user population from 1.0's — so they get their own nav group rather than
+// folding into Administration, and they are served from `/api/v1/admin2/...`.
+//
+// Every row has an entry, ported or not, for two reasons:
+//
+//   1. Without one, an unported row does not stay under its parent. Once a sibling is
+//      mapped, "Administration 2.0" (92) counts as a grouping header, and each unmapped
+//      sibling would surface as its own item under More.
+//   2. Three share a name with a 1.0 row ("Access Control", "Access Control | By Role",
+//      "Activity Logs"). For someone without the 1.0 row, the name fallback would fold the
+//      2.0 row into the 1.0 screen — a Promo_2 grant opening a Promo screen.
+//
+// The unported rows fold into one "Legacy screens" destination, which lists them on the
+// placeholder and keeps every legacy name findable in ⌘K. As a screen is built, give its
+// row its own route, label and icon, as Create Distributor has.
+//
+// Not part of ADMINISTRATION_MENU_IDS: holding a 2.0 row does not make someone a 1.0
+// administrator.
+const ADMIN_2_LEGACY_ROUTE = '/legacy/92';
+
+function legacyAdmin2(menuId: number, legacyName: string): MenuBlueprintEntry {
+  return {
+    menuId,
+    legacyName,
+    route: ADMIN_2_LEGACY_ROUTE,
+    // On every row, so the destination is named whichever of them this user holds.
+    navLabel: 'Legacy screens',
+    icon: 'external-link',
+    group: NAV_GROUP_ADMIN_2,
+    ported: false,
+  };
+}
+
+const ADMINISTRATION_2: MenuBlueprintEntry[] = [
+  {
+    menuId: 87,
+    legacyName: 'Create Distributor',
+    route: '/admin2/distributors',
+    navLabel: 'Distributors',
+    icon: 'truck-delivery',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  legacyAdmin2(93, 'Distributor Access'),
+  legacyAdmin2(88, 'Create Role'),
+  legacyAdmin2(89, 'Level Of Authorities'),
+  legacyAdmin2(90, 'Approval Hierarchy'),
+  legacyAdmin2(91, 'User Mapping'),
+  legacyAdmin2(97, 'Access Control'),
+  legacyAdmin2(154, 'Access Control | By Role'),
+  legacyAdmin2(100, 'Claim KPI'),
+  legacyAdmin2(232, 'User Roles'),
+  legacyAdmin2(233, 'User Regions'),
+  legacyAdmin2(230, 'Activity Logs'),
+];
+
 // ─── Everything else ──────────────────────────────────────────────────────────
 //
 // The other 19 root modules are outside the Administration 1.0 scope being built now.
@@ -254,7 +314,11 @@ const OTHER_MODULES: MenuBlueprintEntry[] = [
   pending(188, 'Advance SIDA', NAV_GROUP_OPERATIONS, 'cash'),
 ];
 
-export const MENU_BLUEPRINT: readonly MenuBlueprintEntry[] = [...ADMINISTRATION, ...OTHER_MODULES];
+export const MENU_BLUEPRINT: readonly MenuBlueprintEntry[] = [
+  ...ADMINISTRATION,
+  ...ADMINISTRATION_2,
+  ...OTHER_MODULES,
+];
 
 /**
  * The Administration 1.0 menu rows.
@@ -293,8 +357,20 @@ export function normaliseMenuName(name: string): string {
     .trim();
 }
 
-export const BLUEPRINT_BY_NAME: ReadonlyMap<string, MenuBlueprintEntry> = new Map(
-  MENU_BLUEPRINT.map((entry) => [normaliseMenuName(entry.legacyName), entry]),
+/**
+ * First entry wins. Administration 2.0 repeats several 1.0 names ("Access Control",
+ * "Activity Logs"), and a plain `new Map(entries)` would let the later 2.0 entry take the
+ * name — so a 1.0 row whose id had drifted would fold into a 2.0 placeholder.
+ */
+export const BLUEPRINT_BY_NAME: ReadonlyMap<string, MenuBlueprintEntry> = MENU_BLUEPRINT.reduce(
+  (byName, entry) => {
+    const key = normaliseMenuName(entry.legacyName);
+    if (!byName.has(key)) {
+      byName.set(key, entry);
+    }
+    return byName;
+  },
+  new Map<string, MenuBlueprintEntry>(),
 );
 
 /**
