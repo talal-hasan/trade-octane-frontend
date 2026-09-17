@@ -5,9 +5,24 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { MenuAccessService } from '../../core/services/menu-access.service';
 import { SidebarService } from '../../core/services/sidebar.service';
-import { TransformedNavItem } from '../../core/menu/menu-transform';
+import {
+  NAV_GROUP_INSIGHTS,
+  NAV_GROUP_OPERATIONS,
+  NAV_GROUP_TRADE,
+} from '../../core/menu/menu-blueprint';
+import { TransformedNavItem, TransformedNavSection } from '../../core/menu/menu-transform';
 import { ICON_REGISTRY } from '../../shared/icon-registry';
 import { ClaimsService } from '../../features/claims/services/claims.service';
+
+/**
+ * Groups the sidebar lists without a heading. They are still ordered and separated by the
+ * section divider — only the label is dropped. Administration and More keep theirs.
+ */
+const UNLABELLED_GROUPS: ReadonlySet<string> = new Set([
+  NAV_GROUP_TRADE,
+  NAV_GROUP_INSIGHTS,
+  NAV_GROUP_OPERATIONS,
+]);
 
 /**
  * The sidebar renders the user's **real menu grants**, folded (CLAUDE.md §4: "the nav is
@@ -66,6 +81,11 @@ export class SidebarComponent {
       return item.label;
     }
     return `${item.label} — ${extras.slice(0, 4).join(', ')}${extras.length > 4 ? '…' : ''}`;
+  }
+
+  /** The heading shows in the expanded sidebar only, and never for an unlabelled group. */
+  protected showsLabel(section: TransformedNavSection): boolean {
+    return !!section.label && !this.collapsed() && !UNLABELLED_GROUPS.has(section.label);
   }
 
   /** Falls back to a known-present icon so an unmapped legacy icon never renders blank. */

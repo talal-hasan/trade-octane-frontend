@@ -9,7 +9,7 @@
     pButton
     class="p-button-outlined p-button-sm"
     (click)="exportCsv()"
-    [disabled]="exporting() || loading()"
+    [disabled]="exporting() || loading() || actorsLoading() || !canQuery()"
   >
     <tabler-icon [icon]="icons['download']" [size]="15" />
     {{ exporting() ? 'Exporting…' : 'Export CSV' }}
@@ -17,19 +17,53 @@
 </to-page-header>
 
 <div class="to-adm">
+  <!--
+    In the order the data flows: a group and a range decide who acted (/actors); those people
+    are the picker; the entries are then fetched for exactly them (/activity-logs?userId=…).
+  -->
   <div class="to-adm__filters">
-    <div class="to-adm__chipset" data-tour="logs-groups" role="group" aria-label="Actor group">
+    <div class="to-adm__chipset" data-tour="logs-groups" role="radiogroup" aria-label="Actor group">
       @for (g of groups; track g) {
         <button
           type="button"
+          role="radio"
           class="to-adm__chip"
-          [class.to-adm__chip--on]="actorGroup() === g"
+          [class.to-adm__chip--on]="group() === g"
+          [attr.aria-checked]="group() === g"
           (click)="setGroup(g)"
         >
           {{ g }}
         </button>
       }
     </div>
+
+    <div class="to-alg__dates" data-tour="logs-dates">
+      <input
+        pInputText
+        type="date"
+        [value]="from()"
+        (change)="setFrom($any($event.target).value)"
+        aria-label="From date"
+      />
+      <span class="to-alg__dash">to</span>
+      <input
+        pInputText
+        type="date"
+        [value]="to()"
+        (change)="setTo($any($event.target).value)"
+        aria-label="To date"
+      />
+    </div>
+
+    <to-multi-select-picker
+      label="People"
+      [options]="actorOptions()"
+      [selected]="selectedActorIds()"
+      [emptyLabel]="actorsLoading() ? 'Loading…' : everyoneLabel()"
+      searchPlaceholder="Search name or login"
+      [disabled]="actorsLoading() || actors().length === 0"
+      (changed)="setActors($event)"
+    />
 
     <div class="to-adm__search">
       <tabler-icon [icon]="icons['search']" [size]="15" />
@@ -43,31 +77,11 @@
         aria-label="Search logs"
       />
     </div>
-
-    <div class="to-adm__field to-alg__actor">
-      <input
-        pInputText
-        type="text"
-        list="to-alg-actors"
-        placeholder="Filter by user"
-        aria-label="Filter by user"
-        (change)="setActor($any($event.target).value)"
-      />
-      <datalist id="to-alg-actors">
-        @for (a of actors(); track a.userId) {
-          <option [value]="a.userId">{{ a.displayName }}</option>
-        }
-      </datalist>
-    </div>
-
-    <div class="to-alg__dates" data-tour="logs-dates">
-      <input pInputText type="date" [formControl]="fromControl" (change)="applyFilters()" aria-label="From date" />
-      <span class="to-alg__dash">to</span>
-      <input pInputText type="date" [formControl]="toControl" (change)="applyFilters()" aria-label="To date" />
-    </div>
   </div>
 
-  @if (loading()) {
+  @if (rangeError(); as message) {
+    <to-empty-state icon="calendar-repeat" heading="Pick a date range" [description]="message" />
+  } @else if (actorsLoading() || loading()) {
     <div class="to-adm__table-wrap">
       @for (r of skeletonRows; track r) {
         <div class="to-adm__skeleton-row">
@@ -77,10 +91,10 @@
         </div>
       }
     </div>
-  } @else if (failed()) {
+  } @else if (actorsFailed() || failed()) {
     <to-empty-state
       icon="alert-triangle"
-      heading="Could not load the logs"
+      [heading]="actorsFailed() ? 'Could not load who acted' : 'Could not load the logs'"
       description="The audit trail did not respond. This is usually temporary."
     >
       <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
@@ -88,11 +102,17 @@
         Try again
       </button>
     </to-empty-state>
+  } @else if (actors().length === 0) {
+    <!-- Step 1 found nobody, so there is no one to ask step 2 about. -->
+    <to-empty-state icon="history" heading="No activity in this range" [description]="noActivityMessage()" />
+  } @else if (tooManyPeople()) {
+    <to-empty-state icon="users-group" heading="Too many people to show at once" [description]="tooManyMessage()" />
   } @else if (rows().length === 0) {
+    <!-- Everyone offered acted in this range, so an empty grid here can only be the search. -->
     <to-empty-state
       icon="history"
       heading="No log entries match"
-      description="Try a wider date range, a different actor group, or clear the search."
+      description="Nothing these people did in this range matches the search. Clear it, or widen the range."
     />
   } @else {
     <div class="to-adm__table-wrap">

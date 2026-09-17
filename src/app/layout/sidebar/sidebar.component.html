@@ -29,7 +29,7 @@
   <div class="to-sidebar__sections">
     @for (section of sections(); track section.label; let first = $first) {
       <div class="to-sidebar__section" [class.to-sidebar__section--divided]="!first">
-        @if (section.label && !collapsed()) {
+        @if (showsLabel(section)) {
           <div class="to-sidebar__section-label">{{ section.label }}</div>
         }
         @for (item of section.items; track item.route) {

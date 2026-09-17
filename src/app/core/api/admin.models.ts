@@ -156,6 +156,20 @@ export interface CreateRoleResponse {
 }
 
 /**
+ * `POST /admin/roles/{roleId}/activate` and its `/deactivate` sibling — the role's status
+ * after the write, plus whether the write actually changed anything.
+ *
+ * `changed` is `false` when the role was already in the requested state: the server writes
+ * nothing and adds no audit row, so the UI should say "already active" rather than claim a
+ * change it did not make. `role` carries the fresh `assignedUserCount`, which is how many
+ * people the write reached.
+ */
+export interface RoleStatusResponse {
+  role: RoleResponse;
+  changed: boolean;
+}
+
+/**
  * A user's roles, split into what they hold and what they could hold.
  *
  * This is the **normalised** shape. `AdminRolesApi` guarantees both lists are real arrays;

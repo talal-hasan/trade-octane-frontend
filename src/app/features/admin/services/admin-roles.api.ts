@@ -8,6 +8,7 @@ import {
   CreateRoleResponse,
   RoleResponse,
   RoleStatusFilter,
+  RoleStatusResponse,
   UserRoleAssignmentResponse,
   UserRoleAssignmentWire,
   UserRolePageResponse,
@@ -67,6 +68,29 @@ export class AdminRolesApi {
    */
   createRole(request: CreateRoleRequest): Observable<CreateRoleResponse> {
     return this.api.post<CreateRoleResponse>('/admin/roles', request);
+  }
+
+  /**
+   * Restore a retired role — `Roles.Status = 1`.
+   *
+   * The access path honours grants only from active roles, so every holder gets this role's
+   * menus back at once, without waiting for the access cache to expire. Activating a role
+   * that is already active writes nothing and comes back `changed: false`.
+   */
+  activateRole(roleId: number): Observable<RoleStatusResponse> {
+    return this.api.post<RoleStatusResponse>(`/admin/roles/${roleId}/activate`);
+  }
+
+  /**
+   * Retire a role — `Roles.Status = 0`.
+   *
+   * The role and its user mappings stay in place; what goes is the access. Every holder
+   * loses this role's menus immediately, and `role.assignedUserCount` on the response says
+   * how many people that was — which is why the caller confirms first. Retiring an
+   * already-retired role writes nothing and comes back `changed: false`.
+   */
+  deactivateRole(roleId: number): Observable<RoleStatusResponse> {
+    return this.api.post<RoleStatusResponse>(`/admin/roles/${roleId}/deactivate`);
   }
 
   /**

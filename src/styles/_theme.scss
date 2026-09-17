@@ -98,6 +98,22 @@
   --to-viz-6: #d7df23; // Together green
   --to-viz-track: #eef1f4; // unfilled bar / gauge track
 
+  // ─── Product brands ─────────────────────────────────────
+  // FrieslandCampina's consumer brands, as distinct from the corporate identity above —
+  // the brand hex list supplied on 2026-09-16. Used where a figure belongs to one brand
+  // (the dashboard's By brand tiles), as a rail and a derived wash:
+  //   color-mix(in srgb, <brand> var(--to-product-tint), var(--to-bg-1))
+  // A medium wash, 20% — 6% read as barely there. Values keep 12.4:1 or better on it. A
+  // grey label would fall to 3.5:1 at this depth, so labels on a wash are the brand hue
+  // deepened toward --to-text-primary instead, which holds 7.7:1 or better.
+  --to-product-olpers: #c6161d; // Olper's — Primary Rich Red
+  --to-product-tarang: #00863f; // Tarang — Deep Emerald Green
+  --to-product-dairy-omung: #e7227e; // Dairy Omung — Vibrant Magenta Pink
+  // Corporate Royal Blue from the same list: the umbrella for brands without their own tile.
+  // Not the CI guidelines' Sky blue, which stays the app's accent.
+  --to-product-frieslandcampina: #003da5;
+  --to-product-tint: 20%;
+
   // ─── Brand expression ───────────────────────────────────
   // Reserved for identity moments: login panel, brand mark, hero rails. Not for
   // routine surfaces — the guidelines are explicit that white space carries the brand.
@@ -318,6 +334,16 @@
   --to-info-subtle: #08283a;
 
   --to-viz-track: #1c2027;
+
+  // Product brands, lifted 25% toward white — the Sky blue treatment above. Raw, the royal
+  // blue is 1.9:1 on --to-bg-1 and its rail and wash vanish; lifted, every rail clears 3.5:1.
+  // The wash runs deeper than light mode's, at 28%, to read as the same medium over
+  // #14171c. Values hold 10.3:1 or better, and brand-lightened labels 6.5:1.
+  --to-product-olpers: #d45056;
+  --to-product-tarang: #40a46f;
+  --to-product-dairy-omung: #ed599e;
+  --to-product-frieslandcampina: #406ebc;
+  --to-product-tint: 28%;
 
   --to-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
   --to-shadow-md: 0 2px 4px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 30%);

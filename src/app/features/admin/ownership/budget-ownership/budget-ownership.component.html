@@ -326,24 +326,42 @@
           <div class="to-own__count">
             <span class="to-numeric to-own__count-figure">{{ formatPkr(selectedValue()) }}</span>
           </div>
+          <p-select
+                styleClass="to-adm__select"
+                panelStyleClass="to-adm__select-panel"
+                inputId="newBudgetOwner"
+                [options]="eligibleOwnerOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label,value"
+                filterPlaceholder="Search name"
+                emptyFilterMessage="No one by that name"
+                [placeholder]="eligibleLoading() ? 'Loading eligible owners…' : 'Select new owner'"
+                [loading]="eligibleLoading()"
+                [disabled]="eligibleLoading() || transferring()"
+                [ngModel]="newOwnerId()"
+                (ngModelChange)="newOwnerId.set($event)"
+                appendTo="body"
+              >
+                <ng-template #selectedItem let-option>
+                  <div class="to-own__candidate">
+                    <span class="to-own__candidate-name">{{ option.label }}</span>
+                    @if (option.hint) {
+                      <span class="to-own__candidate-login">{{ option.hint }}</span>
+                    }
+                  </div>
+          </ng-template>
 
-          <div class="to-adm__field">
-            <label class="to-adm__label" for="newBudgetOwner">New owner</label>
-            <input
-              pInputText
-              id="newBudgetOwner"
-              type="text"
-              list="to-budget-owners"
-              [formControl]="newOwnerControl"
-              placeholder="Login name"
-            />
-            <datalist id="to-budget-owners">
-              @for (c of eligibleOwners(); track c.userId) {
-                <option [value]="c.userId">{{ ownerLabel(c) }}</option>
-              }
-            </datalist>
-          </div>
-
+  <ng-template #item let-option>
+    <div class="to-own__candidate">
+      <span class="to-own__candidate-name">{{ option.label }}</span>
+      @if (option.hint) {
+        <span class="to-own__candidate-login">{{ option.hint }}</span>
+      }
+    </div>
+  </ng-template>
+</p-select>
           <button
             type="button"
             pButton

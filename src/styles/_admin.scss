@@ -166,7 +166,8 @@
   gap: t.$to-space-1;
 
   input,
-  select {
+  select,
+  .p-select {
     width: 100%;
   }
 }
@@ -580,6 +581,25 @@
   width: 100%;
   margin-top: t.$to-space-3;
   justify-content: center;
+}
+
+// A New owner option: the name to recognise, the login name to tell two of the same name
+// apart. Global rather than component-scoped because the overlay is appended to <body>.
+.to-own__candidate {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  min-width: 0;
+}
+
+.to-own__candidate-name {
+  @include u.truncate;
+}
+
+.to-own__candidate-login {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
 }
 
 // ─── Assigned-set summary, read-only notice, segmented filter ─────────────────

@@ -451,6 +451,24 @@ export class UserDetailComponent {
     });
   });
 
+  /**
+   * Inactive roles this user does not already hold — listed, but not selectable.
+   *
+   * The server refuses to assign a retired role (`InactiveRoles`), and one would grant
+   * nothing if it could, so letting it be ticked only defers the failure to Save. A retired
+   * role the user *already* holds is deliberately left out of this set: that is a dead
+   * mapping, and it must stay removable. Unticking one and ticking it back only undoes a
+   * pending removal — the role is still held, so Save writes nothing for it.
+   */
+  protected readonly lockedRoleIds = computed<ReadonlySet<number>>(() => {
+    const held = new Set(this.assignedRoles().map((role) => int(role.roleId)));
+    return new Set(
+      this.allRoles()
+        .filter((role) => !role.isActive && !held.has(int(role.roleId)))
+        .map((role) => int(role.roleId)),
+    );
+  });
+
   /** How many roles each Show tab would reveal, so the counts are visible before clicking. */
   protected readonly availableCount = computed(
     () => this.allRoles().length - this.roleSelection().size,
@@ -480,6 +498,11 @@ export class UserDetailComponent {
 
   protected toggleRole(roleId: number): void {
     if (!this.canManageRoles()) {
+      return;
+    }
+    // Removing is always allowed; adding a locked role is not. The disabled checkbox is
+    // the visible half of this rule — this is the half that holds whatever calls in.
+    if (!this.roleSelection().has(roleId) && this.lockedRoleIds().has(roleId)) {
       return;
     }
     this.roleSelection.update((current) => {

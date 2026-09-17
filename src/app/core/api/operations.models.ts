@@ -140,6 +140,11 @@ export interface BudgetOwnerResponse {
 export interface BudgetScopeResponse {
   tables: BudgetTableResponse[];
   currentOwners: BudgetOwnerResponse[];
+  /**
+   * Empty unless the scope call names a `currentOwner` — who may receive budgets depends on
+   * that owner's role. The screen reads `/budget-ownership/eligible-owners` on each owner
+   * change instead, rather than repeating this scan.
+   */
   eligibleOwners: BudgetOwnerResponse[];
   totalShellCount: ApiInt;
   stuckShellCount: ApiInt;
@@ -301,6 +306,15 @@ export interface TransferActivityOwnershipResponse {
 // ─── Activity Logs ────────────────────────────────────────────────────────────
 
 export type ActivityLogActorGroup = 'Users' | 'Admins' | 'Systems' | 'Distributors';
+
+/**
+ * The activity-log endpoints' limits, mirrored from the backend's `ActivityLogsReportSql` so
+ * the screen can say why it won't ask rather than surface a 400. Both dates are required on
+ * every call, and the range counts both ends (1–31 Jan is 31 days).
+ */
+export const ACTIVITY_LOG_MAX_RANGE_DAYS = 31;
+/** How many `userId` values one logs or export call may name. `/actors` can return far more. */
+export const ACTIVITY_LOG_MAX_USER_FILTERS = 100;
 export type ActivityLogSortField =
   | 'CompletedOn'
   | 'UserId'
