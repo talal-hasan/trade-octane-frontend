@@ -1,11 +1,6 @@
 @use '../../../../styles/tokens' as t;
 @use '../../../../styles/utilities' as u;
 
-.to-alg__actor {
-  min-width: 180px;
-  max-width: 220px;
-}
-
 .to-alg__dates {
   display: flex;
   align-items: center;

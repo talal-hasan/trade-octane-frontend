@@ -1,6 +1,21 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpErrorResponse,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 
-import { messageFor, serverDetail } from './error.interceptor';
+import { NotificationService } from '../services/notification.service';
+import {
+  errorInterceptor,
+  isRefusal,
+  messageFor,
+  refusalsAsInfo,
+  serverDetail,
+} from './error.interceptor';
 
 function httpError(status: number, body: unknown): HttpErrorResponse {
   return new HttpErrorResponse({ status, error: body });
@@ -80,5 +95,79 @@ describe('messageFor', () => {
 
   it('names the status when nothing else is known', () => {
     expect(messageFor(httpError(418, null))).toContain('418');
+  });
+});
+
+describe('isRefusal', () => {
+  // 403 included: Integration answers it for a release that is switched off.
+  it('counts a 4xx the server deliberately declined as a refusal', () => {
+    for (const status of [400, 403, 404, 409, 422, 429]) {
+      expect(isRefusal(httpError(status, null))).toBe(true);
+    }
+  });
+
+  // None of these is the server declining a choice, so they stay errors wherever refusals
+  // are softened.
+  it('does not count an expired session, a server fault or a lost connection', () => {
+    for (const status of [0, 401, 500, 503]) {
+      expect(isRefusal(httpError(status, null))).toBe(false);
+    }
+  });
+});
+
+describe('errorInterceptor', () => {
+  let http: HttpClient;
+  let backend: HttpTestingController;
+  const notices: { severity: 'error' | 'info'; detail: string }[] = [];
+
+  beforeEach(() => {
+    notices.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([errorInterceptor])),
+        provideHttpClientTesting(),
+        {
+          provide: NotificationService,
+          useValue: {
+            error: (detail: string) => notices.push({ severity: 'error', detail }),
+            info: (detail: string) => notices.push({ severity: 'info', detail }),
+          },
+        },
+      ],
+    });
+    http = TestBed.inject(HttpClient);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => backend.verify());
+
+  function fail(context: HttpContext | undefined, status: number, detail: string): void {
+    http.get('/scope', { context }).subscribe({ error: () => undefined });
+    backend.expectOne('/scope').flush({ detail }, { status, statusText: 'x' });
+  }
+
+  it('reports a failure as an error by default', () => {
+    fail(undefined, 400, "'month' must be between 1 and 12.");
+    expect(notices).toEqual([{ severity: 'error', detail: "'month' must be between 1 and 12." }]);
+  });
+
+  // The Ownership filters: the server saying "not yet" while someone is still choosing.
+  it('reports a refusal as information when the request opts in', () => {
+    fail(refusalsAsInfo(), 400, "'month' must be between 1 and 12.");
+    expect(notices).toEqual([{ severity: 'info', detail: "'month' must be between 1 and 12." }]);
+  });
+
+  // Integration's switched-off release.
+  it('reports a 403 refusal as information when the request opts in', () => {
+    fail(refusalsAsInfo(), 403, 'Auto-DA release is disabled. Dry runs are unaffected.');
+    expect(notices).toEqual([
+      { severity: 'info', detail: 'Auto-DA release is disabled. Dry runs are unaffected.' },
+    ]);
+  });
+
+  it('still reports a server fault or an expired session as an error when the request opts in', () => {
+    fail(refusalsAsInfo(), 500, 'Timeout.');
+    fail(refusalsAsInfo(), 401, 'Unauthorized');
+    expect(notices.map((notice) => notice.severity)).toEqual(['error', 'error']);
   });
 });

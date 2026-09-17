@@ -1,8 +1,6 @@
 import { MenuItemResponse } from '../api/identity.models';
 import { int } from '../api/api.types';
 import {
-  ACCESS_EXPLORER_GATED_ON,
-  ACCESS_EXPLORER_ROUTE,
   ADMIN_ONLY_ROUTES,
   BLUEPRINT_BY_MENU_ID,
   BLUEPRINT_BY_NAME,
@@ -317,23 +315,6 @@ export function transformMenu(menu: readonly MenuItemResponse[]): MenuTransformR
       walked,
       undefined,
     );
-  }
-
-  // Screens with no legacy menu row of their own. Gated separately — see menu-blueprint.
-  const canSeeAccessExplorer = ACCESS_EXPLORER_GATED_ON.some((id) => grantedMenuIds.has(id));
-  if (canSeeAccessExplorer && !byRoute.has(ACCESS_EXPLORER_ROUTE)) {
-    byRoute.set(ACCESS_EXPLORER_ROUTE, {
-      entry: { menuId: -1, legacyName: 'Access Explorer', route: ACCESS_EXPLORER_ROUTE },
-      label: 'Access Explorer',
-      icon: 'list-search',
-      group: NAV_GROUP_ADMIN,
-      menuIds: [],
-      tabs: [],
-      aliases: ['User Roles', 'User Regions', 'User Brands', 'User Menus', 'Role Menus'],
-      pending: false,
-      hidden: false,
-      order: Number.MAX_SAFE_INTEGER - 2,
-    });
   }
 
   const sections = assembleSections(byRoute);

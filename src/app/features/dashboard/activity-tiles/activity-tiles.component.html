@@ -63,7 +63,7 @@
       <h3 class="to-at__subtitle">By brand</h3>
       <div class="to-at__grid">
         @for (tile of brands(); track tile.label) {
-          <div class="to-at__tile to-at__tile--brand">
+          <div class="to-at__tile to-at__tile--brand to-at__tile--{{ tile.brand }}">
             <span class="to-at__tile-label">{{ tile.label }}</span>
             <span class="to-at__tile-value to-numeric">{{ tile.value }}</span>
           </div>

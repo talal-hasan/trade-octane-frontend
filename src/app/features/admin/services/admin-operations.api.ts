@@ -3,6 +3,7 @@ import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
 import { unwrapData } from '../../../core/api/api.types';
+import { refusalsAsInfo } from '../../../core/interceptors/error.interceptor';
 import {
   ActivityCandidateResponse,
   ActivityCandidateScope,
@@ -20,6 +21,7 @@ import {
   ApprovalStage,
   ApprovalTable,
   BudgetFilterCatalogueResponse,
+  BudgetOwnerResponse,
   BudgetProductResponse,
   BudgetScopeResponse,
   BudgetShellPageResponse,
@@ -84,14 +86,27 @@ export interface ActivityListQuery {
   cursor?: string | null;
 }
 
+/** `GET /admin/activity-logs/actors`. All three are required; dates are `yyyy-MM-dd`. */
+export interface ActivityLogActorQuery {
+  from: string;
+  to: string;
+  group: ActivityLogActorGroup;
+}
+
+/**
+ * `GET /admin/activity-logs`. The dates are required, `yyyy-MM-dd`, and at most
+ * `ACTIVITY_LOG_MAX_RANGE_DAYS` apart. `userId` is repeated on the wire (`userId=a&userId=b`),
+ * up to `ACTIVITY_LOG_MAX_USER_FILTERS` of them.
+ *
+ * This used to send `actorGroup` and a single `userId` — neither of which the endpoint reads —
+ * so choosing a group changed nothing and every group showed everyone's entries.
+ */
 export interface ActivityLogQuery {
+  from: string;
+  to: string;
+  group?: ActivityLogActorGroup;
+  userId?: readonly string[];
   search?: string;
-  userId?: string;
-  actorGroup?: ActivityLogActorGroup;
-  from?: string;
-  to?: string;
-  activity?: string;
-  tableName?: string;
   sort?: ActivityLogSortField;
   desc?: boolean;
   page?: number;
@@ -152,6 +167,9 @@ export class AdminOperationsApi {
   }
 
   // ─── Change Budget Ownership ────────────────────────────────────────────────
+  // Scope, products, shells and eligible owners run on every filter click, and the server
+  // refuses them until the filters are complete — so those refusals arrive as information,
+  // not errors. See `refusalsAsInfo`. Filters, export and transfer report failures as usual.
 
   budgetFilters(): Observable<BudgetFilterCatalogueResponse> {
     return this.api
@@ -167,6 +185,26 @@ export class AdminOperationsApi {
       .get<BudgetScopeResponse | { data: BudgetScopeResponse }>(
         '/admin/budget-ownership/scope',
         query as Query,
+        refusalsAsInfo(),
+      )
+      .pipe(map(unwrapData));
+  }
+
+  /**
+   * The New Owner dropdown: who may receive one current owner's budgets.
+   *
+   * Budgets move only between users who share a role, and that role must carry the Budget
+   * menu, so the answer depends entirely on the current owner — re-read it whenever that
+   * selection changes. Active accounts only, the current owner excluded, ordered by name.
+   * Empty when the owner has no role, is not a user, or nobody else active shares their
+   * role. The transfer applies the same test, so a login name off this list is refused.
+   */
+  eligibleBudgetOwners(currentOwner: string): Observable<BudgetOwnerResponse[]> {
+    return this.api
+      .get<BudgetOwnerResponse[] | { data: BudgetOwnerResponse[] }>(
+        '/admin/budget-ownership/eligible-owners',
+        { currentOwner },
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -176,6 +214,7 @@ export class AdminOperationsApi {
       .get<BudgetProductResponse[] | { data: BudgetProductResponse[] }>(
         '/admin/budget-ownership/products',
         query as Query,
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -185,6 +224,7 @@ export class AdminOperationsApi {
       .get<BudgetShellPageResponse | { data: BudgetShellPageResponse }>(
         '/admin/budget-ownership/shells',
         query as Query,
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -207,6 +247,8 @@ export class AdminOperationsApi {
   }
 
   // ─── Change Activity Ownership ──────────────────────────────────────────────
+  // As with budgets: owners, candidates and activities are refused until a month and a claim
+  // type are picked, so those refusals are reported as information.
 
   activityFilters(): Observable<ActivityFilterCatalogueResponse> {
     return this.api
@@ -225,6 +267,7 @@ export class AdminOperationsApi {
       .get<ActivityScopeResponse | { data: ActivityScopeResponse }>(
         '/admin/activity-ownership/owners',
         query as Query,
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -237,6 +280,7 @@ export class AdminOperationsApi {
       .get<ActivityCandidateResponse | { data: ActivityCandidateResponse }>(
         '/admin/activity-ownership/candidates',
         { currentOwner, scope } as Query,
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -246,6 +290,7 @@ export class AdminOperationsApi {
       .get<ActivityPageResponse | { data: ActivityPageResponse }>(
         '/admin/activity-ownership/activities',
         query as Query,
+        refusalsAsInfo(),
       )
       .pipe(map(unwrapData));
   }
@@ -274,26 +319,33 @@ export class AdminOperationsApi {
 
   // ─── Activity Logs ──────────────────────────────────────────────────────────
 
-  activityLogActors(group?: ActivityLogActorGroup): Observable<ActivityLogActorResponse[]> {
+  /**
+   * Who acted in a group and date range — the people the logs call is then made for. Ordered
+   * by display name. A 400 when the range holds more than 5,000 distinct actors.
+   */
+  activityLogActors(query: ActivityLogActorQuery): Observable<ActivityLogActorResponse[]> {
     return this.api
       .get<ActivityLogActorResponse[] | { data: ActivityLogActorResponse[] }>(
         '/admin/activity-logs/actors',
-        { group } as Query,
+        // Spread, not cast: the required fields make `as Query` a compile error, and a
+        // literal keeps every field checked against what a query string can carry.
+        { ...query },
       )
       .pipe(map(unwrapData));
   }
 
-  activityLogs(query: ActivityLogQuery = {}): Observable<ActivityLogPageResponse> {
+  activityLogs(query: ActivityLogQuery): Observable<ActivityLogPageResponse> {
     return this.api
       .get<ActivityLogPageResponse | { data: ActivityLogPageResponse }>(
         '/admin/activity-logs',
-        query as Query,
+        { ...query },
       )
       .pipe(map(unwrapData));
   }
 
-  exportActivityLogs(query: Omit<ActivityLogQuery, 'page' | 'pageSize'> = {}): Observable<Blob> {
-    return this.api.downloadCsv('/admin/activity-logs/export', query as Query);
+  /** The same filters as `activityLogs`, as CSV. A 400 past 25,000 rows. */
+  exportActivityLogs(query: Omit<ActivityLogQuery, 'page' | 'pageSize'>): Observable<Blob> {
+    return this.api.downloadCsv('/admin/activity-logs/export', { ...query });
   }
 
   // ─── Frequency Configuration ────────────────────────────────────────────────

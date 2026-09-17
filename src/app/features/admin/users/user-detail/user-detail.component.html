@@ -225,6 +225,11 @@
                   <p class="to-ud__section-note">
                     Roles carry menu access. Changing them changes what this person can
                     reach, which is shown on the Access tab.
+                    @if (canManageRoles() && lockedRoleIds().size > 0) {
+                      <span id="role-locked-note">
+                        Inactive roles can't be assigned — activate them under Roles first.
+                      </span>
+                    }
                   </p>
                 </div>
                 @if (canManageRoles()) {
@@ -333,20 +338,39 @@
 
               <ul class="to-ud__list">
                 @for (role of visibleRoles(); track role.roleId) {
+                  <!--
+                    An inactive role the user doesn't hold is locked: shown, so the catalogue
+                    reads complete, but not selectable. One they already hold is not locked —
+                    it stays removable, because it is a dead mapping worth cleaning up.
+                    The dimming and cursor are bound inline rather than as a modifier class:
+                    this component's stylesheet sits at its 8 kB budget with ~30 bytes spare.
+                  -->
                   <li
                     class="to-ud__list-row"
                     [class.to-ud__list-row--retired]="!role.isActive"
                     [class.to-ud__list-row--on]="roleSelection().has(+role.roleId)"
+                    [style.opacity]="lockedRoleIds().has(+role.roleId) ? 0.6 : null"
+                    pTooltip="This role is inactive, so it can't be assigned. Activate it under Roles first."
+                    tooltipPosition="top"
+                    [tooltipDisabled]="!canManageRoles() || !lockedRoleIds().has(+role.roleId)"
                   >
                     <input
                       type="checkbox"
                       class="to-ud__checkbox"
                       [id]="'role-' + role.roleId"
                       [checked]="roleSelection().has(+role.roleId)"
-                      [disabled]="!canManageRoles()"
+                      [disabled]="!canManageRoles() || lockedRoleIds().has(+role.roleId)"
+                      [attr.aria-describedby]="
+                        canManageRoles() && lockedRoleIds().has(+role.roleId) ? 'role-locked-note' : null
+                      "
+                      [style.cursor]="lockedRoleIds().has(+role.roleId) ? 'not-allowed' : null"
                       (change)="toggleRole(+role.roleId)"
                     />
-                    <label class="to-ud__list-label" [for]="'role-' + role.roleId">
+                    <label
+                      class="to-ud__list-label"
+                      [for]="'role-' + role.roleId"
+                      [style.cursor]="lockedRoleIds().has(+role.roleId) ? 'not-allowed' : null"
+                    >
                       <span class="to-ud__list-name">{{ role.roleName }}</span>
                       @if (role.roleDescription) {
                         <span class="to-ud__list-desc">{{ role.roleDescription }}</span>
