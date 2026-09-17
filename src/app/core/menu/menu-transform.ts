@@ -409,7 +409,10 @@ function assembleSections(byRoute: ReadonlyMap<string, Accumulator>): Transforme
     .map(([label, accumulators]) => ({
       label,
       items: accumulators
-        .sort((a, b) => a.order - b.order)
+        // Built screens before placeholders, then legacy order. Administration 2.0 folds its
+        // unported rows into one "Legacy screens" item, which would otherwise sit wherever
+        // its first row did — between two real screens.
+        .sort((a, b) => Number(a.pending) - Number(b.pending) || a.order - b.order)
         .map((accumulator) => ({
           label: accumulator.label,
           icon: accumulator.icon,

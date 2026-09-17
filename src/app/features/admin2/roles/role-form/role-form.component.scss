@@ -1,0 +1,112 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Layout, fields and the summary aside are shared builder-form chrome from _admin.scss
+// (`.to-adm__form-*`, `.to-adm__summary*`). Only the flag cards are particular to this form.
+
+// ─── Flag cards ───────────────────────────────────────────────────────────────
+// A whole row per flag, clickable anywhere, rather than a bare checkbox and a label: each
+// flag needs its one-line effect beside it, or the legacy labels mean nothing.
+
+.to-rf__flags {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: t.$to-space-2;
+}
+
+.to-rf__flag {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  cursor: pointer;
+  @include u.motion(background-color, border-color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  // The rail is the app's "this is on" language; the checkbox alone is too small to scan.
+  &--on {
+    border-left-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 7%, var(--to-bg-1));
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-rf__checkbox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  // The card carries the focus ring.
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.to-rf__flag-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-rf__flag-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-rf__flag-effect {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// ─── Summary extras ───────────────────────────────────────────────────────────
+
+.to-rf__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+  margin: t.$to-space-3 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-rf__chip {
+  padding: 0 t.$to-space-2;
+  border: 1px solid var(--to-accent);
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 10%, var(--to-bg-1));
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.8;
+  color: var(--to-text-primary);
+}
+
+.to-rf__note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  margin: t.$to-space-2 0 0;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+}

@@ -665,7 +665,85 @@ under "Administration 2.0" (92, catalog `"2"`), over `/api/v1/admin2/distributor
 ### Not done
 
 - Visual pass against live data — needs a signed-in session in the browser.
-- The other eleven 2.0 screens (backend exists for Roles, Level Of Authorities, Approval
+- The other 2.0 screens (backend exists for Roles, Level Of Authorities, Approval
   Hierarchy, User Mapping, Distributor Access, Access Control, Access Control | By Role).
 - The mock identity fixture (`public/assets/response_menu.json`) has no 2.0 rows, so the
   screen is reachable only with `npm run start:live`.
+
+---
+
+## Administration 2.0 — Create Role (2026-09-17)
+
+Legacy `CPS_Role.aspx`, menuId 88, over `/api/v1/admin2/roles` (Promo_Management_2 `Roles` —
+not the 1.0 role catalogue: four claim flags, no menu seeding, no delete).
+
+### Built
+
+- `/admin2/roles` — a table, not the 1.0 screen's cards: one column per claim flag so a
+  permission can be compared across roles, plus "In use" (accounts, menu grants, approval
+  steps, authority levels — the reach of an edit, which legacy never showed). Active /
+  Inactive / All with counts, search, sort by ID, name or usage. Edit; Activate straight
+  through; Deactivate confirmed with that role's own numbers.
+- `/admin2/roles/new` and `/:roleId` — abbreviation and description (the legacy
+  letters/digits/spaces/underscores rule, 100 chars), a taken name flagged as it is typed
+  against every role, inactive included, and the four flags as cards that each say what they
+  do. Summary aside lists pending changes and where the role is used.
+- `features/admin2/services/keyed-collection.store.ts` — the session-cached collection store
+  both 2.0 screens now extend (Distributors was refactored onto it).
+- `_admin.scss` "Builder forms" block (`.to-adm__form-*`, `.to-adm__summary*`,
+  `.to-adm__changes`, `.to-adm__alert`, `.to-adm__facts`) — the form chrome both 2.0 forms
+  share. New 2.0 forms should use it rather than restating it.
+- `shared/validators/unique-name.validator.ts`, with spec.
+- Nav: built screens sort before placeholders within a group, so "Legacy screens" sits last.
+
+### Contract facts worth keeping
+
+- **Deactivating revokes nothing.** No legacy procedure reads `Roles.Status`; it only hides
+  the role from pickers and refuses it for *new* user mappings, approval steps and authority
+  levels. The confirm, toast and tour all say so.
+- **`canUpdateAmount` and `isReadDetail` are read by nothing today** — labelled "Not read
+  today" on the form. The legacy edit silently reset both; PUT requires all four flags.
+- **Needs `db/migrations/004_octane2_role_status.sql`** on the target database — every 2.0
+  role read selects `Status`.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Level Of Authorities (2026-09-17)
+
+Legacy `CPS_Level_Of_Authorities.aspx`, menuId 89, over `/api/v1/admin2/level-of-authorities`
+(Promo_Management_2 `Authority_Level`; 63 rows = 9 business type × claim nature pairs × 7 roles).
+
+### Built
+
+- `/admin2/level-of-authorities` — **one screen, not list + form routes.** A band only makes
+  sense beside its neighbours (GM's From is a decision about where Director's starts), so the
+  pair's roles stay in view while one is edited in the side panel.
+- Business type chips and claim nature segments, each with counts; the pair is remembered in
+  the store for the session. The pair's bands are listed lowest threshold first, with
+  "In the approval of: Every claim / PKR X and above".
+- Panel, default mode — **Try a claim amount**: type PKR N and see which roles it brings in,
+  using `joinsApprovalCycle`, which is `Proc_Claim_Create`'s own test.
+- Panel, New/Edit: business type, claim nature, role (roles already set for the pair and
+  deactivated roles greyed out), From/To as PKR `p-inputnumber`; live range and
+  duplicate checks (with "Edit it" jump), a one-sentence preview of the band's effect, pending
+  changes, and a warning when an edit moves a role out of its current pair. Switching rows
+  with unsaved edits asks first; the route has `UnsavedChangesGuard`.
+- `shared/validators/number-range.validator.ts`, `unique-combination.validator.ts`, and
+  `level-of-authority.util.spec.ts`.
+
+### Contract facts worth keeping
+
+- **Amount To never keeps a role out.** `Proc_Claim_Create` brings a role in when the amount
+  is between From and To, *or above To*, or both are 0 — i.e. from From upwards. The panel,
+  table and tour all say so; most people read a band as a range that stops.
+- Deactivated roles are refused for a *new* level (400); an existing row may keep its role.
+- No delete (legacy hid it): removing a row changes who approves money.
+- Edits affect claims raised from now on, not approval cycles already built.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.

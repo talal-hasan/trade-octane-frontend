@@ -412,7 +412,7 @@ export class DistributorFormComponent implements HasUnsavedChanges {
    * applied only while the form is untouched, so it never overwrites what the admin typed.
    */
   private loadAccount(distributorId: string): void {
-    const cached = this.store.byId(distributorId);
+    const cached = this.store.byKey(distributorId);
     if (cached) {
       this.applyAccount(cached);
     } else {

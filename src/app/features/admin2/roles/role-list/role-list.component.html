@@ -1,0 +1,239 @@
+<to-page-header
+  title="Roles"
+  subtitle="Administration 2.0 roles — their claim permissions, and everything that depends on each one."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Roles' }]"
+>
+  <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm" data-tour="r2-new">
+    <tabler-icon [icon]="icons['plus']" [size]="15" />
+    New role
+  </a>
+</to-page-header>
+
+<div class="to-adm">
+  <div class="to-r2__toolbar">
+    <div class="to-adm__segmented" role="tablist" aria-label="Filter by status" data-tour="r2-tabs">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="status() === tab.key"
+          [attr.aria-selected]="status() === tab.key"
+          [pTooltip]="tab.hint"
+          tooltipPosition="bottom"
+          [showDelay]="400"
+          (click)="setStatus(tab.key)"
+        >
+          {{ tab.label }}
+          @if (loaded()) {
+            <span class="to-numeric">{{ counts()[tab.key] }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="to-adm__search to-r2__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Search role or description"
+        aria-label="Search roles"
+      />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-adm__table-wrap" aria-busy="true" aria-label="Loading roles">
+      @for (row of skeletonRows; track row) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="4%" height="12px" />
+          <to-skeleton width="26%" height="12px" />
+          <to-skeleton width="30%" height="12px" />
+          <to-skeleton width="18%" height="12px" />
+          <to-skeleton width="8%" height="18px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load roles"
+      description="The role catalogue did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (filtered().length === 0) {
+    <to-empty-state
+      icon="shield-lock"
+      heading="No roles match"
+      description="Try another status, or clear the search."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+        Show all roles
+      </button>
+    </to-empty-state>
+  } @else {
+    <div class="to-adm__table-wrap">
+      <table class="to-adm__table">
+        <thead>
+          <tr>
+            <th scope="col" class="to-adm__th to-r2__th-id" [attr.aria-sort]="ariaSort('roleId')">
+              <button type="button" class="to-r2__sort" (click)="toggleSort('roleId')">
+                ID
+                @if (sortKey() === 'roleId') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('roleName')">
+              <button type="button" class="to-r2__sort" (click)="toggleSort('roleName')">
+                Role
+                @if (sortKey() === 'roleName') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <!-- One column per flag: the point of this grid is comparing a permission across
+                 roles, which a single "permissions" cell would make impossible to scan. -->
+            @for (flag of flags; track flag.key) {
+              <th
+                scope="col"
+                class="to-adm__th to-r2__th-flag"
+                [class.to-r2__th-flag--inert]="flag.inert"
+                data-tour="r2-flags"
+              >
+                <span
+                  class="to-r2__flag-head"
+                  [pTooltip]="flag.legacyLabel + ' — ' + flag.effect"
+                  tooltipPosition="bottom"
+                  tabindex="0"
+                >{{ flag.shortLabel }}</span>
+              </th>
+            }
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('users')" data-tour="r2-usage">
+              <button type="button" class="to-r2__sort" (click)="toggleSort('users')">
+                In use
+                @if (sortKey() === 'users') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th">Status</th>
+            <th scope="col" class="to-adm__th to-r2__th-actions">
+              <span class="to-r2__sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filtered(); track row.roleId) {
+            <tr
+              class="to-adm__row to-r2__row"
+              [class.to-r2__row--busy]="busyId() === row.roleId"
+              [class.to-r2__row--fresh]="highlightId() === row.roleId"
+            >
+              <td class="to-adm__td to-adm__td--mono to-numeric">{{ row.roleId }}</td>
+              <td class="to-adm__td to-adm__td--stacked to-r2__role">
+                <a class="to-r2__name" [routerLink]="[route, row.roleId]">{{ row.role.roleName }}</a>
+                <span class="to-r2__desc" [title]="row.role.roleDescription">{{ row.role.roleDescription || '—' }}</span>
+              </td>
+              @for (flag of flags; track flag.key) {
+                <td class="to-adm__td to-r2__flag">
+                  @if (row.role[flag.key]) {
+                    <tabler-icon
+                      class="to-r2__flag-on"
+                      [icon]="icons['circle-check']"
+                      [size]="17"
+                      [attr.aria-label]="flag.shortLabel + ': yes'"
+                      role="img"
+                    />
+                  } @else {
+                    <span class="to-r2__flag-off" [attr.aria-label]="flag.shortLabel + ': no'" role="img">–</span>
+                  }
+                </td>
+              }
+              <td class="to-adm__td to-adm__td--stacked to-r2__usage">
+                @if (row.inUse) {
+                  <span class="to-r2__usage-main to-numeric">
+                    {{ plural(row.users, 'account') }}
+                    @if (row.users > 0 && row.activeUsers !== row.users) {
+                      <span class="to-r2__muted">· {{ row.activeUsers }} active</span>
+                    }
+                  </span>
+                  @if (row.reach) {
+                    <span class="to-r2__usage-sub to-numeric">{{ row.reach }}</span>
+                  }
+                } @else {
+                  <span class="to-r2__muted">Not in use</span>
+                }
+              </td>
+              <td class="to-adm__td">
+                <to-status-pill
+                  [status]="row.role.isActive ? 'approved' : 'draft'"
+                  [label]="row.role.isActive ? 'Active' : 'Inactive'"
+                />
+              </td>
+              <td class="to-adm__td to-r2__actions">
+                <a class="to-r2__action" [routerLink]="[route, row.roleId]" [attr.aria-label]="'Edit ' + row.role.roleName">
+                  <tabler-icon [icon]="icons['edit']" [size]="15" />
+                  <span>Edit</span>
+                </a>
+                @if (row.role.isActive) {
+                  <button
+                    type="button"
+                    class="to-r2__action to-r2__action--danger"
+                    [disabled]="busyId() === row.roleId"
+                    [attr.aria-label]="'Deactivate ' + row.role.roleName"
+                    (click)="requestDeactivate(row)"
+                  >
+                    <tabler-icon [icon]="icons['circle-x']" [size]="15" />
+                    <span>Deactivate</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="to-r2__action"
+                    [disabled]="busyId() === row.roleId"
+                    [attr.aria-label]="'Activate ' + row.role.roleName"
+                    (click)="activate(row)"
+                  >
+                    <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                    <span>Activate</span>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="to-adm__pager">
+      <span class="to-adm__pager-range to-numeric">
+        {{ plural(filtered().length, 'role') }}
+        @if (refreshing()) {
+          <span class="to-r2__muted">· updating…</span>
+        }
+      </span>
+    </div>
+  }
+</div>
+
+<!--
+  Deactivating is confirmed, activating is not. The message spells out that deactivating
+  revokes nothing — the natural assumption, and the wrong one.
+-->
+<to-confirm-dialog
+  [visible]="pendingDeactivation() !== null"
+  (visibleChange)="pendingDeactivation.set(null)"
+  variant="danger"
+  title="Deactivate this role?"
+  [message]="deactivateMessage()"
+  confirmLabel="Deactivate"
+  (confirmed)="confirmDeactivate()"
+  (cancelled)="pendingDeactivation.set(null)"
+/>

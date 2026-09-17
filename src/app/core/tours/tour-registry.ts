@@ -355,6 +355,82 @@ export const DISTRIBUTOR_FORM_TOUR: TourDefinition = {
   ],
 };
 
+export const ROLES_2_TOUR: TourDefinition = {
+  id: 'admin2-roles',
+  label: 'How Administration 2.0 roles work',
+  steps: [
+    {
+      target: '[data-tour="r2-flags"]',
+      title: 'One column per claim permission',
+      body: 'Compare a permission down the page. Hover a heading for what it does — two of the four are stored but read by nothing today.',
+    },
+    {
+      target: '[data-tour="r2-usage"]',
+      title: 'What an edit reaches',
+      body: 'Accounts holding the role, its menu grants, the claim approval steps it sits in and its authority levels.',
+    },
+    {
+      target: '[data-tour="r2-tabs"]',
+      title: 'Deactivating revokes nothing',
+      body: 'An inactive role is refused for new user mappings, approval steps and authority levels. Everyone who already holds it keeps it.',
+    },
+    {
+      target: '[data-tour="r2-new"]',
+      title: 'Roles are never deleted',
+      body: 'Too many tables point at a role id to remove one safely. Deactivate a role you no longer want handed out.',
+    },
+  ],
+};
+
+export const ROLE_2_FORM_TOUR: TourDefinition = {
+  id: 'admin2-role-form',
+  label: 'How to create an Administration 2.0 role',
+  steps: [
+    {
+      target: '[data-tour="rf-details"]',
+      title: 'The abbreviation is what people pick',
+      body: 'It must be unique, ignoring case — a taken name is flagged as you type.',
+    },
+    {
+      target: '[data-tour="rf-flags"]',
+      title: 'Claim permissions',
+      body: 'Each one says what it does. Edits keep all four as they are, where the legacy screen switched two of them off on every save.',
+    },
+    {
+      target: '[data-tour="rf-summary"]',
+      title: 'A new role starts empty',
+      body: 'No screens and no people. Grant screens in Access Control | By Role, and give it to accounts in User Mapping.',
+    },
+  ],
+};
+
+export const LEVEL_OF_AUTHORITIES_TOUR: TourDefinition = {
+  id: 'admin2-level-of-authorities',
+  label: 'How levels of authority work',
+  steps: [
+    {
+      target: '[data-tour="loa-pair"]',
+      title: 'Pick a business type and claim nature',
+      body: 'Every level belongs to one pair. The counts show how many roles each pair brings in by amount.',
+    },
+    {
+      target: '[data-tour="loa-bands"]',
+      title: 'Lowest threshold first',
+      body: 'The order a growing claim picks roles up in. "Every claim" means the role is in the approval whatever the amount.',
+    },
+    {
+      target: '[data-tour="loa-try"]',
+      title: 'Amount to does not stop a role',
+      body: 'A claim above the Amount to of a role still includes that role — that is how claim creation reads these rows. Type an amount to see exactly who it brings in.',
+    },
+    {
+      target: '[data-tour="loa-new"]',
+      title: 'Edit beside the neighbours',
+      body: 'New and Edit open in the panel, so the amounts of the other roles stay in view. Changes apply to claims raised from now on.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -388,6 +464,9 @@ const ROUTE_TOURS: RouteTour[] = [
   // Only the create form has a tour: editing is the same form, already walked through.
   { match: exact('/admin2/distributors/new'), tour: DISTRIBUTOR_FORM_TOUR },
   { match: exact('/admin2/distributors'), tour: DISTRIBUTORS_TOUR },
+  { match: exact('/admin2/roles/new'), tour: ROLE_2_FORM_TOUR },
+  { match: exact('/admin2/roles'), tour: ROLES_2_TOUR },
+  { match: exact('/admin2/level-of-authorities'), tour: LEVEL_OF_AUTHORITIES_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

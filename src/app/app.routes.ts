@@ -202,6 +202,44 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'admin2/roles',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/admin2/roles/role-list/role-list.component').then(
+            (m) => m.Admin2RoleListComponent,
+          ),
+      },
+      {
+        // Ahead of ':roleId'. Create and edit are the same legacy menu row (88), so
+        // MenuGuard's prefix match on /admin2/roles covers both.
+        path: 'admin2/roles/new',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/roles/role-form/role-form.component').then(
+            (m) => m.Admin2RoleFormComponent,
+          ),
+      },
+      {
+        path: 'admin2/roles/:roleId',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/roles/role-form/role-form.component').then(
+            (m) => m.Admin2RoleFormComponent,
+          ),
+      },
+      {
+        // One screen: bands are edited beside their neighbours, not on a separate route.
+        path: 'admin2/level-of-authorities',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/level-of-authorities/level-of-authorities.component').then(
+            (m) => m.LevelOfAuthoritiesComponent,
+          ),
+      },
+      {
         path: 'admin2/distributors/:distributorId',
         canActivate: [MenuGuard],
         canDeactivate: [UnsavedChangesGuard],

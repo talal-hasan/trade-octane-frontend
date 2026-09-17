@@ -734,3 +734,270 @@
     color: var(--to-text-muted);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Builder forms — create / edit screens (Administration 2.0 Distributors, Roles).
+//
+// Two columns: the form at a readable measure, and a sticky aside carrying the running
+// summary and the actions. Below the tablet breakpoint the aside drops underneath, where it
+// reads as a review step before the submit button. Same shape as New user and Add menu.
+//
+// Reminder — emitted once via main.scss; never @use this file from a component.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.to-adm__form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@include u.respond-to(tablet) {
+  .to-adm__form-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-adm__form-main {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  min-width: 0;
+}
+
+.to-adm__form-section {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-adm__form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: t.$to-space-3;
+
+  // Three pickers read as one path (region → area → territory) sit on one row.
+  &--thirds {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+.to-adm__form-field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  min-width: 0;
+
+  input {
+    width: 100%;
+  }
+}
+
+.to-adm__form-label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-adm__form-hint {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-adm__form-error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+.to-adm__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left-width: 3px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  button {
+    margin-left: auto;
+  }
+
+  strong {
+    font-weight: 500;
+  }
+
+  &--warn {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+}
+
+// ─── Aside: summary, pending changes, actions ─────────────────────────────────
+
+.to-adm__form-aside {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  // Follows the form down the page — the summary is only useful while the fields it
+  // describes are still being filled.
+  position: sticky;
+  top: 0;
+}
+
+.to-adm__summary {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-accent);
+  border-radius: t.$to-radius-card;
+}
+
+.to-adm__summary-title {
+  margin: 0 0 t.$to-space-3;
+  font-size: t.$to-font-size-sm;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-adm__summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+}
+
+.to-adm__summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+
+  dt {
+    flex-shrink: 0;
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    @include u.truncate;
+    margin: 0;
+    min-width: 0;
+    text-align: right;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-adm__summary-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.to-adm__summary-sub {
+  @include u.truncate;
+  max-width: 100%;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-adm__summary-block {
+  margin-top: t.$to-space-4;
+  padding-top: t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+}
+
+.to-adm__summary-heading {
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+// "City: Karachi → Hyderabad" — each pending change, old value struck through.
+.to-adm__changes {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-adm__change {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: t.$to-font-size-xs;
+}
+
+.to-adm__change-label {
+  color: var(--to-text-primary);
+}
+
+.to-adm__change-values {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+  color: var(--to-accent-text);
+  word-break: break-word;
+
+  s {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-adm__facts {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  margin: 0;
+  padding-left: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-adm__attention {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+}
+
+.to-adm__form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+}

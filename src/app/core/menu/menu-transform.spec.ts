@@ -52,6 +52,7 @@ const ADMINISTRATION_2 = node(
     node(87, 'Create Distributor'),
     node(93, 'Distributor Access'),
     node(88, 'Create Role'),
+    node(89, 'Level Of Authorities'),
     node(91, 'User Mapping'),
     node(97, 'Access Control'),
     node(154, 'Access Control | By Role'),
@@ -159,13 +160,21 @@ describe('transformMenu', () => {
     const result = transformMenu([ADMINISTRATION_2]);
     const section = result.sections.find((candidate) => candidate.label === 'Administration 2.0');
 
-    expect(section?.items.map((item) => item.route)).toEqual(['/admin2/distributors', '/legacy/92']);
+    // Built screens first, the legacy fold last — even though Distributor Access (93, order 2)
+    // precedes Create Role (88, order 3) in the legacy menu.
+    expect(section?.items.map((item) => item.route)).toEqual([
+      '/admin2/distributors',
+      '/admin2/roles',
+      '/admin2/level-of-authorities',
+      '/legacy/92',
+    ]);
     expect(findItem(result.sections, '/admin2/distributors')?.pending).toBe(false);
+    expect(findItem(result.sections, '/admin2/roles')?.pending).toBe(false);
 
     const legacy = findItem(result.sections, '/legacy/92');
     expect(legacy?.label).toBe('Legacy screens');
     expect(legacy?.pending).toBe(true);
-    expect(legacy?.menuIds.sort((a, b) => a - b)).toEqual([88, 91, 93, 97, 154, 230]);
+    expect(legacy?.menuIds.sort((a, b) => a - b)).toEqual([91, 93, 97, 154, 230]);
     expect(result.unmapped).toEqual([]);
     expect(result.sections.some((candidate) => candidate.label === 'More')).toBe(false);
   });

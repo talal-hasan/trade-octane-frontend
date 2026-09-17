@@ -126,3 +126,117 @@ export interface DistributorAccountWriteResponse {
   distributor: DistributorAccountResponse;
   changedFields: string[];
 }
+
+// ─── Create Role (MenuID 88, CPS_Role.aspx) ─────────────────────────────────
+
+/** Which roles `GET /admin2/roles` returns. The server defaults to `Active`. */
+export type Octane2RoleStatusFilter = 'Active' | 'Inactive' | 'All';
+
+/**
+ * One role from Promo_Management_2.dbo.Roles, with what depends on it. A different table
+ * from the 1.0 role catalogue: four claim flags, and no menu seeding on create.
+ *
+ * The flags are nullable bits in the database; NULL has always behaved as false, and is
+ * reported as false.
+ */
+export interface Octane2RoleResponse {
+  roleId: ApiInt;
+  /** The legacy "Role Abbreviation" — what every role picker shows. */
+  roleName: string;
+  roleDescription: string;
+  /** "Allow Input WBS/Spend proposal". Read by the claim, claim report and payment recovery details. */
+  allowWbsSp: boolean;
+  /** "Make WBS/Spend proposal visible". Same readers. */
+  wbsSpVisibility: boolean;
+  /** "Can Update Amount". Stored, but nothing reads it today. */
+  canUpdateAmount: boolean;
+  /** "Is Read Detail". Stored, but nothing reads it today. */
+  isReadDetail: boolean;
+  /**
+   * Deactivating revokes nothing — no legacy procedure reads the column. It only hides the
+   * role from the default list and refuses it for new user mappings, approval hierarchy
+   * steps and authority levels.
+   */
+  isActive: boolean;
+  /** Promo_2 accounts holding the role. */
+  userCount: ApiInt;
+  activeUserCount: ApiInt;
+  menuGrantCount: ApiInt;
+  /** Claim approval routes the role sits in. */
+  approvalHierarchyLevelCount: ApiInt;
+  authorityLevelCount: ApiInt;
+}
+
+/**
+ * Body of both `POST` and `PUT`. Create requires the two text fields (omitted flags are
+ * false); update requires every member, so no flag can be reset by omission.
+ */
+export interface Octane2RoleWriteRequest {
+  roleName: string;
+  roleDescription: string;
+  allowWbsSp: boolean;
+  wbsSpVisibility: boolean;
+  canUpdateAmount: boolean;
+  isReadDetail: boolean;
+}
+
+/** `changedFields` empty: the server wrote and logged nothing. */
+export interface Octane2RoleWriteResponse {
+  role: Octane2RoleResponse;
+  changedFields: string[];
+}
+
+// ─── Level Of Authorities (MenuID 89, CPS_Level_Of_Authorities.aspx) ─────────
+
+/**
+ * One row of Promo_Management_2.dbo.Authority_Level: the claim amount at which a role
+ * joins the approval cycle of a claim of this business type and claim nature.
+ *
+ * How `Proc_Claim_Create` reads it: the role joins when the claim amount is between the two
+ * amounts, **or above `toAmount`**, or when both are 0. So in practice a role joins every
+ * claim from `fromAmount` upwards — `toAmount` never keeps it out.
+ *
+ * A name is empty when its id no longer resolves; nothing constrains the ids.
+ */
+export interface LevelOfAuthorityResponse {
+  levelOfAuthorityId: ApiInt;
+  businessTypeId: ApiInt;
+  businessType: string;
+  claimNatureId: ApiInt;
+  claimNature: string;
+  roleId: ApiInt;
+  roleName: string;
+  /** Whole PKR. */
+  fromAmount: ApiInt;
+  toAmount: ApiInt;
+}
+
+export interface LevelOfAuthorityOptionResponse {
+  id: ApiInt;
+  name: string;
+}
+
+/** Every business type, claim nature and Administration 2.0 role — inactive roles included. */
+export interface LevelOfAuthorityCatalogueResponse {
+  businessTypes: LevelOfAuthorityOptionResponse[];
+  claimNatures: LevelOfAuthorityOptionResponse[];
+  roles: LevelOfAuthorityOptionResponse[];
+}
+
+/**
+ * Body of both `POST` and `PUT`; every member required on both. Update replaces the three
+ * ids as well as the amounts. The (business type, claim nature, role) triple is unique.
+ */
+export interface LevelOfAuthorityWriteRequest {
+  businessTypeId: number;
+  claimNatureId: number;
+  roleId: number;
+  fromAmount: number;
+  toAmount: number;
+}
+
+/** `changedFields` empty: the server wrote and logged nothing. */
+export interface LevelOfAuthorityWriteResponse {
+  levelOfAuthority: LevelOfAuthorityResponse;
+  changedFields: string[];
+}

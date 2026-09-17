@@ -271,7 +271,7 @@ export class DistributorListComponent {
         return;
       }
       settled = true;
-      const account = this.store.byId(id);
+      const account = this.store.byKey(id);
       if (!account) {
         return;
       }
