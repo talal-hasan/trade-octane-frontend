@@ -22,7 +22,7 @@
 | Frontend Lead | Talal (you speak to him) |
 | Product Owner | Adil Saeed |
 | Project / Backend Lead | Zeeshan Aameer |
-| Backend Developer | Moiz Khan |
+| Backend Developer | Ali Hasan |
 | Backend Developer | Hassan Arif |
 | Business Analyst | Saima Aslam |
 | QA | Sana Tariq |
