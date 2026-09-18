@@ -1,0 +1,36 @@
+<to-page-header
+  title="User Mapping"
+  subtitle="Give an account its role, business types, regions and areas — and see who holds which role where."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'User Mapping' }]"
+/>
+
+<div class="to-umap__tabs" role="tablist" aria-label="User mapping views">
+  @for (tab of tabs(); track tab.key) {
+    <button
+      type="button"
+      role="tab"
+      class="to-umap__tab"
+      [class.to-umap__tab--active]="activeTab() === tab.key"
+      [attr.aria-selected]="activeTab() === tab.key"
+      (click)="selectTab(tab.key)"
+    >
+      {{ tab.label }}
+    </button>
+  }
+</div>
+
+@switch (activeTab()) {
+  @case ('users') {
+    <to-admin2-mapping-editor
+      [userId]="userId()"
+      [view]="activeView()"
+      [canMap]="canMap()"
+      [canAccess]="canAccess()"
+      (userSelected)="selectUser($event)"
+      (viewSelected)="selectView($event)"
+    />
+  }
+  @case ('regions') {
+    <to-admin2-region-roles (openUser)="openUser($event)" />
+  }
+}

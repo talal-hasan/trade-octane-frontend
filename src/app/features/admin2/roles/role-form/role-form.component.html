@@ -174,7 +174,12 @@
                       ({{ used.activeUsers }} active)
                     }
                   </li>
-                  <li>{{ plural(used.menus, 'menu grant') }}</li>
+                  <li>
+                    {{ plural(used.menus, 'menu item') }}
+                    @if (canEditAccess()) {
+                      · <a class="to-rf__link" [routerLink]="[route, current.roleId, 'access']">Menu access</a>
+                    }
+                  </li>
                   <li>{{ plural(used.steps, 'claim approval step') }}</li>
                   <li>{{ plural(used.levels, 'authority level') }}</li>
                 </ul>
@@ -196,7 +201,10 @@
               <h3 class="to-adm__summary-heading">On create</h3>
               <ul class="to-adm__facts">
                 <li><strong>Active,</strong> and offered in role pickers straight away.</li>
-                <li><strong>No screens.</strong> Grant them in Access Control | By Role.</li>
+                <li>
+                  <strong>No screens.</strong>
+                  {{ canEditAccess() ? 'You choose them next.' : 'It needs menu access before it opens anything.' }}
+                </li>
                 <li><strong>No people.</strong> Give it to accounts in User Mapping.</li>
               </ul>
             </div>

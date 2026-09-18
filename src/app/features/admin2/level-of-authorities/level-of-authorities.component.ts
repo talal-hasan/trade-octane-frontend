@@ -338,7 +338,7 @@ export class LevelOfAuthoritiesComponent implements HasUnsavedChanges {
   });
 
   constructor() {
-    this.store.refresh();
+    this.store.ensureFresh();
     this.rolesStore.ensureLoaded();
     this.loadCatalogue();
 

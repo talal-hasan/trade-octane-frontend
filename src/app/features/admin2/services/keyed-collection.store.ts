@@ -12,12 +12,20 @@ import { Observable, Subscription } from 'rxjs';
  *
  * Subclasses are root services that say how to fetch the collection and key a row.
  */
+/**
+ * How long a loaded collection is treated as current. These screens are re-opened far more
+ * often than the data changes, and a write already patches its own row, so re-fetching the
+ * whole set on every visit costs time and buys almost nothing.
+ */
+const FRESH_FOR_MS = 60_000;
+
 export abstract class KeyedCollectionStore<T, K extends string | number> {
   private readonly rowsState = signal<readonly T[]>([]);
   private readonly loadedState = signal(false);
   private readonly failedState = signal(false);
   private readonly refreshingState = signal(false);
   private inFlight: Subscription | null = null;
+  private loadedAt = 0;
   /**
    * Rows written while a refresh was in flight. That response was read before the write,
    * so without re-applying these it would put back the state the admin just changed.
@@ -57,6 +65,7 @@ export abstract class KeyedCollectionStore<T, K extends string | number> {
         written.forEach((row) => this.upsert(row));
         this.writtenDuringRefresh.clear();
         this.loadedState.set(true);
+        this.loadedAt = Date.now();
         this.refreshingState.set(false);
       },
       // The error interceptor has already raised the toast. Rows already on screen stay.
@@ -71,6 +80,13 @@ export abstract class KeyedCollectionStore<T, K extends string | number> {
   /** Loads the collection only if nothing is held yet — for screens that merely consult it. */
   ensureLoaded(): void {
     if (!this.loadedState()) {
+      this.refresh();
+    }
+  }
+
+  /** What a screen opens with: the held rows, re-fetched only once they are stale. */
+  ensureFresh(): void {
+    if (!this.loadedState() || Date.now() - this.loadedAt > FRESH_FOR_MS) {
       this.refresh();
     }
   }

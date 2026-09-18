@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { AdminOnlyGuard, MenuGuard } from './core/guards/menu.guard';
+import { AdminOnlyGuard, MenuGuard, MenuTabGuard } from './core/guards/menu.guard';
 import { MocksOnlyGuard } from './core/guards/mocks-only.guard';
 import { PermissionGuard } from './core/guards/permission.guard';
 import { UnsavedChangesGuard } from './core/guards/unsaved-changes.guard';
@@ -202,6 +202,17 @@ export const routes: Routes = [
           ),
       },
       {
+        // One screen: the distributor grid is the picker, and the menu tree beside it is
+        // what every ticked distributor will hold.
+        path: 'admin2/distributor-access',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/distributor-access/distributor-access.component').then(
+            (m) => m.DistributorAccessComponent,
+          ),
+      },
+      {
         path: 'admin2/roles',
         canActivate: [MenuGuard],
         loadComponent: () =>
@@ -210,20 +221,31 @@ export const routes: Routes = [
           ),
       },
       {
-        // Ahead of ':roleId'. Create and edit are the same legacy menu row (88), so
-        // MenuGuard's prefix match on /admin2/roles covers both.
+        // The Roles destination folds two legacy rows as tabs: Create Role (88) is `details`,
+        // Access Control | By Role (154) is `access`. MenuTabGuard sends a holder of only one
+        // back to the list rather than into the other.
         path: 'admin2/roles/new',
-        canActivate: [MenuGuard],
+        canActivate: [MenuGuard, MenuTabGuard],
         canDeactivate: [UnsavedChangesGuard],
+        data: { tab: 'details' },
         loadComponent: () =>
           import('./features/admin2/roles/role-form/role-form.component').then(
             (m) => m.Admin2RoleFormComponent,
           ),
       },
       {
+        // The Administration 1.0 role access screen, over the Octane 2 menu.
+        path: 'admin2/roles/:roleId/access',
+        canActivate: [MenuGuard, MenuTabGuard],
+        data: { adminApiRoot: 'admin2', tab: 'access' },
+        loadComponent: () =>
+          import('./features/admin/roles/role-access/role-access.component').then((m) => m.RoleAccessComponent),
+      },
+      {
         path: 'admin2/roles/:roleId',
-        canActivate: [MenuGuard],
+        canActivate: [MenuGuard, MenuTabGuard],
         canDeactivate: [UnsavedChangesGuard],
+        data: { tab: 'details' },
         loadComponent: () =>
           import('./features/admin2/roles/role-form/role-form.component').then(
             (m) => m.Admin2RoleFormComponent,
@@ -238,6 +260,32 @@ export const routes: Routes = [
           import('./features/admin2/level-of-authorities/level-of-authorities.component').then(
             (m) => m.LevelOfAuthoritiesComponent,
           ),
+      },
+      {
+        // One screen: the business type is `?businessType=<id>`, so a hierarchy can be linked to.
+        path: 'admin2/claim-hierarchy',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/claim-hierarchy/claim-hierarchy.component').then((m) => m.ClaimHierarchyComponent),
+      },
+      {
+        // The Administration 1.0 screen over the 2.0 log: the backend serves the same report
+        // under /admin2, and the component picks the endpoints from this route data.
+        path: 'admin2/activity-logs',
+        canActivate: [MenuGuard],
+        data: { adminApiRoot: 'admin2' },
+        loadComponent: () =>
+          import('./features/admin/activity-logs/activity-logs.component').then((m) => m.ActivityLogsComponent),
+      },
+      {
+        // Both tabs — Map a user and Roles by region — are the one legacy row (91), so they
+        // are one route with the tab and the account in the query string.
+        path: 'admin2/user-mapping',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin2/user-mapping/user-mapping.component').then((m) => m.UserMappingComponent),
       },
       {
         path: 'admin2/distributors/:distributorId',

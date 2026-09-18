@@ -355,6 +355,33 @@ export const DISTRIBUTOR_FORM_TOUR: TourDefinition = {
   ],
 };
 
+export const DISTRIBUTOR_ACCESS_TOUR: TourDefinition = {
+  id: 'admin2-distributor-access',
+  label: 'How distributor access works',
+  steps: [
+    {
+      target: '[data-tour="da-grid"]',
+      title: 'The grid is the picker',
+      body: 'Click a name to read exactly what that distributor holds. Tick several to give them all the same menu — that is the one write this screen performs.',
+    },
+    {
+      target: '[data-tour="da-tree"]',
+      title: 'The ticks are what they will hold',
+      body: 'Not what they hold now: saving replaces each selected distributor’s set with exactly these items. Where the selection differs today, the row shows the spread, such as 3 of 7.',
+    },
+    {
+      target: '[data-tour="da-save"]',
+      title: 'The effect is stated before the save',
+      body: 'The panel lists which distributors change and what each gains and loses. The legacy screen never ticked the tree, so every save there revoked whatever was not re-ticked.',
+    },
+    {
+      target: '[data-tour="da-actions"]',
+      title: 'Delete is the legacy Delete',
+      body: 'It deactivates the account — the record, its claims and its menu grants are kept, and there is no screen to reactivate one.',
+    },
+  ],
+};
+
 export const ROLES_2_TOUR: TourDefinition = {
   id: 'admin2-roles',
   label: 'How Administration 2.0 roles work',
@@ -365,9 +392,14 @@ export const ROLES_2_TOUR: TourDefinition = {
       body: 'Compare a permission down the page. Hover a heading for what it does — two of the four are stored but read by nothing today.',
     },
     {
+      target: '[data-tour="r2-menus"]',
+      title: 'The screens a role opens',
+      body: 'How many menu items the role grants. Click it to see the menu tree and change which screens everyone holding the role can open.',
+    },
+    {
       target: '[data-tour="r2-usage"]',
       title: 'What an edit reaches',
-      body: 'Accounts holding the role, its menu grants, the claim approval steps it sits in and its authority levels.',
+      body: 'Accounts holding the role, the claim approval steps it sits in and its authority levels.',
     },
     {
       target: '[data-tour="r2-tabs"]',
@@ -431,11 +463,91 @@ export const LEVEL_OF_AUTHORITIES_TOUR: TourDefinition = {
   ],
 };
 
+export const USER_MAPPING_TOUR: TourDefinition = {
+  id: 'admin2-user-mapping',
+  label: 'How to map a user',
+  steps: [
+    {
+      target: '[data-tour="um-users"]',
+      title: 'Start from the account',
+      body: 'Every Administration 2.0 account, with what it holds. "Needs mapping" lists the ones missing a role, a business type, a region or an area.',
+    },
+    {
+      target: '[data-tour="um-role"]',
+      title: 'One role per account',
+      body: 'The role decides their Administration 2.0 menus and where they sit in claim approval routing.',
+    },
+    {
+      target: '[data-tour="um-views"]',
+      title: 'Mapping, or menu access',
+      body: 'Menu access shows the Administration 2.0 screens this account opens. Rows from its role are locked; tick a row to grant it directly.',
+    },
+    {
+      target: '[data-tour="um-geo"]',
+      title: 'Areas sit under regions',
+      body: 'Tick a region to see its areas. An area without its region grants nothing, so unticking a region takes its areas with it.',
+    },
+    {
+      target: '[data-tour="um-summary"]',
+      title: 'Nothing is written until you save',
+      body: 'The summary lists every addition and removal against what the account holds now.',
+    },
+  ],
+};
+
+export const REGION_ROLES_TOUR: TourDefinition = {
+  id: 'admin2-region-roles',
+  label: 'How roles by region works',
+  steps: [
+    {
+      target: '[data-tour="rr-census"]',
+      title: 'Accounts and the gaps',
+      body: 'An account mapped to three regions counts once in the total and once in each region. The gaps open the accounts with no role or no region.',
+    },
+    {
+      target: '[data-tour="rr-regions"]',
+      title: 'Click a region or a role',
+      body: 'Any count opens the accounts behind it, and from there the mapping of any one of them.',
+    },
+  ],
+};
+
+export const CLAIM_HIERARCHY_TOUR: TourDefinition = {
+  id: 'admin2-claim-hierarchy',
+  label: 'How to set a claim hierarchy',
+  steps: [
+    {
+      target: '[data-tour="ch-types"]',
+      title: 'One order per business type',
+      body: 'Pick a business type. The number beside it is how many roles approve its documents.',
+    },
+    {
+      target: '[data-tour="ch-order"]',
+      title: 'First approver first',
+      body: 'Drag a step by its handle, or use the arrows. Only the roles listed here approve — there is nothing to delete afterwards.',
+    },
+    {
+      target: '[data-tour="ch-roles"]',
+      title: 'Add a role',
+      body: 'Drag it into the order where it belongs, or press Add to make it the last step. Deactivated roles cannot be added.',
+    },
+    {
+      target: '[data-tour="ch-summary"]',
+      title: 'Saving applies at once',
+      body: 'It reaches documents already in approval as well as new ones. The summary lists every change, and warns before RMC or the final approval role is taken out.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
-  /** Matched against the path, most specific first. */
-  match: (path: string) => boolean;
+  /**
+   * Matched against the path, most specific first. `query` is for a screen whose tabs live
+   * in the query string: the shell re-resolves the tour on every navigation, including a
+   * tab switch, so a tab's tour must be resolvable from the URL rather than set by the screen.
+   */
+  match: (path: string, query: URLSearchParams) => boolean;
   tour: TourDefinition;
 }
 
@@ -464,9 +576,15 @@ const ROUTE_TOURS: RouteTour[] = [
   // Only the create form has a tour: editing is the same form, already walked through.
   { match: exact('/admin2/distributors/new'), tour: DISTRIBUTOR_FORM_TOUR },
   { match: exact('/admin2/distributors'), tour: DISTRIBUTORS_TOUR },
+  { match: exact('/admin2/distributor-access'), tour: DISTRIBUTOR_ACCESS_TOUR },
+  { match: (p) => /^\/admin2\/roles\/[^/]+\/access$/.test(p), tour: ROLE_ACCESS_TOUR },
   { match: exact('/admin2/roles/new'), tour: ROLE_2_FORM_TOUR },
   { match: exact('/admin2/roles'), tour: ROLES_2_TOUR },
   { match: exact('/admin2/level-of-authorities'), tour: LEVEL_OF_AUTHORITIES_TOUR },
+  { match: exact('/admin2/claim-hierarchy'), tour: CLAIM_HIERARCHY_TOUR },
+  { match: startsWith('/admin2/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
+  { match: (p, q) => p === '/admin2/user-mapping' && q.get('tab') === 'regions', tour: REGION_ROLES_TOUR },
+  { match: exact('/admin2/user-mapping'), tour: USER_MAPPING_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];
@@ -478,6 +596,8 @@ const ROUTE_TOURS: RouteTour[] = [
  * own and the shell defers to it (see `TourService.setRouteTour`).
  */
 export function tourForRoute(url: string): TourDefinition | null {
-  const path = url.split('?')[0].split('#')[0];
-  return ROUTE_TOURS.find((entry) => entry.match(path))?.tour ?? null;
+  const [beforeHash] = url.split('#');
+  const [path, queryString = ''] = beforeHash.split('?');
+  const query = new URLSearchParams(queryString);
+  return ROUTE_TOURS.find((entry) => entry.match(path, query))?.tour ?? null;
 }

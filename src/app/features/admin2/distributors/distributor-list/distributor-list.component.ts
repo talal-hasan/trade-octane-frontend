@@ -259,8 +259,8 @@ export class DistributorListComponent {
   );
 
   constructor() {
-    // Shows what the store already holds at once and revalidates behind it.
-    this.store.refresh();
+    // Shows what the store already holds at once, and re-fetches only once it is stale.
+    this.store.ensureFresh();
 
     // After a save, bring the saved row into view once: widen the tab if it is filtered
     // out, then jump to its page. Runs once per visit.

@@ -226,20 +226,20 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
 //
 // Not part of ADMINISTRATION_MENU_IDS: holding a 2.0 row does not make someone a 1.0
 // administrator.
-const ADMIN_2_LEGACY_ROUTE = '/legacy/92';
+// const ADMIN_2_LEGACY_ROUTE = '/legacy/92';
 
-function legacyAdmin2(menuId: number, legacyName: string): MenuBlueprintEntry {
-  return {
-    menuId,
-    legacyName,
-    route: ADMIN_2_LEGACY_ROUTE,
-    // On every row, so the destination is named whichever of them this user holds.
-    navLabel: 'Legacy screens',
-    icon: 'external-link',
-    group: NAV_GROUP_ADMIN_2,
-    ported: false,
-  };
-}
+// function legacyAdmin2(menuId: number, legacyName: string): MenuBlueprintEntry {
+//   return {
+//     menuId,
+//     legacyName,
+//     route: ADMIN_2_LEGACY_ROUTE,
+//     // On every row, so the destination is named whichever of them this user holds.
+//     navLabel: '',
+//     icon: 'external-link',
+//     group: NAV_GROUP_ADMIN_2,
+//     ported: false,
+//   };
+// }
 
 const ADMINISTRATION_2: MenuBlueprintEntry[] = [
   {
@@ -255,6 +255,7 @@ const ADMINISTRATION_2: MenuBlueprintEntry[] = [
     menuId: 88,
     legacyName: 'Create Role',
     route: '/admin2/roles',
+    tab: 'details',
     navLabel: 'Roles',
     icon: 'shield-lock',
     group: NAV_GROUP_ADMIN_2,
@@ -269,15 +270,70 @@ const ADMINISTRATION_2: MenuBlueprintEntry[] = [
     group: NAV_GROUP_ADMIN_2,
     ported: true,
   },
-  legacyAdmin2(93, 'Distributor Access'),
-  legacyAdmin2(90, 'Approval Hierarchy'),
-  legacyAdmin2(91, 'User Mapping'),
-  legacyAdmin2(97, 'Access Control'),
-  legacyAdmin2(154, 'Access Control | By Role'),
-  legacyAdmin2(100, 'Claim KPI'),
-  legacyAdmin2(232, 'User Roles'),
-  legacyAdmin2(233, 'User Regions'),
-  legacyAdmin2(230, 'Activity Logs'),
+  {
+    menuId: 90,
+    legacyName: 'Approval Hierarchy',
+    route: '/admin2/claim-hierarchy',
+    navLabel: 'Claim Hierarchy',
+    icon: 'route',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  {
+    menuId: 91,
+    legacyName: 'User Mapping',
+    route: '/admin2/user-mapping',
+    tab: 'mapping',
+    navLabel: 'User Mapping',
+    icon: 'users-group',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  {
+    menuId: 93,
+    legacyName: 'Distributor Access',
+    route: '/admin2/distributor-access',
+    navLabel: 'Distributor Access',
+    icon: 'key',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  {
+    // One account's Octane 2 menu access: the Menu access view of User Mapping. Named like
+    // User Mapping, so the destination is labelled whichever of the two this user holds.
+    menuId: 97,
+    legacyName: 'Access Control',
+    route: '/admin2/user-mapping',
+    tab: 'access',
+    navLabel: 'User Mapping',
+    icon: 'users-group',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  {
+    // Each role's menu access, at /admin2/roles/:roleId/access. Named like Create Role, so the
+    // Roles destination is labelled whichever of the two this user holds.
+    menuId: 154,
+    legacyName: 'Access Control | By Role',
+    route: '/admin2/roles',
+    tab: 'access',
+    navLabel: 'Roles',
+    icon: 'shield-lock',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
+  // legacyAdmin2(100, 'Claim KPI'),
+  // legacyAdmin2(232, 'User Roles'),
+  // legacyAdmin2(233, 'User Regions'),
+  {
+    menuId: 230,
+    legacyName: 'Activity Logs',
+    route: '/admin2/activity-logs',
+    navLabel: 'Activity Logs',
+    icon: 'history',
+    group: NAV_GROUP_ADMIN_2,
+    ported: true,
+  },
 ];
 
 // ─── Everything else ──────────────────────────────────────────────────────────

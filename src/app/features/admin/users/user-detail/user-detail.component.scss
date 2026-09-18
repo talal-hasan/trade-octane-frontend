@@ -490,49 +490,6 @@
   color: var(--to-warning);
 }
 
-// ─── Access counters & filter ─────────────────────────────────────────────────
-
-.to-ud__counters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: t.$to-space-3;
-  margin-bottom: t.$to-space-3;
-  padding: t.$to-space-2 t.$to-space-3;
-  background: var(--to-bg-2);
-  border-radius: t.$to-radius-control;
-  font-size: t.$to-font-size-xs;
-  color: var(--to-text-secondary);
-}
-
-.to-ud__counter {
-  display: inline-flex;
-  align-items: center;
-  gap: t.$to-space-1;
-
-  // "Effective" is the one that actually authorises requests, so it is the one that reads
-  // as the answer; direct and via-roles are its inputs.
-  &--strong {
-    color: var(--to-text-primary);
-  }
-
-  &--warn {
-    color: var(--to-warning);
-  }
-}
-
-.to-ud__filter {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: t.$to-space-2;
-  margin-bottom: t.$to-space-3;
-  color: var(--to-text-muted);
-
-  input {
-    flex: 1;
-  }
-}
-
 // ─── Roles tab ────────────────────────────────────────────────────────────────
 
 .to-ud__section-actions {

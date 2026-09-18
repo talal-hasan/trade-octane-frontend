@@ -1,0 +1,90 @@
+@if (loading()) {
+  <to-skeleton width="100%" height="320px" />
+} @else if (notFound()) {
+  <to-empty-state
+    icon="lock"
+    heading="No menu access record for this account"
+    description="Menu grants are kept against the user in Promo_Management, and this login has no user there. Create the user in Administration 1.0 before granting it screens."
+  />
+} @else if (failed()) {
+  <to-empty-state icon="alert-triangle" heading="Could not load menu access" description="This is usually temporary.">
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (access(); as accessState) {
+  <section class="to-uap">
+    <div class="to-uap__head">
+      <div>
+        <h2 class="to-uap__title">{{ isOctane2() ? 'Administration 2.0 menu access' : 'Menu access' }}</h2>
+        <p class="to-uap__note">
+          Ticking a row grants it <strong>directly</strong>.
+          @if (isOctane2()) {
+            Rows their role grants are locked — change the role on Mapping to revoke those.
+          } @else {
+            Rows a role already grants are locked — remove the role to revoke those.
+          }
+        </p>
+      </div>
+      <div class="to-uap__actions">
+        @if (dirty()) {
+          <button type="button" pButton class="p-button-sm p-button-text" [disabled]="saving()" (click)="discard()">
+            Discard
+          </button>
+        }
+        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving()" (click)="save()">
+          {{ saving() ? 'Saving…' : 'Save access' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- The three sets, stated. They are not interchangeable, and an admin who assumes they
+         are will misread this screen. -->
+    <div class="to-uap__counters" data-tour="access-counters">
+      <span class="to-uap__counter">
+        <span class="to-numeric">{{ directSelection().size }}</span> direct
+      </span>
+      <span class="to-uap__counter" [title]="roleNames()">
+        <span class="to-numeric">{{ roleMenuIds().size }}</span>
+        @if (isOctane2() && roleNames()) {
+          via {{ roleNames() }}
+        } @else {
+          via roles
+        }
+      </span>
+      <span class="to-uap__counter to-uap__counter--strong">
+        <span class="to-numeric">{{ accessState.effectiveMenuIds.length }}</span>
+        effective
+      </span>
+      @if (accessState.orphanedMenuIds.length > 0) {
+        <span class="to-uap__counter to-uap__counter--warn">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="13" />
+          <span class="to-numeric">{{ accessState.orphanedMenuIds.length }}</span>
+          orphaned
+        </span>
+      }
+    </div>
+
+    <div class="to-uap__filter">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="filterControl"
+        (input)="filter.set(filterControl.value)"
+        placeholder="Filter menu items"
+        aria-label="Filter menu items"
+      />
+    </div>
+
+    <to-access-tree
+      [tree]="accessState.tree"
+      [selected]="directSelection()"
+      [inherited]="roleMenuIds()"
+      [filter]="filter()"
+      [disabled]="saving()"
+      (toggled)="onToggled($event)"
+    />
+  </section>
+}

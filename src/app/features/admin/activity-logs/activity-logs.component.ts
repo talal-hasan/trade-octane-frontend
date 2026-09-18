@@ -1,13 +1,14 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Subscription } from 'rxjs';
 
 import { csvFilename, saveBlob } from '../../../core/api/api-client.service';
-import { int } from '../../../core/api/api.types';
+import { AdminApiRoot, adminApiRootOf, int } from '../../../core/api/api.types';
 import {
   ACTIVITY_LOG_MAX_RANGE_DAYS,
   ACTIVITY_LOG_MAX_USER_FILTERS,
@@ -37,6 +38,11 @@ import { ActivityLogQuery, AdminOperationsApi } from '../services/admin-operatio
  * carries `page` / `nextPage` / `pageSize` rather than a cursor, so it can offer real
  * numbered paging and must *not* be wired to `CursorPager`. Read-only throughout: an audit
  * log with an edit control would not be an audit log.
+ *
+ * **One screen, two logs.** Administration 2.0's Activity Logs is the same report over
+ * Promo_Management_2, served under `/admin2`; its route passes `data: { adminApiRoot:
+ * 'admin2' }`. Read from the snapshot rather than an input, because the first load starts in
+ * the constructor, before inputs are bound.
  */
 @Component({
   selector: 'to-activity-logs',
@@ -57,6 +63,14 @@ import { ActivityLogQuery, AdminOperationsApi } from '../services/admin-operatio
 export class ActivityLogsComponent {
   private readonly api = inject(AdminOperationsApi);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly source: AdminApiRoot = adminApiRootOf(inject(ActivatedRoute).snapshot.data);
+  protected readonly breadcrumbs = [
+    { label: this.source === 'admin2' ? 'Administration 2.0' : 'Administration' },
+    { label: 'Activity Logs' },
+  ];
+  protected readonly subtitle =
+    this.source === 'admin2' ? 'Who did what in Administration 2.0, and when.' : 'Who did what, and when.';
 
   protected readonly icons = ICON_REGISTRY;
   protected readonly skeletonRows = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -195,7 +209,7 @@ export class ActivityLogsComponent {
 
     this.actorsLoading.set(true);
     this.actorsRequest = this.api
-      .activityLogActors({ from: this.from(), to: this.to(), group: this.group() })
+      .activityLogActors({ from: this.from(), to: this.to(), group: this.group() }, this.source)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (actors) => {
@@ -258,7 +272,7 @@ export class ActivityLogsComponent {
     this.loading.set(true);
     this.failed.set(false);
     this.logsRequest = this.api
-      .activityLogs({ ...query, page: this.page(), pageSize: this.pageSize() })
+      .activityLogs({ ...query, page: this.page(), pageSize: this.pageSize() }, this.source)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -348,11 +362,14 @@ export class ActivityLogsComponent {
     }
     this.exporting.set(true);
     this.api
-      .exportActivityLogs(query)
+      .exportActivityLogs(query, this.source)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (blob) => {
-          saveBlob(blob, csvFilename('trade-octane-activity-logs'));
+          saveBlob(
+            blob,
+            csvFilename(this.source === 'admin2' ? 'trade-octane-admin2-activity-logs' : 'trade-octane-activity-logs'),
+          );
           this.exporting.set(false);
         },
         error: () => this.exporting.set(false),

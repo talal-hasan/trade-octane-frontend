@@ -110,3 +110,12 @@
   line-height: 1.5;
   color: var(--to-text-muted);
 }
+
+.to-rf__link {
+  color: var(--to-accent-text);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

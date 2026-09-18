@@ -1,0 +1,465 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Cards, alerts, the summary and the change list come from _admin.scss. Only what is
+// particular to this editor is declared here.
+
+// Accounts | mapping | summary. The summary drops under the mapping on a laptop screen, and
+// everything stacks on a tablet.
+.to-um__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 300px);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+// Menu access has no summary column, so the panel takes its width.
+.to-um__layout--wide {
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+}
+
+@media (max-width: 1360px) {
+  .to-um__layout {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  }
+
+  .to-um__aside {
+    grid-column: 2;
+  }
+}
+
+@include u.respond-to(tablet) {
+  .to-um__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .to-um__aside {
+    grid-column: auto;
+  }
+}
+
+.to-um__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+.to-um__select {
+  width: 100%;
+}
+
+// ─── Accounts ─────────────────────────────────────────────────────────────────
+
+.to-um__users {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.to-um__users-head {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3;
+  border-bottom: 1px solid var(--to-border);
+}
+
+.to-um__search {
+  max-width: none;
+}
+
+.to-um__filters {
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+
+// Tall enough to scan, short enough that the editor beside it stays in view. A virtual
+// scroll viewport, so the height is fixed rather than driven by the rows.
+.to-um__user-list {
+  height: calc(100vh - 300px);
+  min-height: 240px;
+  @include u.quiet-scrollbar(6px);
+}
+
+// The row height the viewport is told about — see `userRowHeight`.
+.to-um__user-item {
+  height: 54px;
+}
+
+.to-um__user-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  padding: t.$to-space-2 t.$to-space-3;
+}
+
+.to-um__user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: none;
+  height: 100%;
+  border-bottom: 1px solid var(--to-border);
+  border-left: 3px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  @include u.motion(background-color, border-color);
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+
+  &--selected {
+    border-left-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 9%, var(--to-bg-1));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+}
+
+.to-um__user-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+  min-width: 0;
+}
+
+.to-um__user-name {
+  @include u.truncate;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-um__user-role {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-accent-text);
+}
+
+.to-um__user-meta {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-um__inactive {
+  color: var(--to-warning);
+}
+
+// ─── Identity ─────────────────────────────────────────────────────────────────
+
+.to-um__editor {
+  min-width: 0;
+}
+
+.to-um__identity {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+}
+
+.to-um__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+}
+
+.to-um__identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.to-um__identity-name {
+  @include u.truncate;
+  font-size: t.$to-font-size-md;
+  color: var(--to-text-primary);
+}
+
+.to-um__identity-meta {
+  @include u.truncate;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-um__option {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  min-width: 0;
+}
+
+.to-um__option-desc {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Toggle chips ─────────────────────────────────────────────────────────────
+// Multi-select, so these are pressed/unpressed toggles with a tick — not the single-choice
+// segment chips used for filters.
+
+.to-um__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+}
+
+.to-um__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    border-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 12%, var(--to-bg-1));
+    color: var(--to-text-primary);
+
+    tabler-icon {
+      color: var(--to-accent);
+    }
+  }
+
+  &--flagged {
+    border-style: dashed;
+    border-color: var(--to-warning);
+  }
+
+  &--small {
+    padding: 2px t.$to-space-2;
+    font-size: t.$to-font-size-2xs;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Regions and areas ────────────────────────────────────────────────────────
+
+.to-um__geo-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+}
+
+.to-um__regions {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-um__region {
+  border-top: 1px solid var(--to-border);
+  border-left: 3px solid transparent;
+  @include u.motion(background-color, border-color);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &--on {
+    border-left-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 3%, var(--to-bg-1));
+  }
+}
+
+.to-um__region-head {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 t.$to-space-3 t.$to-space-1 t.$to-space-2;
+}
+
+.to-um__region-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 0;
+  margin-right: auto;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-um__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--to-border-strong);
+  border-radius: 4px;
+  background: var(--to-bg-1);
+  color: #fff;
+  @include u.motion(background-color, border-color);
+
+  &--on {
+    border-color: var(--to-accent-strong);
+    background: var(--to-accent-strong);
+  }
+}
+
+.to-um__region-name {
+  @include u.truncate;
+}
+
+.to-um__region-count {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-um__link {
+  flex-shrink: 0;
+  padding: 0 t.$to-space-1;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
+.to-um__areas {
+  padding: 0 t.$to-space-3 t.$to-space-3 t.$to-space-8;
+}
+
+.to-um__region-empty {
+  margin: 0;
+  padding: 0 t.$to-space-3 t.$to-space-3 t.$to-space-8;
+}
+
+.to-um__outside {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+  margin-top: t.$to-space-1;
+}
+
+.to-um__outside-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 t.$to-space-2;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-warning);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.8;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--to-warning-subtle);
+  }
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+.to-um__delta {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  word-break: break-word;
+
+  &--add {
+    color: var(--to-success);
+  }
+
+  &--remove {
+    color: var(--to-danger);
+  }
+}
+
+.to-um__note {
+  margin: t.$to-space-3 0 0;
+}
+
+.to-um__reasons {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-danger);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: t.$to-space-1;
+  }
+}
+
+// ─── View switch ──────────────────────────────────────────────────────────────
+
+.to-um__views {
+  align-self: flex-start;
+}
+
+.to-um__dot {
+  width: 6px;
+  height: 6px;
+  margin-left: t.$to-space-1;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-warning-solid);
+}

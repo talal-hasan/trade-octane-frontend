@@ -1,0 +1,617 @@
+<to-page-header
+  title="Distributor Access"
+  subtitle="Which screens of the distributor portal each distributor can open."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Distributor Access' }]"
+>
+  @if (checkedCount() > 0) {
+    <button actions type="button" pButton class="p-button-sm p-button-text" (click)="clearSelection()">
+      <tabler-icon [icon]="icons['x']" [size]="15" />
+      Clear selection
+    </button>
+  }
+</to-page-header>
+
+@if (loading()) {
+  <div class="to-adm" aria-busy="true" aria-label="Loading distributor access">
+    <to-skeleton width="100%" height="60px" />
+    <div class="to-adm__split to-adm__split--wide">
+      <div class="to-adm__table-wrap">
+        @for (row of skeletonRows; track row) {
+          <div class="to-adm__skeleton-row">
+            <to-skeleton width="8%" height="12px" />
+            <to-skeleton width="26%" height="12px" />
+            <to-skeleton width="14%" height="12px" />
+            <to-skeleton width="20%" height="12px" />
+            <to-skeleton width="10%" height="18px" />
+          </div>
+        }
+      </div>
+      <to-skeleton width="100%" height="420px" />
+    </div>
+  </div>
+} @else if (failed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load distributor access"
+    description="The distributors and the portal menu did not respond. This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else {
+  <div class="to-adm">
+    <!-- What the screen is really about: how many distributors can open anything at all. -->
+    <div class="to-adm__census" data-tour="da-census">
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Distributors</span>
+        <span class="to-adm__census-value to-numeric">{{ counts().all }}</span>
+      </div>
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Hold menu items</span>
+        <span class="to-adm__census-value to-numeric">{{ counts().granted }}</span>
+      </div>
+      <div class="to-adm__census-item" [class.to-adm__census-item--warn]="counts().none > 0">
+        <span class="to-adm__census-label">Hold nothing</span>
+        <span class="to-adm__census-value to-numeric">{{ counts().none }}</span>
+      </div>
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Portal menu items</span>
+        <span class="to-adm__census-value to-numeric">{{ index().rows.length }}</span>
+      </div>
+      @if (counts().none > 0 && access() !== 'None') {
+        <button type="button" class="to-adm__census-action" (click)="setAccess('None')">
+          Show the {{ counts().none }} with nothing
+        </button>
+      }
+    </div>
+
+    <div class="to-da__toolbar">
+      <div class="to-adm__segmented" role="tablist" aria-label="Filter by status" data-tour="da-status">
+        @for (tab of statusTabs; track tab.key) {
+          <button
+            type="button"
+            role="tab"
+            class="to-adm__segment"
+            [class.to-adm__segment--on]="status() === tab.key"
+            [attr.aria-selected]="status() === tab.key"
+            [pTooltip]="tab.hint"
+            tooltipPosition="bottom"
+            [showDelay]="400"
+            (click)="setStatus(tab.key)"
+          >
+            {{ tab.label }}
+            <span class="to-numeric">{{ tab.key === 'Active' ? counts().active : tab.key === 'Inactive' ? counts().inactive : counts().all }}</span>
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__segmented" role="tablist" aria-label="Filter by what they hold">
+        @for (tab of accessTabs; track tab.key) {
+          <button
+            type="button"
+            role="tab"
+            class="to-adm__segment"
+            [class.to-adm__segment--on]="access() === tab.key"
+            [attr.aria-selected]="access() === tab.key"
+            [pTooltip]="tab.hint"
+            tooltipPosition="bottom"
+            [showDelay]="400"
+            (click)="setAccess(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </div>
+
+      <div class="to-da__filters">
+        <p-select
+          class="to-da__type"
+          [formControl]="businessTypeControl"
+          [options]="businessTypeOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="All business types"
+          [showClear]="true"
+          ariaLabel="Filter by business type"
+          appendTo="body"
+        />
+
+        <div class="to-adm__search to-da__search" data-tour="da-search">
+          <tabler-icon [icon]="icons['search']" [size]="15" />
+          <input
+            pInputText
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Search ID, name, city, territory or contact"
+            aria-label="Search distributors"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="to-adm__split to-adm__split--wide">
+      <!-- ─── The distributors ───────────────────────────────────────────────── -->
+      <section class="to-adm__card to-da__grid" data-tour="da-grid">
+        <header class="to-da__grid-head">
+          <h2 class="to-adm__title">
+            @if (checkedCount() > 0) {
+              <span class="to-numeric">{{ checkedCount() }}</span> selected
+            } @else {
+              Distributors
+            }
+          </h2>
+          <div class="to-da__grid-actions">
+            @if (filtered().length > 0) {
+              <button type="button" class="to-adm__census-action" (click)="selectAllFiltered()">
+                Select all {{ filtered().length }}
+              </button>
+            }
+            @if (checkedCount() > 0) {
+              <button type="button" class="to-adm__census-action" (click)="clearSelection()">None</button>
+            }
+          </div>
+        </header>
+
+        @if (counts().all === 0) {
+          <to-empty-state
+            icon="truck-delivery"
+            heading="No distributors yet"
+            description="Distributor accounts are created on the Distributors screen; their portal menu is granted here."
+          >
+            <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm">
+              <tabler-icon [icon]="icons['plus']" [size]="15" />
+              New distributor
+            </a>
+          </to-empty-state>
+        } @else if (filtered().length === 0) {
+          <to-empty-state
+            icon="list-search"
+            heading="No distributors match"
+            description="Try another status, another business type, or clear the search."
+          >
+            @if (hasFilters()) {
+              <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+                Show all distributors
+              </button>
+            }
+          </to-empty-state>
+        } @else {
+          <div class="to-adm__table-wrap to-da__table-scroll">
+            <table class="to-adm__table">
+              <thead>
+                <tr>
+                  <th scope="col" class="to-adm__th to-da__th-check">
+                    <input
+                      type="checkbox"
+                      class="to-da__checkbox"
+                      [checked]="allOnPageChecked()"
+                      (change)="togglePage()"
+                      [attr.aria-label]="allOnPageChecked() ? 'Unselect this page' : 'Select this page'"
+                    />
+                  </th>
+                  <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('distributorId')">
+                    <button type="button" class="to-da__sort" (click)="toggleSort('distributorId')">
+                      ID
+                      @if (sortKey() === 'distributorId') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('name')">
+                    <button type="button" class="to-da__sort" (click)="toggleSort('name')">
+                      Distributor
+                      @if (sortKey() === 'name') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('businessType')">
+                    <button type="button" class="to-da__sort" (click)="toggleSort('businessType')">
+                      Business type
+                      @if (sortKey() === 'businessType') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('location')">
+                    <button type="button" class="to-da__sort" (click)="toggleSort('location')">
+                      Territory
+                      @if (sortKey() === 'location') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('city')">
+                    <button type="button" class="to-da__sort" (click)="toggleSort('city')">
+                      City
+                      @if (sortKey() === 'city') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th">Status</th>
+                  <th scope="col" class="to-adm__th to-adm__th--right" [attr.aria-sort]="ariaSort('menus')">
+                    <button type="button" class="to-da__sort to-da__sort--right" (click)="toggleSort('menus')">
+                      Menus
+                      @if (sortKey() === 'menus') {
+                        <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                      }
+                    </button>
+                  </th>
+                  <th scope="col" class="to-adm__th to-da__th-actions" data-tour="da-actions">
+                    <span class="to-da__sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of pageRows(); track row.distributorId) {
+                  <tr
+                    class="to-adm__row to-da__row"
+                    [class.to-da__row--on]="isChecked(row.distributorId)"
+                    [class.to-da__row--busy]="busyId() === row.distributorId"
+                  >
+                    <td class="to-adm__td to-da__td-check">
+                      <input
+                        type="checkbox"
+                        class="to-da__checkbox"
+                        [checked]="isChecked(row.distributorId)"
+                        (change)="toggleRow(row.distributorId)"
+                        [attr.aria-label]="'Select ' + (row.name || row.distributorId)"
+                      />
+                    </td>
+                    <td class="to-adm__td to-adm__td--mono">{{ row.distributorId }}</td>
+                    <td class="to-adm__td to-da__name-cell">
+                      <!-- Selecting the row is the screen's primary act, so the name does it;
+                           Edit is the link out to the account form. -->
+                      <button
+                        type="button"
+                        class="to-da__name"
+                        [attr.aria-pressed]="isChecked(row.distributorId)"
+                        [title]="'Show what ' + (row.name || row.distributorId) + ' can open'"
+                        (click)="selectOnly(row.distributorId)"
+                      >{{ row.name || row.distributorId }}</button>
+                    </td>
+                    <td class="to-adm__td to-adm__td--muted">{{ row.businessType || '—' }}</td>
+                    <td class="to-adm__td to-adm__td--stacked to-da__location">
+                      <span class="to-da__primary">{{ row.territory || '—' }}</span>
+                      @if (row.locationSecondary) {
+                        <span class="to-da__secondary">{{ row.locationSecondary }}</span>
+                      }
+                    </td>
+                    <td class="to-adm__td to-adm__td--muted to-da__city" [title]="row.city">{{ row.city || '—' }}</td>
+                    <td class="to-adm__td">
+                      <to-status-pill [status]="statusPill[row.status]" [label]="statusLabels[row.status]" />
+                    </td>
+                    <td class="to-adm__td to-adm__td--right">
+                      @if (row.grantedMenuCount > 0) {
+                        <span class="to-numeric">{{ row.grantedMenuCount }}</span>
+                      } @else {
+                        <span
+                          class="to-adm__flag to-adm__flag--warn"
+                          pTooltip="Holds nothing — they sign in to an empty portal."
+                          tooltipPosition="left"
+                        >none</span>
+                      }
+                    </td>
+                    <td class="to-adm__td to-da__actions">
+                      <button
+                        type="button"
+                        class="to-da__action to-da__action--primary"
+                        [attr.aria-label]="'Manage access for ' + (row.name || row.distributorId)"
+                        (click)="selectOnly(row.distributorId)"
+                      >
+                        <tabler-icon [icon]="icons['key']" [size]="15" />
+                        <span>Access</span>
+                      </button>
+                      <a
+                        class="to-da__action"
+                        [routerLink]="[route, row.distributorId]"
+                        [attr.aria-label]="'Edit ' + (row.name || row.distributorId)"
+                      >
+                        <tabler-icon [icon]="icons['edit']" [size]="15" />
+                        <span>Edit</span>
+                      </a>
+                      @if (row.distributor.isActive) {
+                        <button
+                          type="button"
+                          class="to-da__action to-da__action--danger"
+                          pTooltip="Deactivates the account, as the legacy Delete button did. The record and its grants are kept."
+                          tooltipPosition="left"
+                          [showDelay]="400"
+                          [disabled]="busyId() === row.distributorId"
+                          [attr.aria-label]="'Delete ' + (row.name || row.distributorId)"
+                          (click)="requestDelete(row)"
+                        >
+                          <tabler-icon [icon]="icons['trash']" [size]="15" />
+                          <span>Delete</span>
+                        </button>
+                      } @else {
+                        <!-- Holds the column width, so the actions line up on every row. -->
+                        <span class="to-da__action to-da__action--placeholder" aria-hidden="true">
+                          <tabler-icon [icon]="icons['trash']" [size]="15" />
+                          <span>Delete</span>
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- The whole filtered set is in memory, so paging is instant and exact. -->
+          <div class="to-adm__pager">
+            <span class="to-adm__pager-range to-numeric">
+              {{ rangeLabel() }}
+              @if (refreshing()) {
+                <span class="to-da__muted">· updating…</span>
+              }
+            </span>
+            @if (pageCount() > 1) {
+              <div class="to-adm__pager-buttons">
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="page() === 0"
+                  (click)="previousPage()"
+                >
+                  <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm p-button-text"
+                  [disabled]="page() >= pageCount() - 1"
+                  (click)="nextPage()"
+                >
+                  Next
+                  <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- ─── The menu they will hold ─────────────────────────────────────────── -->
+      <aside class="to-adm__panel to-da__panel" data-tour="da-panel">
+        @if (checkedCount() === 0) {
+          <div class="to-adm__card to-adm__card--pad to-da__prompt">
+            <h2 class="to-adm__title">Menu access</h2>
+            <p class="to-adm__note">
+              Pick a distributor to see exactly what it holds, or tick several to give them all the
+              same menu. The legacy screen never showed what was already granted, so every save
+              revoked whatever was not re-ticked.
+            </p>
+            <to-empty-state
+              icon="key"
+              heading="Nothing selected"
+              description="Click a distributor's name, or its Access button."
+            />
+          </div>
+        } @else {
+          <section class="to-adm__card to-adm__card--pad to-da__editor">
+            <header class="to-da__editor-head">
+              <div class="to-da__editor-title">
+                <h2 class="to-adm__title">Menu access</h2>
+                <p class="to-adm__subtitle">{{ selectionLabel() }}</p>
+              </div>
+              <div class="to-da__editor-actions">
+                @if (touched()) {
+                  <button
+                    type="button"
+                    pButton
+                    class="p-button-sm p-button-text"
+                    [disabled]="saving()"
+                    (click)="discard()"
+                  >
+                    Discard
+                  </button>
+                }
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-sm"
+                  [disabled]="!canSave()"
+                  (click)="requestSave()"
+                  data-tour="da-save"
+                >
+                  {{ saving() ? 'Saving…' : 'Update information' }}
+                </button>
+              </div>
+            </header>
+
+            @if (loadingAccess()) {
+              <to-skeleton width="100%" height="380px" />
+            } @else if (accessFailed()) {
+              <to-empty-state
+                icon="alert-triangle"
+                heading="Could not load what they hold"
+                description="Saving now would replace their menu with the ticked one, so the tree stays closed until this loads."
+              >
+                <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retryAccess()">
+                  <tabler-icon [icon]="icons['refresh']" [size]="15" />
+                  Try again
+                </button>
+              </to-empty-state>
+            } @else {
+              @if (templateMode()) {
+                <!-- Over the limit, their grants are not fetched: one request each would
+                     mean hundreds. The write is stated instead of diffed. -->
+                <div class="to-adm__alert to-adm__alert--warn" role="alert">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>
+                    {{ checkedCount() }} distributors is over the {{ detailLimit }} this screen reads one by one, so
+                    the tree starts empty and what each of them holds is not shown. Saving gives all of them
+                    <strong>exactly</strong> the ticked items.
+                  </span>
+                </div>
+              }
+
+              <div class="to-da__editor-counts">
+                <span class="to-da__count">
+                  <span class="to-numeric">{{ target().size }}</span> of {{ index().rows.length }} ticked
+                </span>
+                @if (!templateMode() && impact().changes.length > 0) {
+                  <span class="to-da__count to-da__count--change">
+                    <span class="to-numeric">{{ impact().changes.length }}</span> will change
+                  </span>
+                }
+                @if (!templateMode() && impact().unchangedCount > 0) {
+                  <span class="to-da__count to-da__count--quiet">
+                    <span class="to-numeric">{{ impact().unchangedCount }}</span> unchanged
+                  </span>
+                }
+              </div>
+
+              <div class="to-da__tools">
+                <div class="to-da__bulk">
+                  <button type="button" class="to-adm__census-action" [disabled]="saving()" (click)="selectAllMenus()">
+                    <tabler-icon [icon]="icons['check']" [size]="13" />
+                    Select all
+                  </button>
+                  <button type="button" class="to-adm__census-action" [disabled]="saving()" (click)="selectNoMenus()">
+                    <tabler-icon [icon]="icons['x']" [size]="13" />
+                    None
+                  </button>
+                  @if (holderCount() > 1) {
+                    <button
+                      type="button"
+                      class="to-adm__census-action"
+                      pTooltip="Tick everything at least one of them holds now."
+                      tooltipPosition="bottom"
+                      [showDelay]="300"
+                      [disabled]="saving()"
+                      (click)="takeUnion()"
+                    >
+                      Any of them
+                    </button>
+                    <button
+                      type="button"
+                      class="to-adm__census-action"
+                      pTooltip="Tick only what all of them hold now — what the tree opened on."
+                      tooltipPosition="bottom"
+                      [showDelay]="300"
+                      [disabled]="saving()"
+                      (click)="takeIntersection()"
+                    >
+                      All of them
+                    </button>
+                  }
+                </div>
+
+                <div class="to-adm__search to-da__menu-search">
+                  <tabler-icon [icon]="icons['search']" [size]="15" />
+                  <input
+                    pInputText
+                    type="search"
+                    [formControl]="filterControl"
+                    (input)="menuFilter.set(filterControl.value)"
+                    placeholder="Filter menu items"
+                    aria-label="Filter menu items"
+                  />
+                </div>
+              </div>
+
+              @if (unknownGrants().length > 0) {
+                <div class="to-adm__alert" role="status">
+                  <tabler-icon [icon]="icons['info-circle']" [size]="16" />
+                  <span>
+                    {{ unknownGrants().length }} stored grant(s) point at menu items the portal no longer has
+                    ({{ unknownGrants().join(', ') }}). Saving removes them.
+                  </span>
+                </div>
+              }
+
+              @if (targetOrphans().length > 0) {
+                <div class="to-adm__alert to-adm__alert--warn" role="alert">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>
+                    {{ targetOrphans().length }} ticked item(s) sit under a parent that is not ticked, so the portal
+                    will never list them. They are stored that way already — the editor cannot create one.
+                  </span>
+                  <button type="button" pButton class="p-button-sm p-button-text" (click)="grantOrphanParents()">
+                    Grant the parents
+                  </button>
+                  <button type="button" pButton class="p-button-sm p-button-text" (click)="revokeOrphans()">
+                    Untick them
+                  </button>
+                </div>
+              }
+
+              <to-menu-grant-tree
+                [index]="index()"
+                [selected]="target()"
+                [holders]="holders()"
+                [holderCount]="holderCount()"
+                [storedOrphans]="storedOrphanIds()"
+                [filter]="menuFilter()"
+                [disabled]="saving()"
+                (toggled)="onToggled($event)"
+                (subtreeToggled)="onSubtreeToggled($event)"
+                data-tour="da-tree"
+              />
+
+              @if (impactRows().length > 0) {
+                <div class="to-da__changes">
+                  <h3 class="to-adm__summary-heading">
+                    {{ impactRows().length === 1 ? '1 distributor changes' : impactRows().length + ' distributors change' }}
+                  </h3>
+                  <ul class="to-adm__changes">
+                    @for (change of impactPreview(); track change.distributorId) {
+                      <li class="to-adm__change">
+                        <span class="to-adm__change-label">{{ change.name }}</span>
+                        <span class="to-adm__change-values to-numeric">
+                          @if (change.added.length > 0) {
+                            <span class="to-da__added">+{{ change.added.length }}</span>
+                          }
+                          @if (change.removed.length > 0) {
+                            <span class="to-da__removed">−{{ change.removed.length }}</span>
+                          }
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                  @if (impactOverflow() > 0) {
+                    <p class="to-adm__form-hint">and {{ impactOverflow() }} more.</p>
+                  }
+                </div>
+              }
+
+              <p class="to-adm__form-hint">
+                Every selected distributor is changed in one transaction, and only the grants that differ are
+                written — one audit row each. The portal picks the change up at their next sign-in.
+              </p>
+            }
+          </section>
+        }
+      </aside>
+    </div>
+  </div>
+}
+
+<to-confirm-dialog
+  [visible]="pendingSave()"
+  (visibleChange)="pendingSave.set(false)"
+  [variant]="target().size === 0 ? 'danger' : 'default'"
+  title="Update distributor access?"
+  [message]="saveWarning()"
+  confirmLabel="Update information"
+  (confirmed)="confirmSave()"
+  (cancelled)="pendingSave.set(false)"
+/>
+
+<to-confirm-dialog
+  [visible]="pendingDelete() !== null"
+  (visibleChange)="pendingDelete.set(null)"
+  variant="danger"
+  title="Delete this distributor?"
+  [message]="deleteMessage()"
+  confirmLabel="Delete"
+  (confirmed)="confirmDelete()"
+  (cancelled)="pendingDelete.set(null)"
+/>

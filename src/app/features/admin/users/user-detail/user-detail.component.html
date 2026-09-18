@@ -548,73 +548,8 @@
 
         <!-- ── Access ───────────────────────────────────────────────────────── -->
         @case ('access') {
-          @if (accessLoading()) {
-            <to-skeleton width="100%" height="320px" />
-          } @else if (access(); as accessState) {
-            <section class="to-ud__section">
-              <div class="to-ud__section-head">
-                <div>
-                  <h2 class="to-ud__section-title">Menu access</h2>
-                  <p class="to-ud__section-note">
-                    Ticking a row grants it <strong>directly</strong>. Rows a role already
-                    grants are locked — remove the role to revoke those.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  pButton
-                  class="p-button-sm"
-                  [disabled]="!accessDirty() || savingAccess()"
-                  (click)="saveAccess()"
-                >
-                  {{ savingAccess() ? 'Saving…' : 'Save access' }}
-                </button>
-              </div>
-
-              <!-- The three sets, stated. They are not interchangeable, and an admin who
-                   assumes they are will misread this screen. -->
-              <div class="to-ud__counters">
-                <span class="to-ud__counter">
-                  <span class="to-numeric">{{ directSelection().size }}</span> direct
-                </span>
-                <span class="to-ud__counter">
-                  <span class="to-numeric">{{ roleMenuIds().size }}</span> via roles
-                </span>
-                <span class="to-ud__counter to-ud__counter--strong">
-                  <span class="to-numeric">{{ accessState.effectiveMenuIds.length }}</span>
-                  effective
-                </span>
-                @if (accessState.orphanedMenuIds.length > 0) {
-                  <span class="to-ud__counter to-ud__counter--warn">
-                    <tabler-icon [icon]="icons['alert-triangle']" [size]="13" />
-                    <span class="to-numeric">{{ accessState.orphanedMenuIds.length }}</span>
-                    orphaned
-                  </span>
-                }
-              </div>
-
-              <div class="to-ud__filter">
-                <tabler-icon [icon]="icons['search']" [size]="15" />
-                <input
-                  pInputText
-                  type="search"
-                  [formControl]="accessFilterControl"
-                  (input)="onAccessFilter(accessFilterControl.value)"
-                  placeholder="Filter menu items"
-                  aria-label="Filter menu items"
-                />
-              </div>
-
-              <to-access-tree
-                [tree]="accessState.tree"
-                [selected]="directSelection()"
-                [inherited]="roleMenuIds()"
-                [filter]="accessFilter()"
-                [disabled]="savingAccess()"
-                (toggled)="onAccessToggled($event)"
-              />
-            </section>
-          }
+          <!-- Reloads on every visit, so a role changed on the Roles tab shows here at once. -->
+          <to-user-access-panel [userId]="userId()" />
         }
 
         <!-- ── Resignation ──────────────────────────────────────────────────── -->

@@ -10,6 +10,7 @@ import { Observable, debounceTime, distinctUntilChanged, map } from 'rxjs';
 
 import { Octane2RoleResponse, Octane2RoleWriteResponse } from '../../../../core/api/admin2.models';
 import { int } from '../../../../core/api/api.types';
+import { MenuAccessService } from '../../../../core/services/menu-access.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
@@ -19,10 +20,10 @@ import { StatusPillComponent } from '../../../../shared/components/status-pill/s
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
 import { Admin2RolesApi } from '../../services/admin2-roles.api';
 import { Octane2RolesStore } from '../../services/octane2-roles.store';
-import { ROLE_FLAGS, ROLES_2_ROUTE, plural, roleLabel } from '../role.util';
+import { ROLE_FLAGS, ROLES_2_ROUTE, ROLES_2_TAB_ACCESS, ROLES_2_TAB_DETAILS, plural, roleLabel } from '../role.util';
 
 type StatusTab = 'Active' | 'Inactive' | 'All';
-type SortKey = 'roleId' | 'roleName' | 'users';
+type SortKey = 'roleId' | 'roleName' | 'menus' | 'users';
 
 /** A row with what the grid needs worked out once. */
 interface RoleRow {
@@ -30,7 +31,9 @@ interface RoleRow {
   roleId: number;
   users: number;
   activeUsers: number;
-  /** "45 menu grants · 2 approval steps", or empty when the role sits nowhere. */
+  /** Menu items granted — the screens (and their parent headings) holders open. */
+  menus: number;
+  /** "2 approval steps · 1 authority level", or empty. */
   reach: string;
   inUse: boolean;
   haystack: string;
@@ -44,7 +47,6 @@ function toRow(role: Octane2RoleResponse): RoleRow {
   const levels = int(role.authorityLevelCount);
   const users = int(role.userCount);
   const reach = [
-    menus > 0 ? plural(menus, 'menu grant') : '',
     steps > 0 ? plural(steps, 'approval step') : '',
     levels > 0 ? plural(levels, 'authority level') : '',
   ]
@@ -55,8 +57,9 @@ function toRow(role: Octane2RoleResponse): RoleRow {
     roleId: int(role.roleId),
     users,
     activeUsers: int(role.activeUserCount),
+    menus,
     reach,
-    inUse: users + menus + steps + levels > 0,
+    inUse: users + steps + levels > 0,
     haystack: `${role.roleName}${role.roleDescription}`.toLowerCase(),
   };
 }
@@ -68,9 +71,12 @@ function toRow(role: Octane2RoleResponse): RoleRow {
  * flags **across** roles — which roles may enter a WBS / spend proposal — and a column per
  * flag is the only layout that lets that be compared down the page.
  *
- * Each role also says where it is used — accounts, menu grants, approval steps, authority
- * levels — because that is the reach of every edit made to it, and the legacy grid showed
- * none of it. The 33 roles load once; tabs, search and sort run in memory.
+ * Each role also says where it is used — accounts, approval steps, authority levels — and how
+ * many menu items it grants, linking to the role's menu access (legacy "Access Control | By
+ * Role", menuId 154). The 33 roles load once; tabs, search and sort run in memory.
+ *
+ * The screen folds two legacy rows, as tabs of one destination: Create Role (88) gives the
+ * details actions, Access Control | By Role (154) the menu access. Each shows only to holders.
  */
 @Component({
   selector: 'to-admin2-role-list',
@@ -99,8 +105,11 @@ export class Admin2RoleListComponent {
   private readonly store = inject(Octane2RolesStore);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly menuAccess = inject(MenuAccessService);
 
   protected readonly icons = ICON_REGISTRY;
+  protected readonly canEditDetails = computed(() => this.menuAccess.tabsFor(ROLES_2_ROUTE).includes(ROLES_2_TAB_DETAILS));
+  protected readonly canEditAccess = computed(() => this.menuAccess.tabsFor(ROLES_2_ROUTE).includes(ROLES_2_TAB_ACCESS));
   protected readonly flags = ROLE_FLAGS;
   protected readonly route = ROLES_2_ROUTE;
   protected readonly plural = plural;
@@ -166,6 +175,8 @@ export class Admin2RoleListComponent {
         switch (key) {
           case 'roleName':
             return direction * (COLLATOR.compare(a.role.roleName, b.role.roleName) || a.roleId - b.roleId);
+          case 'menus':
+            return direction * (a.menus - b.menus || a.roleId - b.roleId);
           case 'users':
             return direction * (a.users - b.users || a.roleId - b.roleId);
           default:
@@ -175,8 +186,8 @@ export class Admin2RoleListComponent {
   });
 
   constructor() {
-    // Shows what the store already holds at once and revalidates behind it.
-    this.store.refresh();
+    // Shows what the store already holds at once, and re-fetches only once it is stale.
+    this.store.ensureFresh();
 
     // After a save, bring the saved role into view once: widen the tab if it is filtered out.
     let settled = false;
@@ -206,7 +217,7 @@ export class Admin2RoleListComponent {
     } else {
       this.sortKey.set(key);
       // Busiest first is the useful direction for a count.
-      this.desc.set(key === 'users');
+      this.desc.set(key === 'users' || key === 'menus');
     }
   }
 

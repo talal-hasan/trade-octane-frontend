@@ -1,0 +1,442 @@
+<div class="to-um__layout" [class.to-um__layout--wide]="view() === 'access'">
+  <!-- ─── Accounts ────────────────────────────────────────────────────────────── -->
+  <section class="to-adm__card to-um__users" data-tour="um-users" aria-label="Accounts">
+    <div class="to-um__users-head">
+      <div class="to-adm__search to-um__search">
+        <tabler-icon [icon]="icons['search']" [size]="15" />
+        <input
+          pInputText
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Search name, login, email or role"
+          aria-label="Search accounts"
+        />
+      </div>
+      <div class="to-adm__segmented to-um__filters" role="tablist" aria-label="Filter accounts">
+        @for (filter of userFilters; track filter.key) {
+          <button
+            type="button"
+            role="tab"
+            class="to-adm__segment"
+            [class.to-adm__segment--on]="userFilter() === filter.key"
+            [attr.aria-selected]="userFilter() === filter.key"
+            (click)="userFilter.set(filter.key)"
+          >
+            {{ filter.label }}
+            <span class="to-numeric">{{ userCounts()[filter.key] }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (usersLoading()) {
+      <div class="to-um__user-list" aria-busy="true">
+        @for (row of skeletonRows; track row) {
+          <div class="to-um__user-skeleton">
+            <to-skeleton width="60%" height="12px" />
+            <to-skeleton width="40%" height="10px" />
+          </div>
+        }
+      </div>
+    } @else if (usersFailed()) {
+      <to-empty-state icon="alert-triangle" heading="Could not load accounts">
+        <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retryUsers()">
+          Try again
+        </button>
+      </to-empty-state>
+    } @else if (visibleUsers().length === 0) {
+      <to-empty-state icon="users-group" heading="No accounts match" description="Try another filter or search." />
+    } @else {
+      <!-- 540 accounts, so the list renders the dozen on screen rather than all of them:
+           the first paint and every keystroke stay cheap. -->
+      <cdk-virtual-scroll-viewport
+        class="to-um__user-list"
+        [itemSize]="userRowHeight"
+        minBufferPx="540"
+        maxBufferPx="900"
+        role="list"
+      >
+        <div class="to-um__user-item" *cdkVirtualFor="let row of visibleUsers(); trackBy: trackUser" role="listitem">
+            <button
+              type="button"
+              class="to-um__user"
+              [class.to-um__user--selected]="row.user.userId === userId()"
+              [attr.aria-current]="row.user.userId === userId() ? 'true' : null"
+              (click)="choose(row.user.userId)"
+            >
+              <span class="to-um__user-line">
+                <span class="to-um__user-name">{{ row.user.fullName || row.user.userId }}</span>
+                @if (row.user.roleName) {
+                  <span class="to-um__user-role">{{ row.user.roleName }}</span>
+                } @else {
+                  <span class="to-adm__flag to-adm__flag--warn">No role</span>
+                }
+              </span>
+              <span class="to-um__user-meta to-numeric">
+                <span class="to-um__mono">{{ row.user.userId }}</span>
+                · {{ row.user.businessTypeCount }} types · {{ row.user.regionCount }} regions · {{ row.user.areaCount }} areas
+                @if (row.user.isActive !== true) {
+                  · <span class="to-um__inactive">inactive</span>
+                }
+              </span>
+            </button>
+        </div>
+      </cdk-virtual-scroll-viewport>
+    }
+  </section>
+
+  <!-- ─── The mapping ─────────────────────────────────────────────────────────── -->
+  <div class="to-um__editor">
+    @if (!userId()) {
+      <div class="to-adm__card">
+        <to-empty-state
+          icon="users-group"
+          [heading]="view() === 'access' ? 'Pick an account to see its menu access' : 'Pick an account to map'"
+          [description]="
+            view() === 'access'
+              ? 'The screens it opens in Administration 2.0 — from its role, and granted directly.'
+              : userCounts().needs > 0
+                ? userCounts().needs + ' accounts are missing a role, a business type, a region or an area — filter by Needs mapping.'
+                : 'Every account holds a role, a business type, a region and an area.'
+          "
+        />
+      </div>
+    } @else if (mappingLoading()) {
+      <div class="to-adm__form-main" aria-busy="true">
+        <to-skeleton width="100%" height="84px" />
+        <to-skeleton width="100%" height="120px" />
+        <to-skeleton width="100%" height="280px" />
+      </div>
+    } @else if (mappingFailed()) {
+      <div class="to-adm__card">
+        <to-empty-state icon="alert-triangle" heading="Could not load this mapping">
+          <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retryMapping()">
+            Try again
+          </button>
+        </to-empty-state>
+      </div>
+    } @else if (saved(); as mapping) {
+      <div class="to-adm__form-main">
+        @if (catalogueFailed()) {
+          <div class="to-adm__alert to-adm__alert--warn" role="alert">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>Roles, business types and regions did not load, so only what the account holds is shown.</span>
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="loadCatalogue()">Try again</button>
+          </div>
+        }
+
+        <!-- Who -->
+        <section class="to-adm__card to-adm__card--pad to-um__identity">
+          <span class="to-um__avatar" aria-hidden="true">
+            <tabler-icon [icon]="icons['user']" [size]="18" />
+          </span>
+          <span class="to-um__identity-text">
+            <span class="to-um__identity-name">{{ mapping.fullName || mapping.userId }}</span>
+            <span class="to-um__identity-meta">
+              <span class="to-um__mono">{{ mapping.userId }}</span>
+              @if (mapping.email) {
+                · {{ mapping.email }}
+              }
+            </span>
+          </span>
+          <to-status-pill
+            [status]="mapping.userIsActive ? 'approved' : 'draft'"
+            [label]="mapping.userIsActive ? 'Active' : 'Inactive'"
+          />
+        </section>
+
+        @if (canMap() && canAccess()) {
+          <div class="to-adm__segmented to-um__views" role="tablist" aria-label="Account view" data-tour="um-views">
+            <button
+              type="button"
+              role="tab"
+              class="to-adm__segment"
+              [class.to-adm__segment--on]="view() === 'mapping'"
+              [attr.aria-selected]="view() === 'mapping'"
+              (click)="selectView('mapping')"
+            >
+              Mapping
+              @if (dirty()) {
+                <span class="to-um__dot" aria-label="unsaved changes"></span>
+              }
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="to-adm__segment"
+              [class.to-adm__segment--on]="view() === 'access'"
+              [attr.aria-selected]="view() === 'access'"
+              (click)="selectView('access')"
+            >
+              Menu access
+            </button>
+          </div>
+        }
+
+        <!-- Kept alive once opened, so switching back to it costs nothing and unsaved ticks survive. -->
+        @if (accessVisited()) {
+          <to-user-access-panel [userId]="mapping.userId" apiRoot="admin2" [hidden]="view() !== 'access'" />
+        }
+        @if (view() === 'mapping') {
+        <!-- Role and business types -->
+        <section class="to-adm__card to-adm__card--pad to-adm__form-section">
+          <div class="to-adm__form-grid">
+            <div class="to-adm__form-field" data-tour="um-role">
+              <label class="to-adm__form-label" for="umRole">
+                Role <span class="to-adm__form-hint">One per account</span>
+              </label>
+              <p-select
+                class="to-um__select"
+                inputId="umRole"
+                [formControl]="roleControl"
+                [options]="roleOptions()"
+                optionLabel="name"
+                optionValue="id"
+                [filter]="true"
+                filterBy="name,description"
+                filterPlaceholder="Search roles"
+                placeholder="No role"
+                [showClear]="true"
+                [loading]="!catalogue() && !catalogueFailed()"
+                [invalid]="attempted() && roleControl.value === null && plan().kind === 'blocked'"
+                appendTo="body"
+              >
+                <ng-template #item let-option>
+                  <span class="to-um__option">
+                    <span>{{ option.name }}</span>
+                    @if (option.description) {
+                      <span class="to-um__option-desc">{{ option.description }}</span>
+                    }
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (selectedRole()?.description) {
+                <span class="to-adm__form-hint">{{ selectedRole()?.description }}</span>
+              }
+            </div>
+
+            <div class="to-adm__form-field">
+              <span class="to-adm__form-label" id="umTypes">
+                Business types <span class="to-adm__form-hint to-numeric">{{ businessTypeIds().size }} selected</span>
+              </span>
+              <div class="to-um__chips" role="group" aria-labelledby="umTypes">
+                @for (type of businessTypes(); track type.id) {
+                  <button
+                    type="button"
+                    class="to-um__chip"
+                    [class.to-um__chip--on]="businessTypeIds().has(type.id)"
+                    [class.to-um__chip--flagged]="!!type.flag"
+                    [attr.aria-pressed]="businessTypeIds().has(type.id)"
+                    [pTooltip]="type.flag"
+                    (click)="toggleBusinessType(type.id)"
+                  >
+                    @if (businessTypeIds().has(type.id)) {
+                      <tabler-icon [icon]="icons['check']" [size]="13" />
+                    }
+                    {{ type.name }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Regions and areas -->
+        <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="um-geo">
+          <div class="to-um__geo-head">
+            <h2 class="to-adm__subtitle">Regions and areas</h2>
+            <span class="to-adm__form-hint to-numeric">
+              {{ regionCodes().size }} regions · {{ areaCodes().size }} areas selected
+            </span>
+          </div>
+
+          <div class="to-um__regions">
+            @for (region of geography(); track region.code) {
+              @let on = regionCodes().has(region.code);
+              <div class="to-um__region" [class.to-um__region--on]="on">
+                <div class="to-um__region-head">
+                  <button
+                    type="button"
+                    class="to-um__region-toggle"
+                    [attr.aria-pressed]="on"
+                    [attr.aria-expanded]="on"
+                    (click)="toggleRegion(region)"
+                  >
+                    <span class="to-um__box" [class.to-um__box--on]="on" aria-hidden="true">
+                      @if (on) {
+                        <tabler-icon [icon]="icons['check']" [size]="12" />
+                      }
+                    </span>
+                    <span class="to-um__region-name">{{ region.name }}</span>
+                    @if (region.flag) {
+                      <span class="to-adm__flag to-adm__flag--warn">{{ region.flag }}</span>
+                    }
+                  </button>
+                  @if (on && region.areas.length > 0) {
+                    <span class="to-um__region-count to-numeric">
+                      {{ selectedAreaCount(region) }} of {{ region.areas.length }} areas
+                    </span>
+                    <button type="button" class="to-um__link" (click)="setAllAreas(region, true)">All</button>
+                    <button type="button" class="to-um__link" (click)="setAllAreas(region, false)">None</button>
+                  } @else if (!on) {
+                    <span class="to-um__region-count to-numeric">{{ region.areas.length }} areas</span>
+                  }
+                </div>
+
+                @if (on) {
+                  @if (region.areas.length === 0) {
+                    <p class="to-adm__form-hint to-um__region-empty">This region has no areas in the catalogue.</p>
+                  } @else {
+                    <div class="to-um__chips to-um__areas" role="group" [attr.aria-label]="'Areas in ' + region.name">
+                      @for (area of region.areas; track area.code) {
+                        <button
+                          type="button"
+                          class="to-um__chip to-um__chip--small"
+                          [class.to-um__chip--on]="areaCodes().has(area.code)"
+                          [class.to-um__chip--flagged]="!!area.flag"
+                          [attr.aria-pressed]="areaCodes().has(area.code)"
+                          [pTooltip]="area.flag"
+                          (click)="toggleArea(area.code)"
+                        >
+                          @if (areaCodes().has(area.code)) {
+                            <tabler-icon [icon]="icons['check']" [size]="12" />
+                          }
+                          {{ area.name }}
+                        </button>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          @if (outsideAreas().length > 0) {
+            <div class="to-adm__alert to-adm__alert--warn" role="alert">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span>
+                These areas are held without their region, so they grant nothing and cannot be saved as they are.
+                Tick their region above, or remove them:
+                <span class="to-um__outside">
+                  @for (area of outsideAreas(); track area.code) {
+                    <button type="button" class="to-um__outside-chip" (click)="removeOutsideArea(area.code)">
+                      {{ area.name }}
+                      <tabler-icon [icon]="icons['x']" [size]="12" />
+                    </button>
+                  }
+                </span>
+              </span>
+            </div>
+          }
+        </section>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- ─── Summary and actions ─────────────────────────────────────────────────── -->
+  @if (view() === 'mapping' && saved(); as mapping) {
+    <aside class="to-adm__form-aside to-um__aside">
+      <div class="to-adm__summary" data-tour="um-summary">
+        <h2 class="to-adm__summary-title">
+          {{ diff().count === 0 ? 'No changes yet' : diff().count === 1 ? '1 change to save' : diff().count + ' changes to save' }}
+        </h2>
+
+        <dl class="to-adm__summary-list">
+          <div class="to-adm__summary-row">
+            <dt>Role</dt>
+            <dd>{{ selectedRole()?.name ?? 'None' }}</dd>
+          </div>
+          <div class="to-adm__summary-row">
+            <dt>Holds</dt>
+            <dd class="to-numeric">
+              {{ businessTypeIds().size }} types · {{ regionCodes().size }} regions · {{ areaCodes().size }} areas
+            </dd>
+          </div>
+        </dl>
+
+        @if (diff().count > 0) {
+          <div class="to-adm__summary-block">
+            <ul class="to-adm__changes">
+              @if (summary().role; as role) {
+                <li class="to-adm__change">
+                  <span class="to-adm__change-label">Role</span>
+                  <span class="to-adm__change-values">
+                    <s>{{ role.from }}</s>
+                    <tabler-icon [icon]="icons['arrow-right']" [size]="12" />
+                    {{ role.to }}
+                  </span>
+                </li>
+              }
+              @for (group of changeGroups(); track group.label) {
+                <li class="to-adm__change">
+                  <span class="to-adm__change-label">{{ group.label }}</span>
+                  @if (group.added.length > 0) {
+                    <span class="to-um__delta to-um__delta--add">
+                      + {{ group.added.slice(0, 6).join(', ') }}
+                      @if (group.added.length > 6) {
+                        and {{ group.added.length - 6 }} more
+                      }
+                    </span>
+                  }
+                  @if (group.removed.length > 0) {
+                    <span class="to-um__delta to-um__delta--remove">
+                      − {{ group.removed.slice(0, 6).join(', ') }}
+                      @if (group.removed.length > 6) {
+                        and {{ group.removed.length - 6 }} more
+                      }
+                    </span>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (plan().kind === 'removals') {
+          <p class="to-adm__form-hint to-um__note">
+            This leaves the account without a complete mapping, so it is saved as individual removals.
+          </p>
+        }
+      </div>
+
+      @if (plan(); as current) {
+        @if (current.kind === 'blocked' && (attempted() || outsideAreas().length > 0)) {
+          <ul class="to-um__reasons" role="status">
+            @for (reason of current.reasons; track reason) {
+              <li>
+                <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+                {{ reason }}
+              </li>
+            }
+          </ul>
+        }
+      }
+
+      <div class="to-adm__form-actions">
+        <button
+          type="button"
+          pButton
+          class="p-button-text p-button-sm"
+          [disabled]="!dirty() || saving()"
+          (click)="resetDraft()"
+        >
+          Reset
+        </button>
+        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving()" (click)="submit()">
+          {{ saving() ? 'Saving…' : 'Save mapping' }}
+        </button>
+      </div>
+    </aside>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="confirmingRole()"
+  (visibleChange)="confirmingRole.set(false)"
+  title="Change this account's role?"
+  [message]="roleChangeMessage()"
+  confirmLabel="Change role"
+  (confirmed)="confirmRoleChange()"
+  (cancelled)="confirmingRole.set(false)"
+/>

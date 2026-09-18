@@ -1,5 +1,8 @@
 import {
   IconAlertTriangle,
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
   IconBell,
   IconChartBar,
   IconCheck,
@@ -167,6 +170,9 @@ export const ICON_REGISTRY: Record<string, TablerIcon> = {
   'alert-circle': IconAlertCircle,
   'info-circle': IconInfoCircle,
   'map-pin': IconMapPin,
+  'arrow-up': IconArrowUp,
+  'arrow-down': IconArrowDown,
+  'grip-vertical': IconGripVertical,
   tag: IconTag,
   dots: IconDots,
 };

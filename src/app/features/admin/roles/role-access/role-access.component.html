@@ -18,11 +18,7 @@
   <to-page-header
     [title]="role.roleName"
     subtitle="What everyone holding this role can reach."
-    [breadcrumbs]="[
-      { label: 'Administration' },
-      { label: 'Roles', route: '/admin/roles' },
-      { label: role.roleName },
-    ]"
+    [breadcrumbs]="[{ label: adminLabel }, { label: 'Roles', route: rolesRoute }, { label: role.roleName }]"
   >
     <div actions class="to-ra__actions">
       @if (dirty()) {
@@ -58,6 +54,14 @@
       — every change here applies to all of them immediately.
     </span>
   </div>
+
+  @if (octane2Deactivated()) {
+    <div class="to-ra__notice" role="status">
+      <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+      This role is deactivated, so it cannot be given to new accounts. Everyone who already holds
+      it still opens the screens granted here.
+    </div>
+  }
 
   @if (!role.isActive) {
     <div class="to-ra__notice" role="status">

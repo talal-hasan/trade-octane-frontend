@@ -53,6 +53,7 @@ const ADMINISTRATION_2 = node(
     node(93, 'Distributor Access'),
     node(88, 'Create Role'),
     node(89, 'Level Of Authorities'),
+    node(90, 'Approval Hierarchy'),
     node(91, 'User Mapping'),
     node(97, 'Access Control'),
     node(154, 'Access Control | By Role'),
@@ -156,27 +157,51 @@ describe('transformMenu', () => {
     expect(findItem(result.sections, '/legacy/196')?.pending).toBe(true);
   });
 
-  it('gives Administration 2.0 its own group: Distributors, and one destination for the rest', () => {
+  it('gives Administration 2.0 its own group, one destination per built screen', () => {
     const result = transformMenu([ADMINISTRATION_2]);
     const section = result.sections.find((candidate) => candidate.label === 'Administration 2.0');
 
-    // Built screens first, the legacy fold last — even though Distributor Access (93, order 2)
-    // precedes Create Role (88, order 3) in the legacy menu.
+    // Every row this user holds is now ported, so nothing folds into /legacy/92 and the
+    // group keeps the legacy menu's own order.
     expect(section?.items.map((item) => item.route)).toEqual([
       '/admin2/distributors',
+      '/admin2/distributor-access',
       '/admin2/roles',
       '/admin2/level-of-authorities',
-      '/legacy/92',
+      '/admin2/claim-hierarchy',
+      '/admin2/user-mapping',
+      '/admin2/activity-logs',
     ]);
+    expect(findItem(result.sections, '/admin2/distributor-access')?.pending).toBe(false);
+    expect(findItem(result.sections, '/legacy/92')).toBeUndefined();
     expect(findItem(result.sections, '/admin2/distributors')?.pending).toBe(false);
     expect(findItem(result.sections, '/admin2/roles')?.pending).toBe(false);
+    // Create Role and Access Control | By Role are two facets of one Roles destination.
+    expect(findItem(result.sections, '/admin2/roles')?.menuIds.sort((a, b) => a - b)).toEqual([88, 154]);
+    expect(findItem(result.sections, '/admin2/roles')?.tabs).toEqual(['details', 'access']);
+    // User Mapping and Access Control are two views of one account on User Mapping.
+    expect(findItem(result.sections, '/admin2/user-mapping')?.menuIds.sort((a, b) => a - b)).toEqual([91, 97]);
+    expect(findItem(result.sections, '/admin2/user-mapping')?.tabs).toEqual(['mapping', 'access']);
 
-    const legacy = findItem(result.sections, '/legacy/92');
-    expect(legacy?.label).toBe('Legacy screens');
-    expect(legacy?.pending).toBe(true);
-    expect(legacy?.menuIds.sort((a, b) => a - b)).toEqual([91, 93, 97, 154, 230]);
     expect(result.unmapped).toEqual([]);
     expect(result.sections.some((candidate) => candidate.label === 'More')).toBe(false);
+  });
+
+  it('has no Legacy screens item in Administration 2.0, and still never drops an unported row', () => {
+    // Claim KPI (100) and User Roles (232) have no screen and no blueprint entry. The
+    // Administration 2.0 group lists built screens only; the rows themselves still render —
+    // under More, pointing at the placeholder — because a granted row is never dropped.
+    const result = transformMenu([
+      node(92, 'Administration 2.0', [node(87, 'Create Distributor'), node(100, 'Claim KPI'), node(232, 'User Roles')], 'cogs'),
+    ]);
+    const section = result.sections.find((candidate) => candidate.label === 'Administration 2.0');
+
+    expect(section?.items.map((item) => item.route)).toEqual(['/admin2/distributors']);
+    expect(findItem(result.sections, '/legacy/92')).toBeUndefined();
+
+    expect(findItem(result.sections, '/legacy/100')?.pending).toBe(true);
+    expect(findItem(result.sections, '/legacy/232')?.pending).toBe(true);
+    expect(result.unmapped.map((row) => row.menuId).sort((a, b) => Number(a) - Number(b))).toEqual([100, 232]);
   });
 
   it('keeps 2.0 rows that share a 1.0 name out of the 1.0 screens', () => {

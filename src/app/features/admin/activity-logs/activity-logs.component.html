@@ -1,8 +1,4 @@
-<to-page-header
-  title="Activity Logs"
-  subtitle="Who did what, and when."
-  [breadcrumbs]="[{ label: 'Administration' }, { label: 'Activity Logs' }]"
->
+<to-page-header title="Activity Logs" [subtitle]="subtitle" [breadcrumbs]="breadcrumbs">
   <button
     actions
     type="button"
@@ -136,7 +132,7 @@
               <td class="to-adm__td">
                 <span>{{ row.activity || '—' }}</span>
                 @if (row.description) {
-                  <span class="to-alg__desc">{{ row.description }}</span>
+                  <span class="to-alg__desc" [title]="row.description">{{ row.description }}</span>
                 }
               </td>
               <td class="to-adm__td to-adm__td--mono">

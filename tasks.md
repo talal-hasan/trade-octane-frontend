@@ -747,3 +747,262 @@ Legacy `CPS_Level_Of_Authorities.aspx`, menuId 89, over `/api/v1/admin2/level-of
 ### Not done
 
 - Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — User Mapping (2026-09-17)
+
+Legacy `CPS_User_Mapping.aspx`, menuId 91, over `/api/v1/admin2/user-mapping`. One Promo_2
+account holds **one role** and N business types, N regions and N areas (540 accounts; up to
+15 regions and 68 areas per account).
+
+### Built
+
+- `/admin2/user-mapping` — one route, two tabs in the query string (`?tab=regions`,
+  `?user=<login>`), so a mapping can be linked to.
+- **Map a user** (queue mode): accounts on the left (search; All / Needs mapping / Active /
+  Inactive with counts, all in memory), the editor in the middle, the pending changes on the
+  right. The editor opens on what the account holds — legacy opened an empty form. Role is a
+  single searchable select; business types are toggle chips; regions expand to their areas
+  with All / None, and unticking a region takes its areas. Held codes the catalogue no longer
+  has stay visible, flagged. Areas held without their region are called out with remove
+  buttons, since the API refuses them.
+- Save goes through `planSave` (spec'd): a complete mapping is one `PUT`; a mapping that only
+  takes a whole category away (e.g. no role left) is applied as the per-item DELETEs; an
+  incomplete mapping that adds something is blocked with the reason. A role change is
+  confirmed (it moves the account in claim approval routing).
+- **Roles by region** (analysis mode, the client's request): census (accounts, regions and
+  roles in use, and the two gaps — without a region / without a role — as buttons), accounts
+  per role across all regions as chips, and a row per region with its account count, a bar
+  relative to the busiest region, and its top roles. **Every count opens a drawer** with the
+  accounts behind it (the same filters on `/region-roles/users`, so they agree), narrowable by
+  role, paged, each one link to its mapping.
+- Tour registry matchers now receive the query string, so a query-param tab resolves its own
+  tour (the shell re-resolves tours on every navigation).
+
+### Contract facts worth keeping
+
+- **`/region-roles/users` returns one row per account per region**, while `roleTotals` counts
+  each account once. A drawer spanning regions (a role, or "Without a role") therefore loads
+  every row (200 per request, following `nextPage`), folds them by account with
+  `groupRowsByAccount`, and pages by account. First shipped paging rows: RSM read "31 accounts"
+  over a list "of 40" (MIS: 57 vs 416). A region drawer is already one row per account and
+  stays server-paged.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- Legacy 2.0 rows "User Roles" (232) and "User Regions" (233) are still in the Legacy
+  screens fold; Roles by region may cover what they were for — confirm with the business.
+
+---
+
+## Administration 2.0 — Claim Hierarchy (2026-09-17)
+
+Legacy `CPS_Claim_Hierarchy.aspx` ("Approval Hierarchy"), menuId 90, over
+`/api/v1/admin2/claim-hierarchies` (Promo_Management_2 `Claim_Hierarchy`: 7 business types,
+4–17 steps each, 34 roles).
+
+### Built
+
+- `/admin2/claim-hierarchy?businessType=<id>` — one screen, builder mode: business type chips
+  with step counts; **Roles** (Role ID and name, as legacy) | **Approval order** | summary.
+- The order holds only the roles that approve. Drag a role in from the list (or Add → last
+  step); drag steps by the handle or use the arrows; remove with × or by dragging back.
+  Deactivated roles cannot be added (a stored one can stay, move or go — the API's rule).
+  Built on `@angular/cdk/drag-drop`, which PrimeNG's own OrderList uses; no new dependency.
+- Stored ties and gaps are called out (FSD, Dairy and MT store two roles as step 7); Save is
+  allowed with no other change so it can renumber 1, 2, 3.
+- Summary: steps (was N), added, removed, before → after chain when reordered, and warnings
+  when RMC (role 3, claim step-back) or role 7 (claim final approval) is removed, and that
+  documents waiting on a removed role are no longer handed to it. Clearing the whole order is
+  confirmed. One `PUT` per save; the Roles store is refreshed so approval-step counts move.
+- All hierarchies are fetched once (selected first, the rest 3 at a time), so switching
+  business type is instant. `claim-hierarchy.util.ts` (ties/gaps, diff, move/insert) is spec'd.
+
+### Contract facts worth keeping
+
+- The order is read at **every** approval step by the claim, payment recovery, vehicle
+  maintenance, promotion calculator and CCC procedures: a save reaches documents already in
+  approval.
+- The delete endpoint is not used: removals are part of the draft and saved by the one `PUT`.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Activity Logs (2026-09-17)
+
+Legacy `Activity_Logs_Report_Promo2.aspx`, menuId 230, over `/api/v1/admin2/activity-logs`.
+
+### Built
+
+- `/admin2/activity-logs` is **the Administration 1.0 Activity Logs component**, not a copy.
+  The backend serves both with the same report handlers (validation, 31-day range, 100-user
+  cap, offset paging, 25,000-row CSV) and differs only in the table and the group rules, so
+  the route passes `data: { activityLogSource: 'admin2' }` and `AdminOperationsApi`'s three
+  activity-log calls take an `ActivityLogSource` (`'admin'` default). Breadcrumb, subtitle and
+  CSV filename follow the source; the tour is shared.
+- Both screens now show a log entry's full description on hover (it is truncated to a line).
+
+### Contract facts worth keeping
+
+- 2.0 groups: **Admins** are Promo_2 accounts with `Role_ID` 13; **Users** every other account,
+  including accounts with no role (legacy left those out of every group); **Systems** names
+  matching no account or distributor; **Distributors**.
+- **4,090 of 1,352,921 rows in `Promo_Management_2.dbo.Activity_Logs` carry password text in
+  `Description`** (distributor create/update and forgotten-password rows written by legacy,
+  2019-03-14 → 2026-08-08). The API returns it unredacted in the list and the CSV. Needs a
+  server-side redaction decision; not masked in the UI, which would leave the export exposed.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Access Control By Role (2026-09-17)
+
+Legacy `CPS_Access_Rights_RoleWise.aspx`, menuId 154, over `/api/v1/admin2/roles/{roleId}/access`
+(Octane 2 menu items, `Promo_Management_2.dbo.MenuItems_Mapping_ByRole_O2`; 49 items, 46 active;
+Admin holds 25).
+
+### Built
+
+- `/admin2/roles/:roleId/access` is **the Administration 1.0 role access screen** (reach banner,
+  filterable menu tree, confirm-before-save naming how many active users it affects). The
+  backend serves the same handlers with an Octane 2 menu scope. `AdminApiRoot` + `adminApiRootOf`
+  (`core/api/api.types.ts`) now select `/admin` or `/admin2` for shared screens — Activity Logs
+  moved onto the same `data: { adminApiRoot: 'admin2' }` key.
+- 2.0 difference, handled: the access path does not read a 2.0 role's status, so a deactivated
+  role still opens its screens. The response always says active; the screen takes the status
+  from `Octane2RolesStore` and says exactly that.
+- Roles list: a sortable **Menu access** column ("25 menu items ›") and an **Access** row action.
+  Role form: "N menu items · Menu access" under Where it is used. Creating a role now lands on
+  its menu access — a new role opens nothing until given screens.
+- Nav: row 154 folds into the Roles destination as tab `access`, Create Role (88) as `details`.
+  `MenuTabGuard` keeps a holder of one out of the other's routes, and the list hides New/Edit/
+  Activate/Deactivate or Access accordingly (locally, 3 users hold 88 directly, 2 hold 154).
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The cross-role grant grid and its CSV (`/api/v1/admin2/role-menus`) are not surfaced; 1.0
+  shows its equivalent in Access Explorer, which is not on the 2.0 branch's nav.
+
+---
+
+## Administration 2.0 — Access Control per user (2026-09-17)
+
+Legacy `CPS_Access_Rights.aspx`, menuId 97, over `/api/v1/admin2/users/{userId}/access`. Added
+to User Mapping as a view of the selected account, since both screens start by finding a person.
+
+### Built
+
+- `features/admin/shared/user-access-panel/` — the Administration 1.0 user Access tab, lifted
+  out of `user-detail` into a component with `userId` and `apiRoot` inputs. 1.0 renders it with
+  the default `admin`; User Mapping renders it with `admin2`. No copy of the tree, counters or
+  save logic. Also handles the 404 the 2.0 accounts can produce (see below) and now has a
+  Discard button.
+- User Mapping: **Mapping | Menu access** switch on the selected account, with the view in the
+  query string (`?view=access`). Menu access hides the mapping summary column and widens the
+  panel. Switching views keeps the mapping draft and asks before dropping unsaved access ticks;
+  the route guard covers both.
+- Nav: row 97 folds into User Mapping as tab `access`, row 91 as `mapping`. A holder of only 97
+  sees the account list and Menu access, without Roles by region or the mapping editor.
+
+### Contract facts worth keeping
+
+- The 2.0 access endpoints read users from **`Promo_Management.dbo.USERS`**, while User Mapping
+  lists `Promo_Management_2` accounts: **8 of the 540 have no 1.0 user record**, so the access
+  call 404s for them. The panel says why rather than showing an error.
+- Direct Octane 2 grants live in `Promo_Management.dbo.MenuItems_Mapping` (121 users, 672 rows);
+  role-derived access comes from `MenuItems_Mapping_ByRole_O2` and the Promo_2 `Role_ID`, which
+  is what the sidebar is built from. A save here only ever touches the direct Octane 2 grants.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The cross-user grant grid and CSV (`/api/v1/admin2/user-menus`) are not surfaced.
+
+### Performance pass (2026-09-17)
+
+Measured first: every query behind User Mapping runs in 2–31 ms locally (accounts picker 31 ms,
+catalogue 3 ms, one account's mapping 2 ms), and the production chunk is 88.8 kB / 19.7 kB
+transferred — so the cost was in the client, not the database or the payload.
+
+- **The account list is virtual-scrolled** (`cdk-virtual-scroll-viewport`, fixed 54 px rows):
+  about a dozen rows in the DOM instead of 540, on first paint and on every keystroke.
+- **`KeyedCollectionStore.ensureFresh()`** — a collection loaded less than a minute ago is not
+  re-fetched when a screen is re-opened; writes already patch their own row. Distributors,
+  Roles, Levels of Authority and User Mapping open from memory. Try again still forces a load.
+- **The Menu access panel is kept alive** once opened, so switching Mapping ↔ Menu access
+  neither re-fetches nor loses unsaved ticks.
+
+Note for testing: `npm run start:live` serves unminified lazy chunks and compiles them on
+demand, so the first visit to a screen is always slower there than in a production build.
+
+---
+
+## Administration 2.0 — Distributor Access (2026-09-18)
+
+Legacy `CPS_Access_Control.aspx`, menuId 93, over `/api/v1/admin2/distributor-access`. One
+screen at `/admin2/distributor-access`: the distributor grid is the picker, and the portal
+menu tree beside it is what every ticked distributor will hold.
+
+The "Legacy screens" item (`/legacy/92`) is gone from the Administration 2.0 sidebar: its
+helper and the three rows still on it — Claim KPI (100), User Roles (232), User Regions
+(233) — are commented out of the blueprint. Those rows are active and granted locally (100
+to 3 users directly and 1 role; 232 and 233 to 1 role each), and an unmapped granted row is
+never dropped, so for those holders each one now renders on its own under **More**.
+
+### Built
+
+- `features/admin2/distributor-access/` — the screen, plus `menu-grant-tree/` and a pure
+  `distributor-access.util.ts` (menu index, cascade, orphan/unknown detection, union,
+  intersection, save impact) with 22 specs.
+- `services/admin2-distributor-access.api.ts` and `services/distributor-access-catalogue.store.ts`.
+  The store extends `KeyedCollectionStore` for the distributors and stashes the menu tree
+  off the same response, since the server builds both from one command.
+- **The tree is ticked with what is stored.** Legacy's load of current grants was commented
+  out, so every save there started from an empty tree and revoked whatever was not
+  re-ticked. Selecting one distributor shows exactly its set.
+- **The effect is stated before the write.** The panel lists which distributors change and
+  what each gains and loses, computed from their loaded grants — not a restatement of the
+  request. The confirm dialog repeats it, and turns danger when the ticked set is empty.
+- **Orphans cannot be created and are not hidden.** Ticking cascades both ways (a child
+  grants its parents, unticking a parent revokes its children). Grants already stored that
+  way are flagged `hidden` on their row, with one-click *Grant the parents* / *Untick them*;
+  a save that keeps one passes `allowOrphanedGrants=true`, so an untouched distributor is
+  never refused.
+- **Multi-select is honest about disagreement.** Up to 25 distributors, each one's grants are
+  fetched (6 at a time, cached for the visit) and a row only some of them hold shows the
+  spread — `3 of 7` — with *Any of them* / *All of them* to resolve it. Over 25, the grants
+  are not fetched: the tree starts empty and an alert says the save replaces whatever each
+  of them holds. The tree opens on the intersection, never the union.
+- Grid: select-all / none over the whole filtered set (capped at the server's 1,000 per
+  write), status and access segmented filters, business type, search, six sortable columns,
+  50 rows a page — all in memory. Row actions are **Access**, **Edit** (the account form) and
+  **Delete**, which is the legacy Delete: deactivate, with the dialog saying the record,
+  its claims and its menu grants are kept.
+
+### Contract facts worth keeping
+
+- Verified locally: **520** distributors (388 active), **23** menu items of which 8 are
+  children of just two parents (One Window 19, ROI Reports 25), **8,807** grants, and every
+  distributor holds at least one — so the census's "Hold nothing" reads 0 today.
+- **200 distributors hold exactly one orphaned grant**, so the hidden-grant banner is a
+  common sight rather than an edge case. No grant points at a menu id the catalogue lost,
+  so the "no longer has" notice is defensive only.
+- The grid's business type, territory and city come from `DistributorAccountsStore`, shared
+  with the Distributors screen. The join is skipped rather than fatal when it fails: someone
+  holding 93 without 87 must still be able to read and fix access.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The panel sits to the right of the grid and stacks under it below 1100px, rather than
+  always below it as in legacy. Sticky keeps the tree and the save in view while rows are
+  ticked; say so if it should always sit underneath.

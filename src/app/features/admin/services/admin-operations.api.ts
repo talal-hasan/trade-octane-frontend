@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
-import { unwrapData } from '../../../core/api/api.types';
+import { AdminApiRoot, unwrapData } from '../../../core/api/api.types';
 import { refusalsAsInfo } from '../../../core/interceptors/error.interceptor';
 import {
   ActivityCandidateResponse,
@@ -323,10 +323,13 @@ export class AdminOperationsApi {
    * Who acted in a group and date range — the people the logs call is then made for. Ordered
    * by display name. A 400 when the range holds more than 5,000 distinct actors.
    */
-  activityLogActors(query: ActivityLogActorQuery): Observable<ActivityLogActorResponse[]> {
+  activityLogActors(
+    query: ActivityLogActorQuery,
+    source: AdminApiRoot = 'admin',
+  ): Observable<ActivityLogActorResponse[]> {
     return this.api
       .get<ActivityLogActorResponse[] | { data: ActivityLogActorResponse[] }>(
-        '/admin/activity-logs/actors',
+        `/${source}/activity-logs/actors`,
         // Spread, not cast: the required fields make `as Query` a compile error, and a
         // literal keeps every field checked against what a query string can carry.
         { ...query },
@@ -334,18 +337,21 @@ export class AdminOperationsApi {
       .pipe(map(unwrapData));
   }
 
-  activityLogs(query: ActivityLogQuery): Observable<ActivityLogPageResponse> {
+  activityLogs(query: ActivityLogQuery, source: AdminApiRoot = 'admin'): Observable<ActivityLogPageResponse> {
     return this.api
       .get<ActivityLogPageResponse | { data: ActivityLogPageResponse }>(
-        '/admin/activity-logs',
+        `/${source}/activity-logs`,
         { ...query },
       )
       .pipe(map(unwrapData));
   }
 
   /** The same filters as `activityLogs`, as CSV. A 400 past 25,000 rows. */
-  exportActivityLogs(query: Omit<ActivityLogQuery, 'page' | 'pageSize'>): Observable<Blob> {
-    return this.api.downloadCsv('/admin/activity-logs/export', { ...query });
+  exportActivityLogs(
+    query: Omit<ActivityLogQuery, 'page' | 'pageSize'>,
+    source: AdminApiRoot = 'admin',
+  ): Observable<Blob> {
+    return this.api.downloadCsv(`/${source}/activity-logs/export`, { ...query });
   }
 
   // ─── Frequency Configuration ────────────────────────────────────────────────

@@ -10,6 +10,17 @@
 // So the wire type is honest (`ApiInt`) and every read goes through `int()`.
 export type ApiInt = number | string;
 
+/**
+ * Which Administration API a shared screen talks to: 1.0 under `/admin`, or 2.0 under
+ * `/admin2`, where the backend serves the same handlers over Promo_Management_2. A route picks
+ * 2.0 with `data: { adminApiRoot: 'admin2' }` — read it with `adminApiRootOf`.
+ */
+export type AdminApiRoot = 'admin' | 'admin2';
+
+export function adminApiRootOf(routeData: Readonly<Record<string, unknown>>): AdminApiRoot {
+  return routeData['adminApiRoot'] === 'admin2' ? 'admin2' : 'admin';
+}
+
 /** Coerces a wire integer to a real number. Returns `fallback` for null/blank/NaN. */
 export function int(value: ApiInt | null | undefined, fallback = 0): number {
   if (value === null || value === undefined || value === '') {

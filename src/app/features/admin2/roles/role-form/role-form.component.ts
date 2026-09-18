@@ -11,6 +11,7 @@ import { map } from 'rxjs';
 import { Octane2RoleResponse, Octane2RoleWriteRequest } from '../../../../core/api/admin2.models';
 import { int } from '../../../../core/api/api.types';
 import { HasUnsavedChanges } from '../../../../core/guards/unsaved-changes.guard';
+import { MenuAccessService } from '../../../../core/services/menu-access.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
@@ -26,6 +27,7 @@ import {
   ROLE_TEXT_MAX,
   ROLE_TEXT_PATTERN,
   ROLES_2_ROUTE,
+  ROLES_2_TAB_ACCESS,
   plural,
   roleLabel,
 } from '../role.util';
@@ -85,8 +87,10 @@ export class Admin2RoleFormComponent implements HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+  private readonly menuAccess = inject(MenuAccessService);
 
   protected readonly icons = ICON_REGISTRY;
+  protected readonly canEditAccess = computed(() => this.menuAccess.tabsFor(ROLES_2_ROUTE).includes(ROLES_2_TAB_ACCESS));
   protected readonly flags = ROLE_FLAGS;
   protected readonly route = ROLES_2_ROUTE;
   protected readonly textMax = ROLE_TEXT_MAX;
@@ -336,10 +340,16 @@ export class Admin2RoleFormComponent implements HasUnsavedChanges {
       .subscribe({
         next: (created) => {
           this.store.upsert(created);
-          this.notifications.success(
-            `${roleLabel(created)} created. It has no screens yet — grant them in Access Control | By Role.`,
-          );
-          this.leave(int(created.roleId));
+          // A new role opens nothing until it is given screens, so that is the next step.
+          if (this.canEditAccess()) {
+            this.notifications.success(`${roleLabel(created)} created. Now choose the screens it opens.`);
+            this.form.markAsPristine();
+            this.saving.set(false);
+            void this.router.navigate([ROLES_2_ROUTE, int(created.roleId), 'access']);
+          } else {
+            this.notifications.success(`${roleLabel(created)} created. It opens no screens until it is given menu access.`);
+            this.leave(int(created.roleId));
+          }
         },
         error: (error: unknown) => this.onWriteError(error),
       });

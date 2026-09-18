@@ -5,6 +5,10 @@ export const MENU_CREATE_ROLE_2 = 88;
 
 export const ROLES_2_ROUTE = '/admin2/roles';
 
+/** The Roles screen's two facets, one per legacy menu row: Create Role (88) and Access Control | By Role (154). */
+export const ROLES_2_TAB_DETAILS = 'details';
+export const ROLES_2_TAB_ACCESS = 'access';
+
 /** The legacy validators' rule, which the API still applies to both text fields. */
 export const ROLE_TEXT_PATTERN = /^[A-Za-z0-9_ ]+$/;
 export const ROLE_TEXT_MAX = 100;

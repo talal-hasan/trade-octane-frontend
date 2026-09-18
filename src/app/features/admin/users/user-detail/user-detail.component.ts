@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -14,10 +14,9 @@ import {
   BrandResponse,
   RegionResponse,
   RoleResponse,
-  UserAccessResponse,
   UserResponse,
 } from '../../../../core/api/admin.models';
-import { int, intSet } from '../../../../core/api/api.types';
+import { int } from '../../../../core/api/api.types';
 import { MenuAccessService } from '../../../../core/services/menu-access.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -26,11 +25,10 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { StatusPillComponent } from '../../../../shared/components/status-pill/status-pill.component';
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
-import { AccessTreeComponent } from '../../shared/access-tree/access-tree.component';
-import { AdminAccessApi } from '../../services/admin-access.api';
 import { AdminRolesApi } from '../../services/admin-roles.api';
 import { AdminScopeApi } from '../../services/admin-scope.api';
 import { AdminUsersApi } from '../../services/admin-users.api';
+import { UserAccessPanelComponent } from '../../shared/user-access-panel/user-access-panel.component';
 import {
   USER_STATUS_LABELS,
   USER_STATUS_PILL,
@@ -104,7 +102,7 @@ const TAB_LABELS: Record<UserTab, string> = {
     SkeletonComponent,
     StatusPillComponent,
     ConfirmDialogComponent,
-    AccessTreeComponent,
+    UserAccessPanelComponent,
   ],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss',
@@ -116,7 +114,6 @@ export class UserDetailComponent {
   private readonly usersApi = inject(AdminUsersApi);
   private readonly rolesApi = inject(AdminRolesApi);
   private readonly scopeApi = inject(AdminScopeApi);
-  private readonly accessApi = inject(AdminAccessApi);
   private readonly menuAccess = inject(MenuAccessService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
@@ -185,7 +182,17 @@ export class UserDetailComponent {
     });
   }
 
+  private readonly accessPanel = viewChild(UserAccessPanelComponent);
+
   protected selectTab(tab: UserTab): void {
+    // The access panel holds its own unsaved ticks, and leaving the tab discards it.
+    if (
+      tab !== this.activeTab() &&
+      this.accessPanel()?.hasUnsavedChanges() &&
+      !confirm('You have unsaved access changes. Discard them?')
+    ) {
+      return;
+    }
     this.requestedTab.set(tab);
     // Deep-linkable, so an admin can send a colleague straight to someone's access tab.
     this.router.navigate([], {
@@ -230,11 +237,6 @@ export class UserDetailComponent {
       case 'brands':
         if (!this.brandsLoaded()) {
           this.loadBrands(userId);
-        }
-        break;
-      case 'access':
-        if (!this.accessLoaded()) {
-          this.loadAccess(userId);
         }
         break;
       default:
@@ -536,8 +538,6 @@ export class UserDetailComponent {
           this.availableRoles.set(assignment.available);
           this.roleSelection.set(new Set(assignment.assigned.map((role) => int(role.roleId))));
           this.savingRoles.set(false);
-          // Roles supply menu grants, so the access tab is now stale.
-          this.accessLoaded.set(false);
           this.notifications.success('Roles updated.');
         },
         error: () => this.savingRoles.set(false),
@@ -745,100 +745,6 @@ export class UserDetailComponent {
           this.notifications.success('Brands updated.');
         },
         error: () => this.savingBrands.set(false),
-      });
-  }
-
-  // ─── Access ─────────────────────────────────────────────────────────────────
-
-  protected readonly accessLoaded = signal(false);
-  protected readonly accessLoading = signal(false);
-  protected readonly access = signal<UserAccessResponse | null>(null);
-  protected readonly directSelection = signal<ReadonlySet<number>>(new Set<number>());
-  private readonly originalDirect = signal<ReadonlySet<number>>(new Set<number>());
-  protected readonly savingAccess = signal(false);
-  protected readonly accessFilterControl = this.fb.nonNullable.control('');
-  protected readonly accessFilter = signal('');
-
-  private loadAccess(userId: string): void {
-    this.accessLoading.set(true);
-    this.accessApi
-      .userAccess(userId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.access.set(response);
-          // Bound to *direct* grants — the only set this endpoint's writes control.
-          const direct = intSet(response.directMenuIds);
-          this.directSelection.set(direct);
-          this.originalDirect.set(new Set(direct));
-          this.accessLoading.set(false);
-          this.accessLoaded.set(true);
-        },
-        error: () => this.accessLoading.set(false),
-      });
-  }
-
-  /** Role-supplied grants. Shown as locked in the tree — PUT here cannot remove them. */
-  protected readonly roleMenuIds = computed(() => intSet(this.access()?.roleMenuIds ?? []));
-
-  protected readonly accessDirty = computed(() => {
-    const original = this.originalDirect();
-    const current = this.directSelection();
-    if (original.size !== current.size) {
-      return true;
-    }
-    for (const id of current) {
-      if (!original.has(id)) {
-        return true;
-      }
-    }
-    return false;
-  });
-
-  protected onAccessToggled(event: { menuId: number; checked: boolean }): void {
-    this.directSelection.update((current) => {
-      const next = new Set(current);
-      if (event.checked) {
-        next.add(event.menuId);
-      } else {
-        next.delete(event.menuId);
-      }
-      return next;
-    });
-  }
-
-  protected onAccessFilter(value: string): void {
-    this.accessFilter.set(value);
-  }
-
-  protected saveAccess(): void {
-    const user = this.user();
-    if (!user || this.savingAccess()) {
-      return;
-    }
-    this.savingAccess.set(true);
-    this.accessApi
-      .replaceUserAccess(user.userId, [...this.directSelection()])
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.access.set(response.access);
-          const direct = intSet(response.access.directMenuIds);
-          this.directSelection.set(direct);
-          this.originalDirect.set(new Set(direct));
-          this.savingAccess.set(false);
-
-          // `noLongerEffective` is the interesting case: grants removed from the direct
-          // set that a role still supplies, so nothing actually changed for the user.
-          // Saying "saved" without saying that would be misleading.
-          const stillReachable = response.noLongerEffective?.length ?? 0;
-          this.notifications.success(
-            stillReachable > 0
-              ? `Access updated. ${stillReachable} item(s) are still reachable through a role.`
-              : 'Access updated.',
-          );
-        },
-        error: () => this.savingAccess.set(false),
       });
   }
 

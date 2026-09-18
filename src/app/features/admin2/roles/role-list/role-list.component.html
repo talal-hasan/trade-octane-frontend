@@ -3,10 +3,12 @@
   subtitle="Administration 2.0 roles — their claim permissions, and everything that depends on each one."
   [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Roles' }]"
 >
-  <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm" data-tour="r2-new">
-    <tabler-icon [icon]="icons['plus']" [size]="15" />
-    New role
-  </a>
+  @if (canEditDetails()) {
+    <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm" data-tour="r2-new">
+      <tabler-icon [icon]="icons['plus']" [size]="15" />
+      New role
+    </a>
+  }
 </to-page-header>
 
 <div class="to-adm">
@@ -115,6 +117,14 @@
                 >{{ flag.shortLabel }}</span>
               </th>
             }
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('menus')" data-tour="r2-menus">
+              <button type="button" class="to-r2__sort" (click)="toggleSort('menus')">
+                Menu access
+                @if (sortKey() === 'menus') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
             <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('users')" data-tour="r2-usage">
               <button type="button" class="to-r2__sort" (click)="toggleSort('users')">
                 In use
@@ -138,7 +148,11 @@
             >
               <td class="to-adm__td to-adm__td--mono to-numeric">{{ row.roleId }}</td>
               <td class="to-adm__td to-adm__td--stacked to-r2__role">
-                <a class="to-r2__name" [routerLink]="[route, row.roleId]">{{ row.role.roleName }}</a>
+                @if (canEditDetails()) {
+                  <a class="to-r2__name" [routerLink]="[route, row.roleId]">{{ row.role.roleName }}</a>
+                } @else {
+                  <span class="to-r2__name">{{ row.role.roleName }}</span>
+                }
                 <span class="to-r2__desc" [title]="row.role.roleDescription">{{ row.role.roleDescription || '—' }}</span>
               </td>
               @for (flag of flags; track flag.key) {
@@ -156,6 +170,23 @@
                   }
                 </td>
               }
+              <td class="to-adm__td">
+                @if (canEditAccess()) {
+                  <a
+                    class="to-r2__menus"
+                    [class.to-r2__menus--none]="row.menus === 0"
+                    [routerLink]="[route, row.roleId, 'access']"
+                    [attr.aria-label]="'Menu access for ' + row.role.roleName"
+                  >
+                    <span class="to-numeric">{{ row.menus === 0 ? 'No menu items' : plural(row.menus, 'menu item') }}</span>
+                    <tabler-icon [icon]="icons['chevron-right']" [size]="14" />
+                  </a>
+                } @else {
+                  <span class="to-numeric" [class.to-r2__muted]="row.menus === 0">
+                    {{ row.menus === 0 ? 'No menu items' : plural(row.menus, 'menu item') }}
+                  </span>
+                }
+              </td>
               <td class="to-adm__td to-adm__td--stacked to-r2__usage">
                 @if (row.inUse) {
                   <span class="to-r2__usage-main to-numeric">
@@ -178,32 +209,44 @@
                 />
               </td>
               <td class="to-adm__td to-r2__actions">
-                <a class="to-r2__action" [routerLink]="[route, row.roleId]" [attr.aria-label]="'Edit ' + row.role.roleName">
-                  <tabler-icon [icon]="icons['edit']" [size]="15" />
-                  <span>Edit</span>
-                </a>
-                @if (row.role.isActive) {
-                  <button
-                    type="button"
-                    class="to-r2__action to-r2__action--danger"
-                    [disabled]="busyId() === row.roleId"
-                    [attr.aria-label]="'Deactivate ' + row.role.roleName"
-                    (click)="requestDeactivate(row)"
-                  >
-                    <tabler-icon [icon]="icons['circle-x']" [size]="15" />
-                    <span>Deactivate</span>
-                  </button>
-                } @else {
-                  <button
-                    type="button"
+                @if (canEditAccess()) {
+                  <a
                     class="to-r2__action"
-                    [disabled]="busyId() === row.roleId"
-                    [attr.aria-label]="'Activate ' + row.role.roleName"
-                    (click)="activate(row)"
+                    [routerLink]="[route, row.roleId, 'access']"
+                    [attr.aria-label]="'Menu access for ' + row.role.roleName"
                   >
-                    <tabler-icon [icon]="icons['circle-check']" [size]="15" />
-                    <span>Activate</span>
-                  </button>
+                    <tabler-icon [icon]="icons['shield-lock']" [size]="15" />
+                    <span>Access</span>
+                  </a>
+                }
+                @if (canEditDetails()) {
+                  <a class="to-r2__action" [routerLink]="[route, row.roleId]" [attr.aria-label]="'Edit ' + row.role.roleName">
+                    <tabler-icon [icon]="icons['edit']" [size]="15" />
+                    <span>Edit</span>
+                  </a>
+                  @if (row.role.isActive) {
+                    <button
+                      type="button"
+                      class="to-r2__action to-r2__action--danger"
+                      [disabled]="busyId() === row.roleId"
+                      [attr.aria-label]="'Deactivate ' + row.role.roleName"
+                      (click)="requestDeactivate(row)"
+                    >
+                      <tabler-icon [icon]="icons['circle-x']" [size]="15" />
+                      <span>Deactivate</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="to-r2__action"
+                      [disabled]="busyId() === row.roleId"
+                      [attr.aria-label]="'Activate ' + row.role.roleName"
+                      (click)="activate(row)"
+                    >
+                      <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                      <span>Activate</span>
+                    </button>
+                  }
                 }
               </td>
             </tr>

@@ -240,3 +240,344 @@ export interface LevelOfAuthorityWriteResponse {
   levelOfAuthority: LevelOfAuthorityResponse;
   changedFields: string[];
 }
+
+// ─── User Mapping (MenuID 91, CPS_User_Mapping.aspx) ────────────────────────
+
+/** Which accounts the user picker and the roles-by-region views count. */
+export type UserMappingUserStatus = 'All' | 'Active' | 'Inactive';
+
+export interface UserMappingRoleResponse {
+  roleId: ApiInt;
+  roleName: string;
+  roleDescription: string;
+  /** Deactivated roles are listed so a held one can be shown; moving a user onto one is refused. */
+  isActive: boolean;
+}
+
+export interface UserMappingBusinessTypeResponse {
+  businessTypeId: ApiInt;
+  name: string;
+}
+
+export interface UserMappingAreaResponse {
+  /** A tilde-joined geography path. Opaque — send it back exactly as received. */
+  code: string;
+  shortName: string;
+  name: string;
+  regionCode: string;
+  isActive: boolean;
+}
+
+export interface UserMappingRegionResponse {
+  code: string;
+  shortName: string;
+  name: string;
+  isActive: boolean;
+  areas: UserMappingAreaResponse[];
+}
+
+/** Everything the mapping form offers. Retired regions and areas are omitted by default. */
+export interface UserMappingCatalogueResponse {
+  roles: UserMappingRoleResponse[];
+  businessTypes: UserMappingBusinessTypeResponse[];
+  regions: UserMappingRegionResponse[];
+}
+
+/** One Promo_Management_2 account, with a summary of what it holds. */
+export interface UserMappingUserResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  isActive: boolean | null;
+  roleId: ApiInt | null;
+  /** Null when the account holds no role. */
+  roleName: string | null;
+  businessTypeCount: ApiInt;
+  regionCount: ApiInt;
+  areaCount: ApiInt;
+}
+
+export interface UserMappingRoleAssignment {
+  roleId: ApiInt;
+  roleName: string;
+  /** False when the stored id names no role. */
+  exists: boolean;
+}
+
+export interface UserMappingBusinessTypeAssignment {
+  businessTypeId: ApiInt;
+  name: string;
+  exists: boolean;
+}
+
+export interface UserMappingRegionAssignment {
+  code: string;
+  shortName: string;
+  name: string;
+  exists: boolean;
+  isActive: boolean;
+}
+
+export interface UserMappingAreaAssignment {
+  code: string;
+  shortName: string;
+  name: string;
+  regionCode: string;
+  exists: boolean;
+  isActive: boolean;
+  /** An area without its region grants nothing — the claim procedures join the two. */
+  regionHeld: boolean;
+}
+
+/** Everything one user holds. Held rows report whether they still exist and are active. */
+export interface UserMappingResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  userIsActive: boolean | null;
+  role: UserMappingRoleAssignment | null;
+  businessTypes: UserMappingBusinessTypeAssignment[];
+  regions: UserMappingRegionAssignment[];
+  areas: UserMappingAreaAssignment[];
+}
+
+/**
+ * `PUT /admin2/user-mapping/users/{userId}` — the complete intended mapping. Every member is
+ * required and non-empty; every area must sit under one of the regions.
+ */
+export interface UserMappingWriteRequest {
+  roleId: number;
+  businessTypeIds: number[];
+  regionCodes: string[];
+  areaCodes: string[];
+}
+
+/** The true diff, computed inside the write transaction. */
+export interface UserMappingChangesResponse {
+  roleAssigned: ApiInt | null;
+  roleRemoved: ApiInt | null;
+  businessTypesAdded: ApiInt[];
+  businessTypesRemoved: ApiInt[];
+  regionsAdded: string[];
+  regionsRemoved: string[];
+  /** Includes areas removed because their region was. */
+  areasAdded: string[];
+  areasRemoved: string[];
+  hasChanges: boolean;
+}
+
+export interface UserMappingWriteResponse {
+  userId: string;
+  changes: UserMappingChangesResponse;
+  /** The post-state, so no follow-up read is needed. */
+  mapping: UserMappingResponse;
+}
+
+// Roles by region.
+
+export type UserMappingRegionRoleSort = 'Region' | 'Role' | 'User';
+
+/** The filters both roles-by-region endpoints share, so a count and its account list agree. */
+export interface UserMappingRegionRoleFilter {
+  search?: string;
+  roleId?: number;
+  regionCode?: string;
+  withoutRole?: boolean;
+  withoutRegion?: boolean;
+  status?: UserMappingUserStatus;
+}
+
+export interface UserMappingRoleCountResponse {
+  /** Null for accounts with no role. */
+  roleId: ApiInt | null;
+  roleName: string | null;
+  userCount: ApiInt;
+  activeUserCount: ApiInt;
+}
+
+export interface UserMappingRegionRoleSummaryResponse {
+  /** Null for the accounts mapped to no region — always the last group. */
+  regionCode: string | null;
+  regionShortName: string;
+  regionName: string;
+  regionExists: boolean;
+  regionIsActive: boolean;
+  userCount: ApiInt;
+  activeUserCount: ApiInt;
+  /** Most accounts first. */
+  roles: UserMappingRoleCountResponse[];
+}
+
+export interface UserMappingRegionRolesResponse {
+  /** Distinct accounts. One mapped to three regions counts once here, and once in each region. */
+  totalUsers: ApiInt;
+  totalRegionAssignments: ApiInt;
+  roleTotals: UserMappingRoleCountResponse[];
+  regions: UserMappingRegionRoleSummaryResponse[];
+}
+
+/** One account in one region, or with a null region when it holds none. */
+export interface UserMappingRegionRoleRowResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  userIsActive: boolean | null;
+  roleId: ApiInt | null;
+  roleName: string | null;
+  regionCode: string | null;
+  regionShortName: string;
+  regionName: string;
+  regionExists: boolean;
+  regionIsActive: boolean;
+}
+
+export interface UserMappingRegionRolePageResponse {
+  items: UserMappingRegionRoleRowResponse[];
+  totalCount: ApiInt;
+  page: ApiInt;
+  pageSize: ApiInt;
+  /** Null on the last page. */
+  nextPage: ApiInt | null;
+}
+
+// ─── Claim Hierarchy (MenuID 90, CPS_Claim_Hierarchy.aspx) ──────────────────
+
+export interface ClaimHierarchyBusinessTypeResponse {
+  businessTypeId: ApiInt;
+  name: string;
+}
+
+/** Every Administration 2.0 role — inactive ones included; the catalogue does not say which. */
+export interface ClaimHierarchyRoleResponse {
+  roleId: ApiInt;
+  name: string;
+  description: string;
+}
+
+export interface ClaimHierarchyCatalogueResponse {
+  businessTypes: ClaimHierarchyBusinessTypeResponse[];
+  roles: ClaimHierarchyRoleResponse[];
+}
+
+export interface ClaimHierarchyLevelResponse {
+  /** The stored step. Legacy saves left gaps and ties; only the order matters, and every write renumbers from 1. */
+  sequence: ApiInt;
+  roleId: ApiInt;
+  roleName: string;
+  roleDescription: string;
+}
+
+/** One business type's approval order, first approver first. */
+export interface ClaimHierarchyResponse {
+  businessTypeId: ApiInt;
+  businessType: string;
+  levels: ClaimHierarchyLevelResponse[];
+}
+
+/** `PUT /admin2/claim-hierarchies/{businessTypeId}` — exactly these roles, in this order. Empty clears it. */
+export interface ReplaceClaimHierarchyRequest {
+  roleIds: number[];
+}
+
+export interface ClaimHierarchyWriteResponse {
+  hierarchy: ClaimHierarchyResponse;
+  previousRoleIds: ApiInt[];
+  /** False when the stored rows already matched: nothing was written or logged. */
+  changed: boolean;
+}
+
+// ─── Distributor Access (MenuID 93, CPS_Access_Control.aspx) ────────────────
+//
+// `Promo_Management_2.dbo.MenuItems_Mapping_Distributor` — the distributor portal's own
+// menu grants, keyed by `Distributor.user_id`. A different table from both the per-user
+// (97) and role-wise (154) access screens, over a different menu catalogue
+// (`MenuItems_Distributor`, 23 items), so none of those types apply here.
+
+/** One distributor on the picker, with how many menu items it holds now. */
+export interface DistributorAccessDistributorResponse {
+  /** `Distributor.user_id` — the login, and the key the grants are stored under. */
+  distributorId: string;
+  /** Trimmed by the server: many stored names begin with a space. */
+  name: string;
+  isActive: boolean;
+  /** Reported as stored. Four distributors are both active and deleted. */
+  isDeleted: boolean;
+  /**
+   * Stored grants, orphaned ones included — so it can exceed what the sidebar shows, and
+   * can count menu ids the catalogue no longer holds.
+   */
+  grantedMenuCount: ApiInt;
+}
+
+/** One item of the distributor portal's menu. Two levels in practice. */
+export interface DistributorMenuResponse {
+  menuId: ApiInt;
+  menuName: string;
+  /** The legacy `.aspx`. The only thing telling two same-named rows apart. */
+  menuPage: string;
+  orderId: ApiInt;
+  children: DistributorMenuResponse[];
+}
+
+export interface DistributorAccessCatalogueResponse {
+  distributors: DistributorAccessDistributorResponse[];
+  menus: DistributorMenuResponse[];
+}
+
+/** One menu item in a distributor's access tree. */
+export interface DistributorAccessNodeResponse {
+  menuId: ApiInt;
+  menuName: string;
+  menuPage: string;
+  orderId: ApiInt;
+  isGranted: boolean;
+  /**
+   * Granted while its parent is not. Stored, but never shown: the distributor sidebar
+   * lists only the children of a granted parent.
+   */
+  isOrphaned: boolean;
+  children: DistributorAccessNodeResponse[];
+}
+
+/** One distributor's menu access — what the legacy tree should have shown and never did. */
+export interface DistributorAccessResponse {
+  distributorId: string;
+  name: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  tree: DistributorAccessNodeResponse[];
+  /** Exactly what is stored. Send it back for a no-op write. */
+  menuIds: ApiInt[];
+  orphanedMenuIds: ApiInt[];
+}
+
+/**
+ * `PUT /admin2/distributor-access/menus` — give every named distributor exactly these
+ * menu items, replacing what each holds now.
+ *
+ * `menuIds` is required: an empty array revokes everything, an absent one is refused, so
+ * a mistyped property cannot become a silent revoke-all.
+ */
+export interface ReplaceDistributorAccessRequest {
+  distributorIds: string[];
+  menuIds: number[];
+}
+
+/** What a write changed for one distributor. */
+export interface DistributorAccessChangeResponse {
+  distributorId: string;
+  name: string;
+  isActive: boolean;
+  added: ApiInt[];
+  removed: ApiInt[];
+}
+
+export interface DistributorAccessWriteResponse {
+  /** The menu set every named distributor now holds. */
+  menuIds: ApiInt[];
+  /** Grants inserted across all of them — and audit rows written for them. */
+  addedCount: ApiInt;
+  removedCount: ApiInt;
+  /** One entry per distributor, in the order they were named. */
+  distributors: DistributorAccessChangeResponse[];
+}
