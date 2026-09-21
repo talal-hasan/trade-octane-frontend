@@ -315,7 +315,7 @@ describe('transformMenu sidebar', () => {
     ]);
   });
 
-  it('keeps Employee Resignation out of Administration 1.0 but granted, and lists Hierarchy', () => {
+  it('keeps Employee Resignation and Hierarchy out of Administration 1.0 but granted', () => {
     const withHierarchy = node(4, 'Administration 1.0', [
       node(17, 'Create User'),
       node(133, 'Employee Resignation'),
@@ -324,7 +324,7 @@ describe('transformMenu sidebar', () => {
     ]);
     const result = transformMenu([withHierarchy]);
 
-    expect(result.sidebar[0].children.map((child) => child.label)).toEqual(['Create User', 'Hierarchy', 'Re-Route Scheme']);
+    expect(result.sidebar[0].children.map((child) => child.label)).toEqual(['Create User', 'Re-Route Scheme']);
     expect(findItem(result.sections, '/legacy/135')).toBeUndefined();
     expect(result.grantedMenuIds.has(133)).toBe(true);
     expect(result.grantedMenuIds.has(135)).toBe(true);

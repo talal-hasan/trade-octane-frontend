@@ -203,9 +203,9 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     navLabel: 'Approval Hierarchy',
     icon: 'hierarchy-2',
     group: NAV_GROUP_ADMIN,
-    // Hidden from the sidebar on 2026-09-18, shown again on 2026-09-21 now that it is its own
-    // screen: a user granted menu 135 in Access Control sees it under Administration 1.0.
     ported: true,
+    // Kept out of the sidebar at the client's request (2026-09-18); the route still opens it.
+    hidden: true,
   },
 
   // → Ownership transfers. Both are the identical shape — filter a period, pick the
