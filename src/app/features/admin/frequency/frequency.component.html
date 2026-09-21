@@ -17,20 +17,59 @@
 </to-page-header>
 
 <div class="to-adm">
-  <div class="to-adm__filters">
-    <div class="to-adm__chipset" role="group" aria-label="Scheme group">
-      @for (g of groups(); track g.groupKey) {
-        <button
-          type="button"
-          class="to-adm__chip"
-          [class.to-adm__chip--on]="groupKey() === g.groupKey"
-          (click)="setGroup(g.groupKey)"
-        >
-          {{ g.schemeGroup || g.groupKey }}
-        </button>
-      }
-    </div>
+  <!-- Legacy's "Select Scheme Group All | None": several groups at once, all ticked on
+       arrival. Ticks, not a segmented control — a segmented control reads as "one of". -->
+  @if (groupNames().length > 0) {
+    <section
+      class="to-adm__card to-adm__card--pad to-frq__groups"
+      role="group"
+      aria-labelledby="frq-groups-title"
+      data-tour="freq-groups"
+    >
+      <div class="to-frq__groups-head">
+        <h2 class="to-frq__groups-title" id="frq-groups-title">Scheme groups</h2>
+        <span class="to-frq__groups-count to-numeric">
+          {{ selectedGroupCount() }} of {{ groupNames().length }} selected
+        </span>
+        <span class="to-frq__groups-actions">
+          <button
+            type="button"
+            class="to-frq__link"
+            [disabled]="selectedGroupCount() === groupNames().length"
+            (click)="selectAllGroups()"
+          >
+            Select all
+          </button>
+          <span class="to-frq__divider" aria-hidden="true">|</span>
+          <button
+            type="button"
+            class="to-frq__link"
+            [disabled]="selectedGroupCount() === 0"
+            (click)="selectNoGroups()"
+          >
+            None
+          </button>
+        </span>
+      </div>
 
+      <div class="to-frq__group-list">
+        @for (name of groupNames(); track name) {
+          <label class="to-frq__group" [class.to-frq__group--on]="isGroupSelected(name)">
+            <input
+              type="checkbox"
+              class="to-frq__checkbox"
+              [checked]="isGroupSelected(name)"
+              (change)="toggleGroup(name)"
+            />
+            <span>{{ name }}</span>
+            <span class="to-frq__group-count to-numeric">{{ groupCounts().get(name) ?? 0 }}</span>
+          </label>
+        }
+      </div>
+    </section>
+  }
+
+  <div class="to-adm__filters">
     <div class="to-adm__search">
       <tabler-icon [icon]="icons['search']" [size]="15" />
       <input
@@ -43,6 +82,11 @@
         aria-label="Search schemes"
       />
     </div>
+    @if (!loading() && !failed()) {
+      <span class="to-frq__shown to-numeric" aria-live="polite">
+        Showing {{ visibleRows().length }} of {{ rows().length }} schemes
+      </span>
+    }
   </div>
 
   @if (loading()) {
@@ -68,6 +112,16 @@
     </to-empty-state>
   } @else if (rows().length === 0) {
     <to-empty-state icon="calendar-repeat" heading="No schemes match" />
+  } @else if (visibleRows().length === 0) {
+    <to-empty-state
+      icon="calendar-repeat"
+      heading="No scheme group selected"
+      description="Tick a group above to list its schemes."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="selectAllGroups()">
+        Select all groups
+      </button>
+    </to-empty-state>
   } @else {
     <div class="to-adm__split to-adm__split--wide">
       <div>
@@ -93,7 +147,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (row of rows(); track row.schemeId) {
+              @for (row of visibleRows(); track row.schemeId) {
                 <tr class="to-adm__row" [class.to-frq__row--saving]="savingScheme() === row.schemeId">
                   <td class="to-adm__td">
                     <input

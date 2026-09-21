@@ -1,0 +1,318 @@
+<div class="to-adm">
+  <!-- ─── Filters ────────────────────────────────────────────────────────────── -->
+  <div class="to-rr__toolbar">
+    <div class="to-adm__search to-rr__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Search account, role or region"
+        aria-label="Search accounts, roles and regions"
+      />
+    </div>
+
+    <p-select
+      class="to-rr__role"
+      [formControl]="roleControl"
+      [options]="roleOptions()"
+      optionLabel="name"
+      optionValue="id"
+      [filter]="true"
+      filterBy="name"
+      placeholder="Every role"
+      [showClear]="true"
+      ariaLabel="Filter by role"
+      appendTo="body"
+    />
+
+    <div class="to-adm__segmented" role="tablist" aria-label="Account status">
+      @for (option of statuses; track option) {
+        <button
+          type="button"
+          role="tab"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="status() === option"
+          [attr.aria-selected]="status() === option"
+          (click)="setStatus(option)"
+        >
+          {{ option }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading() && !data()) {
+    <to-skeleton width="100%" height="64px" />
+    <div class="to-adm__table-wrap">
+      @for (row of skeletonRows; track row) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="18%" height="12px" />
+          <to-skeleton width="30%" height="10px" />
+          <to-skeleton width="36%" height="18px" />
+        </div>
+      }
+    </div>
+  } @else if (failed() && !data()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load roles by region"
+      description="The counts did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (census(); as totals) {
+    <!-- ─── The headline counts, and the gaps worth chasing ─────────────────── -->
+    <div class="to-adm__census" data-tour="rr-census" [class.to-rr__stale]="loading()">
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Accounts</span>
+        <span class="to-adm__census-value to-numeric">{{ totals.users }}</span>
+      </div>
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Regions in use</span>
+        <span class="to-adm__census-value to-numeric">{{ totals.regions }}</span>
+      </div>
+      <div class="to-adm__census-item">
+        <span class="to-adm__census-label">Roles in use</span>
+        <span class="to-adm__census-value to-numeric">{{ roleTotals().length }}</span>
+      </div>
+      <button
+        type="button"
+        class="to-adm__census-item to-rr__census-button"
+        [class.to-adm__census-item--warn]="totals.withoutRegion > 0"
+        [class.to-adm__census-item--clear]="totals.withoutRegion === 0"
+        [disabled]="totals.withoutRegion === 0"
+        (click)="openWithoutRegion()"
+      >
+        <span class="to-adm__census-label">Without a region</span>
+        <span class="to-adm__census-value to-numeric">{{ totals.withoutRegion }}</span>
+      </button>
+      <button
+        type="button"
+        class="to-adm__census-item to-rr__census-button"
+        [class.to-adm__census-item--warn]="totals.withoutRole > 0"
+        [class.to-adm__census-item--clear]="totals.withoutRole === 0"
+        [disabled]="totals.withoutRole === 0"
+        (click)="openWithoutRole()"
+      >
+        <span class="to-adm__census-label">Without a role</span>
+        <span class="to-adm__census-value to-numeric">{{ totals.withoutRole }}</span>
+      </button>
+    </div>
+
+    @if (roleTotals().length > 0) {
+      <div class="to-rr__roles" aria-label="Accounts by role, across every region">
+        <span class="to-adm__census-label">By role</span>
+        @for (role of roleTotals(); track role.roleId) {
+          <button type="button" class="to-rr__role-chip" (click)="openRole(role)">
+            {{ role.roleName || 'Role ' + role.roleId }}
+            <span class="to-numeric">{{ role.userCount }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    <!-- ─── One row per region ──────────────────────────────────────────────── -->
+    @if (regions().length === 0) {
+      <to-empty-state icon="map-pin" heading="No accounts match" description="Try another role, status or search." />
+    } @else {
+      @if (overlap(); as shared) {
+        <p class="to-rr__overlap" role="note">
+          <tabler-icon [icon]="icons['info-circle']" [size]="15" />
+          <span>
+            Counts overlap: an account mapped to several regions is counted in each of them.
+            Across the regions below that is
+            <strong class="to-numeric">{{ shared.regionMappings }} region mappings</strong>, held by
+            <strong class="to-numeric">{{ shared.accounts }} {{ shared.accountNoun }}</strong>.
+          </span>
+        </p>
+      }
+      <div class="to-adm__table-wrap" data-tour="rr-regions" [class.to-rr__stale]="loading()">
+        <table class="to-adm__table">
+          <thead>
+            <tr>
+              <th scope="col" class="to-adm__th">Region</th>
+              <th scope="col" class="to-adm__th to-rr__th-accounts">Accounts mapped here</th>
+              <th scope="col" class="to-adm__th">Roles held</th>
+              <th scope="col" class="to-adm__th"><span class="to-rr__sr-only">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (region of regions(); track region.key) {
+              <tr class="to-adm__row to-rr__row" [class.to-adm__row--attention]="region.code === null">
+                <td class="to-adm__td">
+                  <button type="button" class="to-rr__region" (click)="openRegion(region)">
+                    {{ region.name }}
+                  </button>
+                  @if (region.flag) {
+                    <span class="to-adm__flag to-adm__flag--warn">{{ region.flag }}</span>
+                  }
+                </td>
+                <td class="to-adm__td">
+                  <span class="to-rr__accounts-cell">
+                    <span class="to-rr__count to-numeric">{{ region.users }}</span>
+                    <span class="to-rr__bar" aria-hidden="true">
+                      <span class="to-rr__bar-fill" [style.width.%]="barWidth(region.users)"></span>
+                    </span>
+                    @if (status() === 'All') {
+                      <span class="to-rr__muted to-numeric">{{ region.activeUsers }} active</span>
+                    }
+                  </span>
+                </td>
+                <td class="to-adm__td to-adm__td--wrapable">
+                  <span class="to-rr__chips">
+                    @for (role of region.top; track role.roleId) {
+                      <button
+                        type="button"
+                        class="to-rr__role-chip"
+                        [class.to-rr__role-chip--none]="role.roleId === null"
+                        (click)="openRegion(region, role.roleId === null ? 'none' : int(role.roleId))"
+                      >
+                        {{ role.roleId === null ? 'No role' : role.roleName || 'Role ' + role.roleId }}
+                        <span class="to-numeric">{{ role.userCount }}</span>
+                      </button>
+                    }
+                    @if (region.more > 0) {
+                      <button type="button" class="to-rr__more" (click)="openRegion(region)">+{{ region.more }} more</button>
+                    }
+                  </span>
+                </td>
+                <td class="to-adm__td to-adm__td--right">
+                  <button
+                    type="button"
+                    class="to-rr__open"
+                    [attr.aria-label]="'Open the accounts in ' + region.name"
+                    (click)="openRegion(region)"
+                  >
+                    <tabler-icon [icon]="icons['chevron-right']" [size]="16" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>
+
+<!-- ─── The accounts behind a count ────────────────────────────────────────── -->
+<p-drawer
+  [visible]="drill() !== null"
+  (visibleChange)="$event || closeDrill()"
+  position="right"
+  styleClass="to-rr-drawer"
+  [blockScroll]="true"
+>
+  <ng-template #header>
+    @if (drill(); as current) {
+      <div class="to-rr__drawer-head">
+        <span class="to-rr__drawer-title">{{ current.title }}</span>
+        <span class="to-rr__drawer-sub to-numeric">{{ current.subtitle }}</span>
+      </div>
+    }
+  </ng-template>
+
+  @if (drill(); as current) {
+    <div class="to-rr__drawer">
+      @if (current.roles.length > 1) {
+        <div class="to-rr__chips" role="group" aria-label="Narrow by role">
+          <button
+            type="button"
+            class="to-rr__role-chip"
+            [class.to-rr__role-chip--on]="isDrillRole(null)"
+            (click)="setDrillRole(null)"
+          >
+            Every role
+          </button>
+          @for (role of current.roles; track role.roleId) {
+            <button
+              type="button"
+              class="to-rr__role-chip"
+              [class.to-rr__role-chip--on]="isDrillRole(role)"
+              [class.to-rr__role-chip--none]="role.roleId === null"
+              (click)="setDrillRole(role)"
+            >
+              {{ role.roleId === null ? 'No role' : role.roleName || 'Role ' + role.roleId }}
+              <span class="to-numeric">{{ role.userCount }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      @if (rowsLoading() && !drillPage()) {
+        @for (row of skeletonRows; track row) {
+          <to-skeleton width="100%" height="44px" />
+        }
+      } @else if (drillPage(); as view) {
+        @if (view.accounts.length === 0) {
+          <to-empty-state icon="users-group" heading="No accounts" />
+        } @else {
+          <ul class="to-rr__accounts" [class.to-rr__stale]="rowsLoading()">
+            @for (account of view.accounts; track account.userId) {
+              <li class="to-rr__account">
+                <span class="to-rr__account-text">
+                  <span class="to-rr__account-name">
+                    {{ account.fullName || account.userId }}
+                    @if (account.isActive !== true) {
+                      <span class="to-adm__flag">inactive</span>
+                    }
+                  </span>
+                  <span class="to-rr__account-meta">
+                    <span class="to-rr__mono">{{ account.userId }}</span>
+                    · {{ account.roleName || 'No role' }}
+                  </span>
+                  @if (view.showRegions) {
+                    <span class="to-rr__account-regions">
+                      @if (account.regions.length === 0) {
+                        No region
+                      } @else {
+                        <span class="to-numeric">{{ account.regions.length }} {{ account.regions.length === 1 ? 'region' : 'regions' }}:</span>
+                        {{ account.regions.join(', ') }}
+                      }
+                    </span>
+                  }
+                </span>
+                <button type="button" pButton class="p-button-text p-button-sm" (click)="openUser.emit(account.userId)">
+                  Mapping
+                  <tabler-icon [icon]="icons['arrow-right']" [size]="14" />
+                </button>
+              </li>
+            }
+          </ul>
+
+          <div class="to-adm__pager">
+            <span class="to-adm__pager-range to-numeric">{{ pageLabel() }}</span>
+            <div class="to-adm__pager-buttons">
+              <button
+                type="button"
+                pButton
+                class="p-button-sm p-button-text"
+                [disabled]="view.page <= 1 || rowsLoading()"
+                (click)="previousPage()"
+              >
+                <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+                Previous
+              </button>
+              <button
+                type="button"
+                pButton
+                class="p-button-sm p-button-text"
+                [disabled]="!view.hasNext || rowsLoading()"
+                (click)="nextPage()"
+              >
+                Next
+                <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+              </button>
+            </div>
+          </div>
+        }
+      } @else {
+        <to-empty-state icon="alert-triangle" heading="Could not load these accounts" />
+      }
+    </div>
+  }
+</p-drawer>

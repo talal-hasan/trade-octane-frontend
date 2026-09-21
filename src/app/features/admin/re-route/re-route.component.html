@@ -1,0 +1,689 @@
+<to-page-header
+  title="Re-Route Scheme"
+  subtitle="Move pending approvals from one approver to another — including work stuck with people who have left."
+  [breadcrumbs]="[{ label: 'Administration 1.0' }, { label: 'Re-Route Scheme' }]"
+>
+  <div actions class="to-rr__header-actions">
+    @if (loadedAt()) {
+      <span class="to-rr__freshness" pTooltip="Counts are read live. Refresh to re-read them." tooltipPosition="bottom">
+        As of {{ loadedAtLabel() }}
+      </span>
+    }
+    <button
+      type="button"
+      pButton
+      class="p-button-text p-button-sm"
+      (click)="refresh()"
+      [disabled]="refreshing() || running() || censusState() === 'loading'"
+    >
+      <tabler-icon [icon]="icons['refresh']" [size]="15" [class.to-rr__spin]="refreshing()" />
+      Refresh
+    </button>
+    <button
+      type="button"
+      pButton
+      class="p-button-outlined p-button-sm"
+      (click)="exportCsv()"
+      [disabled]="censusState() !== 'ready' || holders().length === 0"
+      pTooltip="The queues behind the list as filtered, as CSV."
+      tooltipPosition="bottom"
+    >
+      <tabler-icon [icon]="icons['download']" [size]="15" />
+      Export CSV
+    </button>
+  </div>
+</to-page-header>
+
+<div class="to-rr">
+  <!-- ─── Who holds the work — the status facets ─────────────────────────────── -->
+  <div class="to-rr__views" role="group" aria-label="Approver status" data-tour="rr-views">
+    @for (option of viewOptions; track option.view) {
+      <button
+        type="button"
+        class="to-rr__view"
+        [class.to-rr__view--on]="view() === option.view"
+        [class.to-rr__view--warn]="option.tone === 'warn'"
+        [class.to-rr__view--ok]="option.tone === 'ok'"
+        [attr.aria-pressed]="view() === option.view"
+        [pTooltip]="option.hint"
+        tooltipPosition="bottom"
+        [showDelay]="400"
+        (click)="setView(option.view)"
+      >
+        <span class="to-rr__view-label">{{ option.label }}</span>
+        @if (censusState() === 'loading') {
+          <to-skeleton width="64px" height="20px" />
+        } @else {
+          <span class="to-rr__view-value to-numeric">{{ fmt(viewFacet(option.view).pending) }}</span>
+          <span class="to-rr__view-sub to-numeric">
+            {{ viewFacet(option.view).approvers }}
+            {{ viewFacet(option.view).approvers === 1 ? 'approver' : 'approvers' }}
+          </span>
+        }
+      </button>
+    }
+  </div>
+
+  <!-- ─── The old screen's dropdowns, as filters over a list that is already there ─── -->
+  <div class="to-adm__filters to-rr__toolbar" data-tour="rr-filters">
+    <div class="to-adm__search to-rr__search">
+      <tabler-icon [icon]="icons['search']" [size]="15" />
+      <input
+        pInputText
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Search approver name or login"
+        aria-label="Search approver"
+      />
+    </div>
+
+    <div class="to-rr__filter">
+      <span class="to-rr__filter-label" id="rr-table">Table</span>
+      <div class="to-adm__chipset" role="group" aria-labelledby="rr-table">
+        <button type="button" class="to-adm__chip" [class.to-adm__chip--on]="table() === null" (click)="setTable(null)">
+          All
+        </button>
+        @for (t of tables; track t) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="table() === t"
+            [disabled]="stage() !== null && !stageExists(t, stage()!)"
+            [attr.aria-pressed]="table() === t"
+            (click)="setTable(t)"
+          >
+            {{ tableShort[t] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="to-rr__filter">
+      <span class="to-rr__filter-label" id="rr-level">Level</span>
+      <div class="to-adm__chipset" role="group" aria-labelledby="rr-level">
+        <button type="button" class="to-adm__chip" [class.to-adm__chip--on]="stage() === null" (click)="setStage(null)">
+          All
+        </button>
+        @for (s of stages; track s) {
+          <button
+            type="button"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="stage() === s"
+            [disabled]="table() !== null && !stageExists(table()!, s)"
+            [attr.aria-pressed]="stage() === s"
+            (click)="setStage(s)"
+          >
+            {{ stageShort(s) }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="to-rr__filter to-rr__filter--role">
+      <label class="to-rr__filter-label" for="rr-role">Role</label>
+      <p-select
+        inputId="rr-role"
+        styleClass="to-rr__role-select"
+        [options]="roleOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [filter]="true"
+        filterBy="label"
+        filterPlaceholder="Search roles"
+        placeholder="Any role"
+        [showClear]="true"
+        [loading]="roleLoading()"
+        [ngModel]="roleId()"
+        (ngModelChange)="setRole($event ?? null)"
+        appendTo="body"
+      >
+        <ng-template #item let-option>
+          <div class="to-own__candidate">
+            <span class="to-own__candidate-name">{{ option.label }}</span>
+            <span class="to-own__candidate-login">{{ option.hint }}</span>
+          </div>
+        </ng-template>
+      </p-select>
+    </div>
+
+    @if (hasFilters()) {
+      <button type="button" class="to-adm__census-action to-rr__clear" (click)="clearFilters()">Clear filters</button>
+    }
+  </div>
+
+  <div class="to-rr__split">
+    <!-- ─── Approvers ──────────────────────────────────────────────────────────── -->
+    <section class="to-adm__card to-rr__list-card" aria-label="Approvers holding work" data-tour="rr-list">
+      <header class="to-rr__list-head">
+        <span class="to-rr__list-count to-numeric">
+          @if (censusState() === 'ready' && !roleLoading()) {
+            {{ holders().length }} {{ holders().length === 1 ? 'approver' : 'approvers' }} ·
+            {{ fmt(listTotal()) }} pending
+          } @else {
+            Counting…
+          }
+        </span>
+        <div class="to-adm__segmented" role="group" aria-label="Sort approvers">
+          @for (option of sortOptions; track option.value) {
+            <button
+              type="button"
+              class="to-adm__segment"
+              [class.to-adm__segment--on]="sort() === option.value"
+              [attr.aria-pressed]="sort() === option.value"
+              (click)="setSort(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          }
+        </div>
+      </header>
+
+      @if (censusState() === 'loading' || roleLoading()) {
+        <div aria-busy="true" aria-label="Loading approvers">
+          @for (row of skeletonRows; track row) {
+            <div class="to-adm__skeleton-row">
+              <to-skeleton variant="circle" width="32px" height="32px" />
+              <div class="to-rr__skeleton-lines">
+                <to-skeleton width="60%" height="12px" />
+                <to-skeleton width="40%" height="10px" />
+              </div>
+              <to-skeleton width="40px" height="12px" />
+            </div>
+          }
+        </div>
+      } @else if (censusState() === 'failed') {
+        <to-empty-state
+          icon="alert-triangle"
+          heading="Could not read the approval queues"
+          description="The census did not answer. This is usually temporary."
+        >
+          <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retryCensus()">
+            <tabler-icon [icon]="icons['refresh']" [size]="15" />
+            Try again
+          </button>
+        </to-empty-state>
+      } @else if (holders().length === 0) {
+        <to-empty-state
+          icon="route"
+          [heading]="view() === 'stuck' && !search().trim() ? 'Nothing is stuck' : 'No approvers match'"
+          [description]="
+            view() === 'stuck' && !search().trim()
+              ? 'Everything pending here sits with someone who can approve it.'
+              : 'Try another table, level or role, or clear the search.'
+          "
+        >
+          @if (matchesElsewhere() > 0) {
+            <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="showAllView()">
+              Show {{ matchesElsewhere() }} in All approvers
+            </button>
+          } @else if (hasFilters()) {
+            <button actions type="button" pButton class="p-button-sm p-button-text" (click)="clearFilters()">
+              Clear filters
+            </button>
+          }
+        </to-empty-state>
+      } @else {
+        <ul class="to-rr__list" role="list" (keydown)="onListKey($event)" [attr.aria-busy]="running()">
+          @for (group of holders(); track group.key) {
+            <li>
+              <button
+                type="button"
+                class="to-rr__holder"
+                [id]="holderDomId(group)"
+                [class.to-rr__holder--active]="selectedKey() === group.key"
+                [class.to-rr__holder--stuck]="group.status !== 'Active'"
+                [class.to-rr__holder--inert]="!group.targetable"
+                [attr.aria-current]="selectedKey() === group.key ? 'true' : null"
+                [attr.aria-disabled]="!group.targetable || running() ? 'true' : null"
+                [pTooltip]="
+                  group.targetable
+                    ? undefined
+                    : 'These rows have a blank approver. There is no value to match on, so the re-route cannot reach them.'
+                "
+                tooltipPosition="right"
+                (click)="selectHolder(group)"
+              >
+                <span class="to-rr__avatar" [class.to-rr__avatar--warn]="group.status !== 'Active'" aria-hidden="true">
+                  @switch (group.status) {
+                    @case ('NotAUser') {
+                      <tabler-icon [icon]="icons['alert-circle']" [size]="16" />
+                    }
+                    @case ('Deactivated') {
+                      <tabler-icon [icon]="icons['user-off']" [size]="16" />
+                    }
+                    @default {
+                      {{ initials(group) }}
+                    }
+                  }
+                </span>
+                <span class="to-rr__holder-main">
+                  <span class="to-rr__holder-name">{{ displayName(group) }}</span>
+                  <span class="to-rr__holder-meta">
+                    @if (group.status !== 'Active') {
+                      <span class="to-adm__flag to-adm__flag--warn">{{ statusLabel(group) }}</span>
+                    }
+                    <span class="to-rr__holder-login">{{ subLabel(group) }}</span>
+                  </span>
+                  <span class="to-rr__holder-queues">{{ queuesSummary(group) }}</span>
+                </span>
+                <span class="to-rr__holder-side">
+                  <span class="to-rr__holder-count to-numeric">{{ fmt(group.total) }}</span>
+                  <span class="to-rr__holder-age" [pTooltip]="'Oldest item initiated ' + formatDate(group.oldestInitiatedOn)">
+                    {{ waited(group.oldestInitiatedOn) }}
+                  </span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ─── The selected approver, or where everything is waiting ─────────────── -->
+    <section class="to-rr__detail" aria-live="polite" data-tour="rr-detail">
+      @if (selectedKey() === null) {
+        <to-re-route-overview
+          [matrix]="matrix()"
+          [loading]="censusState() === 'loading'"
+          [table]="table()"
+          [stage]="stage()"
+          (pick)="pickCell($event)"
+        />
+      } @else if (censusState() === 'loading' || (refreshing() && !selected() && !runShown())) {
+        <div class="to-adm__card to-adm__card--pad">
+          <to-skeleton width="45%" height="20px" />
+          <to-skeleton width="100%" height="220px" />
+        </div>
+      } @else if (runShown(); as run) {
+        <to-re-route-receipt [run]="run" (openRecipient)="openRecipient()" (dismiss)="dismissRun()" />
+      } @else if (!selected()) {
+        <div class="to-adm__card">
+          <to-empty-state
+            icon="circle-check"
+            heading="Nothing pending with this approver"
+            description="They hold no pending approvals at any level. The work may already have been re-routed or approved."
+          >
+            <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="closeHolder()">
+              Back to all approvers
+            </button>
+          </to-empty-state>
+        </div>
+      } @else {
+        @let group = selected()!;
+        <article class="to-adm__card to-rr__panel">
+          <!-- ─── Who ───────────────────────────────────────────────────────── -->
+          <header class="to-rr__who">
+            <span class="to-rr__avatar to-rr__avatar--lg" [class.to-rr__avatar--warn]="group.status !== 'Active'" aria-hidden="true">
+              @switch (group.status) {
+                @case ('NotAUser') {
+                  <tabler-icon [icon]="icons['alert-circle']" [size]="20" />
+                }
+                @case ('Deactivated') {
+                  <tabler-icon [icon]="icons['user-off']" [size]="20" />
+                }
+                @default {
+                  {{ initials(group) }}
+                }
+              }
+            </span>
+            <div class="to-rr__who-text">
+              <h2 class="to-rr__who-name">
+                {{ displayName(group) }}
+                <span
+                  class="to-adm__flag"
+                  [class.to-adm__flag--warn]="group.status !== 'Active'"
+                  [class.to-adm__flag--ok]="group.status === 'Active'"
+                >
+                  {{ statusLabel(group) }}
+                </span>
+              </h2>
+              <p class="to-rr__who-sub">
+                {{ subLabel(group) }}
+                @if (holderRoles()) {
+                  · {{ holderRoles() }}
+                }
+              </p>
+              <p class="to-rr__who-facts to-numeric">
+                <span><strong>{{ fmt(group.total) }}</strong> pending</span>
+                <span>{{ group.queues.length }} {{ group.queues.length === 1 ? 'queue' : 'queues' }}</span>
+                <span>oldest waiting {{ waited(group.oldestInitiatedOn) }} · since {{ formatDate(group.oldestInitiatedOn) }}</span>
+              </p>
+            </div>
+            <button type="button" class="to-rr__close" (click)="closeHolder()" aria-label="Close approver" [disabled]="running()">
+              <tabler-icon [icon]="icons['x']" [size]="16" />
+            </button>
+          </header>
+
+          @if (!group.targetable) {
+            <div class="to-rr__callout">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" aria-hidden="true" />
+              <span>
+                These rows have a blank approver. The re-route matches the stored approver exactly,
+                and a blank has nothing to match on, so this screen cannot move them.
+              </span>
+            </div>
+          } @else {
+            @if (selectedIsStuck()) {
+              <div class="to-rr__callout">
+                <tabler-icon [icon]="icons['alert-triangle']" [size]="16" aria-hidden="true" />
+                <span>
+                  @if (group.status === 'Deactivated') {
+                    This account is deactivated, so it cannot sign in to approve these. They stay
+                    stuck until they are re-routed to someone active.
+                  } @else if (isLegacyPlaceholder(group)) {
+                    Nobody can sign in as {{ displayName(group) }}. It is what the old Re-Route
+                    screen saved when Re-Route was clicked without choosing a new user — so these
+                    were stranded by a re-route. They can only move by being re-routed properly.
+                  } @else {
+                    Nobody can sign in as {{ displayName(group) }} — it is leftover dropdown text
+                    that was saved as the approver. These approvals can only move by being
+                    re-routed.
+                  }
+                </span>
+              </div>
+            }
+
+            <!-- ─── 1 · What moves ────────────────────────────────────────────── -->
+            <section class="to-rr__section" data-tour="rr-queues" aria-labelledby="rr-s1">
+              <header class="to-rr__section-head">
+                <h3 class="to-adm__subtitle" id="rr-s1">1 · What moves</h3>
+                @if (group.queues.length > 1) {
+                  <span class="to-adm__hint">{{ tickedQueues().length }} of {{ group.queues.length }} queues ticked</span>
+                }
+              </header>
+              <ul class="to-rr__queues">
+                @for (queue of group.queues; track queue.key) {
+                  @let preview = previewOf(queue);
+                  <li>
+                    <div class="to-rr__queue" [class.to-rr__queue--off]="!isTicked(queue)">
+                      @if (group.queues.length > 1) {
+                        <label class="to-rr__queue-pick">
+                          <input
+                            type="checkbox"
+                            class="to-own__checkbox"
+                            [checked]="isTicked(queue)"
+                            [disabled]="running()"
+                            (change)="toggleQueue(queue)"
+                          />
+                          <span class="to-rr__queue-name">
+                            {{ tableLabels[queue.table] }}
+                            <span class="to-rr__queue-stage">{{ stageLabels[queue.stage] }}</span>
+                          </span>
+                        </label>
+                      } @else {
+                        <span class="to-rr__queue-name">
+                          {{ tableLabels[queue.table] }}
+                          <span class="to-rr__queue-stage">{{ stageLabels[queue.stage] }}</span>
+                        </span>
+                      }
+                      <span class="to-rr__queue-age">
+                        oldest {{ formatDate(queue.oldestInitiatedOn) }} · {{ waited(queue.oldestInitiatedOn) }}
+                      </span>
+                      <span class="to-rr__queue-count to-numeric">
+                        @switch (preview?.status) {
+                          @case ('ready') {
+                            {{ fmt(preview!.total) }}
+                            @if (preview!.total !== queue.pendingCount) {
+                              <span
+                                class="to-adm__flag"
+                                [pTooltip]="'The list counted ' + fmt(queue.pendingCount) + ' when it loaded. This is the live count.'"
+                              >
+                                live
+                              </span>
+                            }
+                          }
+                          @case ('failed') {
+                            <button type="button" class="to-rr__link" (click)="retryPreview(queue)">
+                              Retry count
+                            </button>
+                          }
+                          @default {
+                            <to-skeleton width="44px" height="14px" />
+                          }
+                        }
+                      </span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </section>
+
+            <!-- ─── 2 · Who takes them ────────────────────────────────────────── -->
+            <!-- Legacy bound one GetUserRoles(roleId) result to both the Current User and the
+                 New User dropdowns, so the pair always shared a role. The list here is that
+                 same set, derived from the approver instead of chosen first. -->
+            <section class="to-rr__section" data-tour="rr-target" aria-labelledby="rr-s2">
+              <header class="to-rr__section-head">
+                <h3 class="to-adm__subtitle" id="rr-s2">2 · Who takes them</h3>
+              </header>
+
+              @switch (eligibility()?.status) {
+                @case ('failed') {
+                  <p class="to-adm__note">
+                    Could not load who can take these.
+                    <button type="button" class="to-rr__link" (click)="retryEligibility()">Try again</button>
+                  </p>
+                }
+                @case ('ready') {
+                  @if (candidateOptions().length === 0) {
+                    <div class="to-rr__callout to-rr__callout--flush">
+                      <tabler-icon [icon]="icons['alert-triangle']" [size]="16" aria-hidden="true" />
+                      <span>
+                        No other active user has the {{ holderRoles() || 'same' }} role, so there is
+                        nobody these can move to. Give that role to someone first — they will then
+                        appear here.
+                      </span>
+                    </div>
+                  } @else {
+                    <div class="to-rr__target">
+                      <p-select
+                        inputId="rr-new-holder"
+                        styleClass="to-rr__target-select"
+                        [options]="candidateOptions()"
+                        optionLabel="label"
+                        optionValue="value"
+                        [filter]="true"
+                        filterBy="label,login"
+                        filterPlaceholder="Search name or login"
+                        emptyFilterMessage="Nobody by that name"
+                        placeholder="Select new approver"
+                        [ngModel]="newHolderId()"
+                        (ngModelChange)="setNewHolder($event)"
+                        [disabled]="running()"
+                        appendTo="body"
+                        aria-label="New approver"
+                      >
+                        <ng-template #selectedItem let-option>
+                          <div class="to-own__candidate">
+                            <span class="to-own__candidate-name">{{ option.label }}</span>
+                            <span class="to-own__candidate-login">{{ option.login }}</span>
+                          </div>
+                        </ng-template>
+                        <ng-template #item let-option>
+                          <div class="to-own__candidate to-rr__candidate">
+                            <span class="to-own__candidate-name">{{ option.label }}</span>
+                            <span class="to-own__candidate-login">{{ option.login }}</span>
+                            <span class="to-rr__candidate-load to-numeric">
+                              {{ option.holding > 0 ? 'holds ' + fmt(option.holding) : 'holds none' }}
+                            </span>
+                          </div>
+                        </ng-template>
+                      </p-select>
+
+                      @if (eligibility()?.data?.roleConstrained) {
+                        <span class="to-adm__hint">
+                          Same role as the current approver — {{ holderRoles() }}.
+                          {{ candidateOptions().length }} active
+                          {{ candidateOptions().length === 1 ? 'user' : 'users' }} can take these.
+                        </span>
+                      } @else {
+                        <span class="to-adm__hint to-rr__hint--warn">
+                          <tabler-icon [icon]="icons['info-circle']" [size]="14" aria-hidden="true" />
+                          @if (eligibility()?.data?.currentHolderIsUser) {
+                            This approver has no role, so there is no role to match — every active
+                            user is listed. Pick someone who works this level.
+                          } @else {
+                            {{ displayName(group) }} is not a person, so there is no role to match —
+                            every active user is listed. Pick someone who works this level.
+                          }
+                        </span>
+                      }
+
+                      @for (note of merges(); track note.table + note.stage) {
+                        <span class="to-adm__hint to-rr__hint--warn">
+                          <tabler-icon [icon]="icons['alert-triangle']" [size]="14" aria-hidden="true" />
+                          They already hold {{ fmt(note.existing) }} at {{ queueLabel(note) }}. The piles
+                          merge, and this screen cannot separate them again.
+                        </span>
+                      }
+                    </div>
+                  }
+                }
+                @default {
+                  <to-skeleton width="100%" height="36px" />
+                }
+              }
+            </section>
+
+            <!-- ─── 3 · The rows ──────────────────────────────────────────────── -->
+            <!-- Not decoration: the count on each queue is the count the write is held to. -->
+            <section class="to-rr__section" data-tour="rr-preview" aria-labelledby="rr-s3">
+              <header class="to-rr__section-head">
+                <h3 class="to-adm__subtitle" id="rr-s3">3 · Check the rows</h3>
+                @if (tickedQueues().length > 1) {
+                  <div class="to-adm__segmented" role="tablist" aria-label="Queue">
+                    @for (queue of tickedQueues(); track queue.key) {
+                      <button
+                        type="button"
+                        role="tab"
+                        class="to-adm__segment"
+                        [class.to-adm__segment--on]="activePreview()?.key === queue.key"
+                        [attr.aria-selected]="activePreview()?.key === queue.key"
+                        (click)="previewTab.set(queue.key)"
+                      >
+                        {{ tableShort[queue.table] }} {{ stageShort(queue.stage) }}
+                        <span class="to-numeric">{{ fmt(countOf(queue)) }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+              </header>
+
+              @if (activePreview(); as queue) {
+                @let state = activePreviewState();
+                @if (!state || state.status === 'loading') {
+                  <div class="to-adm__card">
+                    @for (row of [0, 1, 2, 3]; track row) {
+                      <div class="to-adm__skeleton-row">
+                        <to-skeleton width="30%" height="12px" />
+                        <to-skeleton width="25%" height="12px" />
+                        <to-skeleton width="20%" height="12px" />
+                      </div>
+                    }
+                  </div>
+                } @else if (state.status === 'failed') {
+                  <p class="to-adm__note">
+                    The rows for {{ queueLabel(queue) }} did not load.
+                    <button type="button" class="to-rr__link" (click)="retryPreview(queue)">Try again</button>
+                  </p>
+                } @else {
+                  <div class="to-rr__preview">
+                    <table class="to-adm__table">
+                      <thead>
+                        <tr>
+                          @if (queue.table === 'BudgetApprovals') {
+                            <th scope="col" class="to-adm__th">Shell code</th>
+                          } @else {
+                            <th scope="col" class="to-adm__th">Company</th>
+                            <th scope="col" class="to-adm__th">Plan</th>
+                            <th scope="col" class="to-adm__th">Sequence</th>
+                          }
+                          <th scope="col" class="to-adm__th">Initiated by</th>
+                          <th scope="col" class="to-adm__th">Initiated on</th>
+                          <th scope="col" class="to-adm__th to-adm__th--right">Waiting</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of state.rows; track $index) {
+                          <tr class="to-adm__row">
+                            @if (queue.table === 'BudgetApprovals') {
+                              <td class="to-adm__td to-adm__td--mono">{{ row.key }}</td>
+                            } @else {
+                              <td class="to-adm__td to-adm__td--mono">{{ row.company || '—' }}</td>
+                              <td class="to-adm__td to-adm__td--mono">{{ row.reference || '—' }}</td>
+                              <td class="to-adm__td to-adm__td--mono">{{ row.sequence || '—' }}</td>
+                            }
+                            <td class="to-adm__td to-adm__td--muted">{{ row.initiatedBy || '—' }}</td>
+                            <td class="to-adm__td to-adm__td--muted to-numeric">{{ formatDateTime(row.initiatedOn) }}</td>
+                            <td class="to-adm__td to-adm__td--right to-numeric">{{ waited(row.initiatedOn) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <footer class="to-rr__preview-foot">
+                    <span class="to-numeric">
+                      Showing {{ fmt(state.rows.length) }} of {{ fmt(state.total) }}, oldest first.
+                      @if (state.rows.length < state.total) {
+                        All {{ fmt(state.total) }} move.
+                      }
+                    </span>
+                    @if (state.nextCursor) {
+                      <button
+                        type="button"
+                        pButton
+                        class="p-button-text p-button-sm"
+                        [disabled]="state.loadingMore"
+                        (click)="loadMore(queue)"
+                      >
+                        {{ state.loadingMore ? 'Loading…' : 'Show 50 more' }}
+                      </button>
+                    }
+                  </footer>
+                }
+              } @else {
+                <p class="to-adm__note">Tick a queue above to see its rows.</p>
+              }
+            </section>
+
+            <!-- ─── The action ────────────────────────────────────────────────── -->
+            <footer class="to-rr__actionbar">
+              <div class="to-rr__actionbar-text">
+                @if (blocker(); as reason) {
+                  <span class="to-rr__actionbar-reason">{{ reason }}</span>
+                } @else {
+                  <span class="to-rr__actionbar-figure to-numeric">{{ fmt(moveCount()) }}</span>
+                  <span>
+                    {{ moveCount() === 1 ? 'approval' : 'approvals' }}
+                    in {{ tickedQueues().length }} {{ tickedQueues().length === 1 ? 'queue' : 'queues' }}
+                    <span class="to-rr__actionbar-route">
+                      {{ displayName(group) }}
+                      <tabler-icon [icon]="icons['arrow-right']" [size]="13" aria-hidden="true" />
+                      {{ newHolder() ? candidateName(newHolder()!) : '' }}
+                    </span>
+                  </span>
+                }
+              </div>
+              <button type="button" pButton class="p-button-sm" [disabled]="!canRun()" (click)="askToConfirm()">
+                <tabler-icon [icon]="icons['arrows-exchange']" [size]="15" />
+                Re-route{{ blocker() ? '' : ' ' + fmt(moveCount()) }}
+              </button>
+            </footer>
+          }
+        </article>
+      }
+    </section>
+  </div>
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming()"
+  (visibleChange)="confirming.set(false)"
+  [title]="confirmTitle()"
+  [message]="confirmMessage()"
+  [details]="confirmDetails()"
+  [note]="confirmNote()"
+  confirmLabel="Re-route"
+  (confirmed)="confirmRun()"
+  (cancelled)="confirming.set(false)"
+/>

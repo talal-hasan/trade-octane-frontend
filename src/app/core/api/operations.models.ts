@@ -69,6 +69,36 @@ export interface PendingApprovalPageResponse {
   totalCount: ApiInt;
 }
 
+export interface EligibleHolderResponse {
+  userId: string;
+  fullName: string;
+}
+
+/**
+ * Who a queue may be handed to — **the legacy screen's New User dropdown**.
+ *
+ * `Re_Route_Role_Based.aspx` asked for a role, ran `GetUserRoles(roleId)` once, and bound
+ * that single result to *both* Current User and New User, so the two could never differ in
+ * role. This screen starts from a queue that already names the holder, so the role is
+ * derived from them and this is the rest of that same list.
+ *
+ * `roleConstrained` is false when the holder has no role at all — every placeholder value
+ * (`<-- FORWARD TO -->`, `Please Select`) and five real accounts. The rule then has nothing
+ * to match on and `candidates` is every active user instead. **Do not read that as the rule
+ * being optional:** `POST /admin/re-route` applies the identical test, so a mismatch is a
+ * 400 whenever the holder does have a role.
+ *
+ * An empty `candidates` with `roleConstrained: true` is a different problem — nobody else
+ * holds that role — and the remedy is to grant it, not to widen the list.
+ */
+export interface EligibleHoldersResponse {
+  currentHolder: string;
+  roleConstrained: boolean;
+  currentHolderIsUser: boolean;
+  currentHolderRoles: string[];
+  candidates: EligibleHolderResponse[];
+}
+
 /**
  * `expectedCount` is **required and load-bearing**: it comes from the preview, the UPDATE's
  * row count is compared against it, and the whole transaction rolls back with a 409 if they
@@ -140,6 +170,11 @@ export interface BudgetOwnerResponse {
 export interface BudgetScopeResponse {
   tables: BudgetTableResponse[];
   currentOwners: BudgetOwnerResponse[];
+  /**
+   * Empty unless the scope call names a `currentOwner` — who may receive budgets depends on
+   * that owner's role. The screen reads `/budget-ownership/eligible-owners` on each owner
+   * change instead, rather than repeating this scan.
+   */
   eligibleOwners: BudgetOwnerResponse[];
   totalShellCount: ApiInt;
   stuckShellCount: ApiInt;
@@ -301,6 +336,15 @@ export interface TransferActivityOwnershipResponse {
 // ─── Activity Logs ────────────────────────────────────────────────────────────
 
 export type ActivityLogActorGroup = 'Users' | 'Admins' | 'Systems' | 'Distributors';
+
+/**
+ * The activity-log endpoints' limits, mirrored from the backend's `ActivityLogsReportSql` so
+ * the screen can say why it won't ask rather than surface a 400. Both dates are required on
+ * every call, and the range counts both ends (1–31 Jan is 31 days).
+ */
+export const ACTIVITY_LOG_MAX_RANGE_DAYS = 31;
+/** How many `userId` values one logs or export call may name. `/actors` can return far more. */
+export const ACTIVITY_LOG_MAX_USER_FILTERS = 100;
 export type ActivityLogSortField =
   | 'CompletedOn'
   | 'UserId'

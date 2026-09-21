@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
-import { unwrapData } from '../../../core/api/api.types';
+import { AdminApiRoot, unwrapData } from '../../../core/api/api.types';
 import {
   AccessSortField,
   AccessStatusFilter,
@@ -52,10 +52,11 @@ export class AdminAccessApi {
   userAccess(
     userId: string,
     options: { scope?: AccessTreeScope; status?: AccessStatusFilter } = {},
+    root: AdminApiRoot = 'admin',
   ): Observable<UserAccessResponse> {
     return this.api
       .get<UserAccessResponse | { data: UserAccessResponse }>(
-        `/admin/users/${encodeURIComponent(userId)}/access`,
+        `/${root}/users/${encodeURIComponent(userId)}/access`,
         options as Query,
       )
       .pipe(map(unwrapData));
@@ -72,9 +73,10 @@ export class AdminAccessApi {
     userId: string,
     menuIds: readonly number[],
     options: { allowInactiveMenus?: boolean; allowOrphanedGrants?: boolean } = {},
+    root: AdminApiRoot = 'admin',
   ): Observable<UserAccessWriteResponse> {
     return this.api.put<UserAccessWriteResponse>(
-      `/admin/users/${encodeURIComponent(userId)}/access`,
+      `/${root}/users/${encodeURIComponent(userId)}/access`,
       { menuIds: [...menuIds] },
       options as Query,
     );
@@ -104,10 +106,11 @@ export class AdminAccessApi {
   roleAccess(
     roleId: number,
     options: { scope?: AccessTreeScope; status?: AccessStatusFilter } = {},
+    root: AdminApiRoot = 'admin',
   ): Observable<RoleAccessResponse> {
     return this.api
       .get<RoleAccessResponse | { data: RoleAccessResponse }>(
-        `/admin/roles/${roleId}/access`,
+        `/${root}/roles/${roleId}/access`,
         options as Query,
       )
       .pipe(map(unwrapData));
@@ -126,9 +129,10 @@ export class AdminAccessApi {
       allowInactiveMenus?: boolean;
       allowOrphanedGrants?: boolean;
     } = {},
+    root: AdminApiRoot = 'admin',
   ): Observable<RoleAccessWriteResponse> {
     return this.api.put<RoleAccessWriteResponse>(
-      `/admin/roles/${roleId}/access`,
+      `/${root}/roles/${roleId}/access`,
       { menuIds: [...menuIds] },
       options as Query,
     );

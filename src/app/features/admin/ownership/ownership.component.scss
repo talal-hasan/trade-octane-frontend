@@ -52,3 +52,53 @@
     border-radius: t.$to-radius-control;
   }
 }
+
+/* 1. Main Select Container - Sets Accessible Touch Height (44px) */
+::ng-deep .to-adm__select {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  width: 100%;
+}
+
+::ng-deep .to-adm__select .p-select-label {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* 2. Dropdown List Item Height & Breathing Room */
+::ng-deep .to-adm__select-panel .p-select-option {
+  padding: 0.65rem 0.85rem;
+}
+
+::ng-deep .to-adm__select-panel .p-select-list-container {
+  max-height: 260px; /* Expands view area to show more results */
+}
+
+/* 3. Option Layout & UX Visual Hierarchy */
+.to-own__candidate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.to-own__candidate-name {
+  font-weight: 500;
+  color: inherit;
+}
+
+.to-own__candidate-login {
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  line-height: 1;
+}

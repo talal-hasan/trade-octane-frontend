@@ -1,0 +1,405 @@
+<to-page-header
+  title="Levels of Authority"
+  subtitle="The claim amount at which each role is brought into a claim's approval, by business type and claim nature."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Levels of Authority' }]"
+>
+  <button actions type="button" pButton class="p-button-sm" [disabled]="loading() || failed()" (click)="openNew()" data-tour="loa-new">
+    <tabler-icon [icon]="icons['plus']" [size]="15" />
+    New level
+  </button>
+</to-page-header>
+
+@if (loading()) {
+  <div class="to-adm" aria-busy="true" aria-label="Loading levels of authority">
+    <to-skeleton width="60%" height="32px" />
+    <div class="to-adm__split to-adm__split--wide">
+      <div class="to-adm__table-wrap">
+        @for (row of skeletonRows; track row) {
+          <div class="to-adm__skeleton-row">
+            <to-skeleton width="22%" height="12px" />
+            <to-skeleton width="18%" height="12px" />
+            <to-skeleton width="18%" height="12px" />
+            <to-skeleton width="24%" height="12px" />
+          </div>
+        }
+      </div>
+      <to-skeleton width="100%" height="320px" />
+    </div>
+  </div>
+} @else if (failed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load levels of authority"
+    description="The levels or their pickers did not respond. This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else {
+  <div class="to-adm">
+    <!-- The pair every band belongs to. Chips, not dropdowns: seven business types and three
+         natures, switched constantly, each with how many levels it holds. -->
+    <div class="to-loa__toolbar" data-tour="loa-pair">
+      <div class="to-adm__chipset" role="radiogroup" aria-label="Business type">
+        @for (type of businessTypes(); track type.id) {
+          <button
+            type="button"
+            role="radio"
+            class="to-adm__chip"
+            [class.to-adm__chip--on]="businessTypeId() === type.id"
+            [attr.aria-checked]="businessTypeId() === type.id"
+            (click)="selectBusinessType(type.id)"
+          >
+            {{ type.name }}
+            <span class="to-numeric to-loa__count">{{ countByBusinessType().get(type.id) ?? 0 }}</span>
+          </button>
+        }
+      </div>
+
+      <div class="to-adm__segmented" role="radiogroup" aria-label="Claim nature">
+        @for (nature of claimNatures(); track nature.id) {
+          <button
+            type="button"
+            role="radio"
+            class="to-adm__segment"
+            [class.to-adm__segment--on]="claimNatureId() === nature.id"
+            [attr.aria-checked]="claimNatureId() === nature.id"
+            (click)="selectClaimNature(nature.id)"
+          >
+            {{ nature.name }}
+            <span class="to-numeric">{{ countByClaimNature().get(nature.id) ?? 0 }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="to-adm__split to-adm__split--wide">
+      <!-- ─── The pair's bands ─────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-loa__bands" data-tour="loa-bands">
+        <header class="to-loa__bands-head">
+          <h2 class="to-adm__title">{{ businessTypeName() }} · {{ claimNatureName() }}</h2>
+          <span class="to-adm__pager-range to-numeric">
+            {{ pairBands().length }} {{ pairBands().length === 1 ? 'role' : 'roles' }}
+            @if (refreshing()) {
+              <span class="to-loa__muted">· updating…</span>
+            }
+          </span>
+        </header>
+
+        @if (pairBands().length === 0) {
+          <to-empty-state
+            icon="cash"
+            [heading]="'No levels for ' + businessTypeName() + ' · ' + claimNatureName()"
+            description="No role is brought into these claims' approval by amount yet."
+          >
+            <button actions type="button" pButton class="p-button-sm" (click)="openNew()">
+              <tabler-icon [icon]="icons['plus']" [size]="15" />
+              New level
+            </button>
+          </to-empty-state>
+        } @else {
+          <div class="to-loa__table-scroll">
+            <table class="to-adm__table">
+              <thead>
+                <tr>
+                  <th scope="col" class="to-adm__th">Role</th>
+                  <th scope="col" class="to-adm__th to-adm__th--right">Amount from</th>
+                  <th scope="col" class="to-adm__th to-adm__th--right">Amount to</th>
+                  <th scope="col" class="to-adm__th">In the approval of</th>
+                  <th scope="col" class="to-adm__th"><span class="to-loa__sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (band of pairBands(); track band.id) {
+                  <tr
+                    class="to-adm__row to-loa__row"
+                    [class.to-loa__row--editing]="isEditing(band)"
+                    [class.to-loa__row--fresh]="highlightId() === band.id"
+                  >
+                    <td class="to-adm__td">
+                      <span class="to-loa__role">
+                        @if (band.row.roleName) {
+                          {{ band.row.roleName }}
+                        } @else {
+                          <span class="to-adm__flag to-adm__flag--warn" [pTooltip]="'Role ' + band.roleId + ' no longer exists.'">
+                            Unknown role
+                          </span>
+                        }
+                      </span>
+                    </td>
+                    <td class="to-adm__td to-adm__td--right to-numeric">{{ band.from | pkrCurrency }}</td>
+                    <td class="to-adm__td to-adm__td--right to-adm__td--muted to-numeric">{{ band.to | pkrCurrency }}</td>
+                    <td class="to-adm__td">
+                      @if (band.from === 0) {
+                        <span class="to-loa__reach to-loa__reach--all">Every claim</span>
+                      } @else {
+                        <span class="to-loa__reach to-numeric">{{ band.from | pkrCurrency }} and above</span>
+                      }
+                    </td>
+                    <td class="to-adm__td to-adm__td--right">
+                      <button
+                        type="button"
+                        class="to-loa__action"
+                        [disabled]="saving()"
+                        [attr.aria-label]="'Edit the level for ' + (band.row.roleName || 'role ' + band.roleId)"
+                        (click)="openEdit(band)"
+                      >
+                        <tabler-icon [icon]="icons['edit']" [size]="15" />
+                        <span>Edit</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- ─── Panel: try an amount, or the form ─────────────────────────────────── -->
+      <aside class="to-adm__panel">
+        @switch (panel().kind) {
+          @case ('try') {
+            <div class="to-adm__card to-adm__card--pad to-loa__panel" data-tour="loa-try">
+              <h2 class="to-adm__subtitle">Try a claim amount</h2>
+
+              <div class="to-adm__form-field">
+                <label class="to-adm__form-label" for="trialAmount">
+                  A {{ businessTypeName() }} · {{ claimNatureName() }} claim of
+                </label>
+                <p-inputnumber
+                  inputId="trialAmount"
+                  [formControl]="amountControl"
+                  mode="decimal"
+                  locale="en-PK"
+                  prefix="PKR "
+                  [maxFractionDigits]="0"
+                  [min]="0"
+                  [max]="maxAmount"
+                  [fluid]="true"
+                  placeholder="PKR 0"
+                />
+              </div>
+
+              @if (trial(); as result) {
+                <p class="to-loa__verdict to-numeric" role="status">
+                  <strong>{{ result.joining }} of {{ result.bands.length }}</strong>
+                  {{ result.bands.length === 1 ? 'role is' : 'roles are' }} brought into its approval.
+                </p>
+              }
+
+              @if (pairBands().length > 0) {
+                <ul class="to-loa__ladder">
+                  @for (band of pairBands(); track band.id; let i = $index) {
+                    @let joins = trial()?.bands?.[i]?.joins;
+                    <li
+                      class="to-loa__rung"
+                      [class.to-loa__rung--in]="joins === true"
+                      [class.to-loa__rung--out]="joins === false"
+                    >
+                      <tabler-icon
+                        [icon]="joins === false ? icons['minus'] : icons['circle-check']"
+                        [size]="15"
+                        aria-hidden="true"
+                      />
+                      <span class="to-loa__rung-name">{{ band.row.roleName || 'Role ' + band.roleId }}</span>
+                      <span class="to-loa__rung-from to-numeric">
+                        {{ band.from === 0 ? 'every claim' : 'from ' + (band.from | pkrCurrency) }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <p class="to-loa__rule">
+                A role is brought in from its <strong>Amount from</strong> upwards. <strong>Amount to</strong>
+                does not stop it: a claim above that still includes the role. The claim also needs the role
+                in the business type's approval hierarchy, and someone holding it for the distributor's area.
+              </p>
+            </div>
+          }
+
+          @default {
+            <form
+              class="to-adm__card to-adm__card--pad to-loa__panel to-loa__panel--form"
+              [formGroup]="form"
+              (ngSubmit)="submit()"
+              novalidate
+              data-tour="loa-form"
+            >
+              <div class="to-loa__panel-head">
+                <h2 class="to-adm__subtitle">{{ panel().kind === 'edit' ? 'Edit level' : 'New level' }}</h2>
+                <button type="button" class="to-loa__close" aria-label="Close" (click)="closePanel()">
+                  <tabler-icon [icon]="icons['x']" [size]="16" />
+                </button>
+              </div>
+
+              <div class="to-adm__form-grid to-loa__pair-grid">
+                <div class="to-adm__form-field">
+                  <label class="to-adm__form-label" for="loaBusinessType">Business type</label>
+                  <p-select
+                    class="to-loa__select"
+                    inputId="loaBusinessType"
+                    formControlName="businessTypeId"
+                    [options]="businessTypes()"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select"
+                    [invalid]="showError(form.controls.businessTypeId)"
+                    appendTo="body"
+                  />
+                </div>
+                <div class="to-adm__form-field">
+                  <label class="to-adm__form-label" for="loaClaimNature">Claim nature</label>
+                  <p-select
+                    class="to-loa__select"
+                    inputId="loaClaimNature"
+                    formControlName="claimNatureId"
+                    [options]="claimNatures()"
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select"
+                    [invalid]="showError(form.controls.claimNatureId)"
+                    appendTo="body"
+                  />
+                </div>
+              </div>
+
+              <div class="to-adm__form-field">
+                <label class="to-adm__form-label" for="loaRole">Role</label>
+                <p-select
+                  class="to-loa__select"
+                  inputId="loaRole"
+                  formControlName="roleId"
+                  [options]="roleOptions()"
+                  optionLabel="name"
+                  optionValue="id"
+                  optionDisabled="disabled"
+                  [filter]="true"
+                  filterBy="name"
+                  filterPlaceholder="Search roles"
+                  placeholder="Select a role"
+                  [invalid]="showError(form.controls.roleId)"
+                  appendTo="body"
+                >
+                  <ng-template #item let-option>
+                    <span class="to-loa__option">
+                      <span class="to-loa__option-name">{{ option.name }}</span>
+                      @if (option.blockedReason) {
+                        <span class="to-loa__option-flag">{{ option.blockedReason }}</span>
+                      }
+                    </span>
+                  </ng-template>
+                </p-select>
+                @if (showError(form.controls.roleId)) {
+                  <span class="to-adm__form-error">Pick a role.</span>
+                } @else {
+                  <span class="to-adm__form-hint">Roles already set for this pair are greyed out — edit their row instead.</span>
+                }
+              </div>
+
+              @if (duplicate(); as taken) {
+                <div class="to-adm__alert to-adm__alert--warn" role="alert">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>{{ taken.row.roleName }} already has a level for this business type and claim nature.</span>
+                  <button type="button" pButton class="p-button-sm p-button-text" (click)="openEdit(taken)">Edit it</button>
+                </div>
+              }
+
+              <div class="to-adm__form-grid to-loa__pair-grid">
+                <div class="to-adm__form-field">
+                  <label class="to-adm__form-label" for="loaFrom">Amount from</label>
+                  <p-inputnumber
+                    inputId="loaFrom"
+                    formControlName="fromAmount"
+                    mode="decimal"
+                    locale="en-PK"
+                    prefix="PKR "
+                    [maxFractionDigits]="0"
+                    [min]="0"
+                    [max]="maxAmount"
+                    [fluid]="true"
+                    [invalid]="showError(form.controls.fromAmount)"
+                  />
+                  @if (showError(form.controls.fromAmount)) {
+                    <span class="to-adm__form-error">Enter an amount — 0 for every claim.</span>
+                  }
+                </div>
+                <div class="to-adm__form-field">
+                  <label class="to-adm__form-label" for="loaTo">Amount to</label>
+                  <p-inputnumber
+                    inputId="loaTo"
+                    formControlName="toAmount"
+                    mode="decimal"
+                    locale="en-PK"
+                    prefix="PKR "
+                    [maxFractionDigits]="0"
+                    [min]="0"
+                    [max]="maxAmount"
+                    [fluid]="true"
+                    [invalid]="showError(form.controls.toAmount) || rangeError()"
+                  />
+                  @if (showError(form.controls.toAmount)) {
+                    <span class="to-adm__form-error">Enter an amount — 0 is allowed.</span>
+                  } @else if (rangeError()) {
+                    <span class="to-adm__form-error">Must not be below Amount from.</span>
+                  }
+                </div>
+              </div>
+
+              @if (preview()) {
+                <p class="to-loa__preview" role="status">
+                  <tabler-icon [icon]="icons['info-circle']" [size]="15" />
+                  {{ preview() }}
+                </p>
+              }
+
+              @if (editing(); as band) {
+                <div class="to-loa__changes">
+                  <h3 class="to-adm__summary-heading">
+                    {{ changes().length === 0 ? 'No changes yet' : changes().length === 1 ? '1 change to save' : changes().length + ' changes to save' }}
+                  </h3>
+                  @if (changes().length > 0) {
+                    <ul class="to-adm__changes">
+                      @for (change of changes(); track change.label) {
+                        <li class="to-adm__change">
+                          <span class="to-adm__change-label">{{ change.label }}</span>
+                          <span class="to-adm__change-values to-numeric">
+                            <s>{{ change.from }}</s>
+                            <tabler-icon [icon]="icons['arrow-right']" [size]="12" />
+                            {{ change.to }}
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  }
+                  @if (movesPair()) {
+                    <p class="to-adm__form-hint">
+                      This moves {{ band.row.roleName }}'s level out of {{ band.row.businessType }} · {{ band.row.claimNature }},
+                      so those claims will no longer bring the role in by amount.
+                    </p>
+                  }
+                </div>
+              }
+
+              <p class="to-adm__form-hint">Changes apply to claims raised from now on, not to approvals already under way.</p>
+
+              <div class="to-adm__form-actions">
+                <button type="button" pButton class="p-button-text p-button-sm" (click)="closePanel()">Cancel</button>
+                <button type="submit" pButton class="p-button-sm" [disabled]="!canSave()">
+                  @if (saving()) {
+                    Saving…
+                  } @else {
+                    {{ panel().kind === 'edit' ? 'Save changes' : 'Create level' }}
+                  }
+                </button>
+              </div>
+            </form>
+          }
+        }
+      </aside>
+    </div>
+  </div>
+}

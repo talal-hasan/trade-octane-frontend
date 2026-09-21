@@ -1,0 +1,308 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Census, table, filters and pager chrome come from _admin.scss. The drawer's own width is
+// a PrimeNG internal, so it lives in _primeng-overrides.scss (`.to-rr-drawer`).
+
+.to-rr__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-rr__search {
+  min-width: 260px;
+}
+
+.to-rr__role {
+  width: 200px;
+}
+
+.to-rr__muted {
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-2xs;
+}
+
+.to-rr__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+.to-rr__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// Refetching behind numbers already on screen dims them rather than blanking them.
+.to-rr__stale {
+  opacity: 0.6;
+  @include u.motion(opacity);
+}
+
+// The two gaps are buttons: a count worth chasing should open what it counts.
+.to-rr__census-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:not(:disabled):hover .to-adm__census-value {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-rr__overlap {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--to-accent);
+  }
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-rr__roles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+}
+
+// ─── Chips ────────────────────────────────────────────────────────────────────
+
+.to-rr__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-1;
+}
+
+.to-rr__role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: 1px t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.7;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, border-color);
+
+  .to-numeric {
+    color: var(--to-text-muted);
+  }
+
+  &:hover {
+    border-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+  }
+
+  &--on {
+    border-color: var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 12%, var(--to-bg-1));
+  }
+
+  &--none {
+    border-style: dashed;
+    border-color: var(--to-warning);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-rr__more {
+  padding: 0 t.$to-space-1;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+.to-rr__region {
+  padding: 0;
+  margin-right: t.$to-space-2;
+  border: none;
+  background: none;
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--to-accent-text);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-rr__th-accounts {
+  width: 220px;
+}
+
+.to-rr__accounts-cell {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-rr__count {
+  min-width: 28px;
+  text-align: right;
+}
+
+// Relative to the busiest region, so the eye finds where the people are.
+.to-rr__bar {
+  flex: 1;
+  max-width: 96px;
+  height: 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-viz-track);
+  overflow: hidden;
+}
+
+.to-rr__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--to-viz-1);
+}
+
+.to-rr__open {
+  display: inline-flex;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+}
+
+// ─── Drawer ───────────────────────────────────────────────────────────────────
+
+.to-rr__drawer-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.to-rr__drawer-title {
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  color: var(--to-text-primary);
+}
+
+.to-rr__drawer-sub {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-rr__drawer {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+}
+
+.to-rr__accounts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-rr__account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.to-rr__account-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-rr__account-name {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-rr__account-meta {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// Every region the account holds, wrapped rather than cut off — the reason the row exists.
+.to-rr__account-regions {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  .to-numeric {
+    color: var(--to-text-muted);
+  }
+}

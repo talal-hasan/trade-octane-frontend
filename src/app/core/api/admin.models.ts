@@ -112,6 +112,76 @@ export interface PasswordChangeResponse {
   account: AccountResponse;
 }
 
+// ─── Resignations (tag: Administration 1.0 / Update Resignation) ──────────────
+
+/**
+ * One account's resignation state.
+ *
+ * `resignationDate` is the stored value **raw**, and it may carry a time — the
+ * activate/deactivate path stamps `getdate()` into the same column when an account is
+ * switched off without a date. `stampedOnDeactivation` is how you tell those apart from a
+ * date an administrator typed: the first is the moment the account was closed, the second
+ * is the day the person left. They are not the same fact and the screen must not present
+ * them as one.
+ *
+ * `isActive` is tri-state because the column is nullable: legacy's insert never set it, so
+ * NULL means nobody ever switched the account on — a different thing from switching it off.
+ */
+export interface ResignationResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  isActive: boolean | null;
+  /** `yyyy-MM-ddTHH:mm:ss`, or a bare date. Never parse it as `dd-MM-yyyy`. */
+  resignationDate: string | null;
+  stampedOnDeactivation: boolean;
+  /**
+   * **This date may have had its day and month transposed when it was recorded.**
+   *
+   * The legacy screen pasted a `dd-MM-yyyy` string straight into the SQL, where the server
+   * read it under the connection's `DATEFORMAT` (`mdy` by default). A day above 12 failed
+   * loudly; a day of 12 or below was stored transposed, silently. It is a *candidate*
+   * marker, not a defect — 3 May and 5 March are indistinguishable after the fact. Only
+   * the person who entered it can say which was meant.
+   */
+  dateFormatSuspect: boolean;
+  /** `yyyy-MM-dd` — the same value read the other way round. Null unless suspect. */
+  suspectAlternativeDate: string | null;
+}
+
+export interface ResignationWrapperResponse {
+  data: ResignationResponse;
+}
+
+/**
+ * The body of `PUT /admin/resignations/{userId}`.
+ *
+ * `yyyy-MM-dd`, and the server binds it as a parameter rather than parsing text — which is
+ * the whole point of the endpoint. A null here is **refused**, not treated as "clear it":
+ * clearing is destructive and has its own verb, so a serialisation bug cannot erase a date
+ * it meant to write.
+ */
+export interface SetResignationRequest {
+  resignationDate: string;
+}
+
+/**
+ * What a set or a clear actually did.
+ *
+ * `accountRemainsActive` is surfaced rather than assumed: recording a resignation does not
+ * deactivate anyone, and an administrator who read "resignation" as "revoke access" needs
+ * to find that out here rather than a week later.
+ */
+export interface SetResignationResponse {
+  user: ResignationResponse;
+  previousResignationDate: string | null;
+  accountRemainsActive: boolean;
+}
+
+export interface SetResignationWrapperResponse {
+  data: SetResignationResponse;
+}
+
 // ─── Roles (tag: Administration 1.0 / Assign Role To User) ────────────────────
 
 export type RoleStatusFilter = 'All' | 'Active' | 'Inactive';
@@ -153,6 +223,20 @@ export interface BaselineMenuGrantResponse {
 export interface CreateRoleResponse {
   role: RoleResponse;
   baselineGrants: BaselineMenuGrantResponse[];
+}
+
+/**
+ * `POST /admin/roles/{roleId}/activate` and its `/deactivate` sibling — the role's status
+ * after the write, plus whether the write actually changed anything.
+ *
+ * `changed` is `false` when the role was already in the requested state: the server writes
+ * nothing and adds no audit row, so the UI should say "already active" rather than claim a
+ * change it did not make. `role` carries the fresh `assignedUserCount`, which is how many
+ * people the write reached.
+ */
+export interface RoleStatusResponse {
+  role: RoleResponse;
+  changed: boolean;
 }
 
 /**
@@ -538,4 +622,79 @@ export interface MenuWriteResponse {
   menu: MenuResponse;
   /** True when the new row is invisible to everyone until someone grants it. */
   requiresAccessGrant: boolean;
+}
+
+// ─── Approval Hierarchy (tag: Administration 1.0 / Approval Hierarchy) ────────
+//
+// `Hierarchy_ApprovalCycle`, legacy `Hierarchy.aspx` (menuId 135). One hierarchy per
+// business type × group × scheme key. Rows are (sequence, role) pairs: sequence 0 is the
+// initiating role — budget initiation reads `Seq_ID = 0` — and the approval procedures look
+// for the next approver at sequence + 1. Several roles can share a sequence; any of them
+// acts for it.
+
+export interface ApprovalBusinessTypeResponse {
+  businessTypeId: ApiInt;
+  name: string;
+}
+
+/** `GROUPS.REQUEST_ID` — BUDGET, CLAIMS, ACTIVITY … */
+export interface ApprovalGroupResponse {
+  groupId: string;
+  name: string;
+}
+
+/**
+ * `SCHEME_TYPES.Key_LoadBudgetShell` — legacy's "Request". Keys are not unique by name and
+ * vice versa: key B15 is listed once as DBDP and once as VTR-1.
+ */
+export interface ApprovalSchemeResponse {
+  schemeId: string;
+  name: string;
+}
+
+export interface ApprovalRoleResponse {
+  roleId: ApiInt;
+  name: string;
+  description: string;
+  isActive: boolean;
+}
+
+export interface ApprovalHierarchyCatalogueResponse {
+  businessTypes: ApprovalBusinessTypeResponse[];
+  groups: ApprovalGroupResponse[];
+  schemes: ApprovalSchemeResponse[];
+  roles: ApprovalRoleResponse[];
+}
+
+export interface ApprovalHierarchyLevelResponse {
+  sequence: ApiInt;
+  roleId: ApiInt;
+  roleName: string;
+  roleDescription: string;
+  /** Null when the stored role no longer exists. */
+  roleIsActive: boolean | null;
+}
+
+export interface ApprovalHierarchyResponse {
+  businessTypeId: ApiInt;
+  groupId: string;
+  schemeId: string;
+  levels: ApprovalHierarchyLevelResponse[];
+}
+
+/**
+ * `PUT /admin/approval-hierarchies?businessTypeId&groupId&schemeId`. `steps[i]` is stored as
+ * sequence `firstSequence + i`; roles in one step share it. Empty clears the hierarchy.
+ */
+export interface ReplaceApprovalHierarchyRequest {
+  steps: number[][];
+  /** 0: the first step initiates. 1: no role initiates; the first step approves. */
+  firstSequence: 0 | 1;
+}
+
+export interface ApprovalHierarchyWriteResponse {
+  hierarchy: ApprovalHierarchyResponse;
+  previousRoleIds: ApiInt[];
+  /** False when the stored rows already matched: nothing was written or logged. */
+  changed: boolean;
 }

@@ -1,0 +1,343 @@
+<to-page-header
+  title="Claim Hierarchy"
+  subtitle="The order in which roles approve, for each business type."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Claim Hierarchy' }]"
+/>
+
+@if (catalogueFailed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load business types and roles"
+    description="This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="loadCatalogue()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (!catalogue()) {
+  <div class="to-adm" aria-busy="true" aria-label="Loading">
+    <to-skeleton width="50%" height="32px" />
+    <div class="to-ch__layout">
+      <to-skeleton width="100%" height="420px" />
+      <to-skeleton width="100%" height="420px" />
+      <to-skeleton width="100%" height="220px" />
+    </div>
+  </div>
+} @else {
+  <div class="to-adm">
+    <!-- ─── Business type ─────────────────────────────────────────────────────── -->
+    <div class="to-adm__chipset" role="radiogroup" aria-label="Business type" data-tour="ch-types">
+      @for (type of businessTypes(); track type.id) {
+        <button
+          type="button"
+          role="radio"
+          class="to-adm__chip"
+          [class.to-adm__chip--on]="selectedId() === type.id"
+          [attr.aria-checked]="selectedId() === type.id"
+          (click)="selectBusinessType(type.id)"
+        >
+          {{ type.name }}
+          @if (stepCount(type.id) !== null) {
+            <span class="to-numeric to-ch__count">{{ stepCount(type.id) }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="to-ch__layout">
+      <!-- ─── Roles ────────────────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-ch__roles" data-tour="ch-roles" aria-label="Roles">
+        <header class="to-ch__panel-head">
+          <h2 class="to-adm__subtitle">Roles</h2>
+          <span class="to-adm__form-hint">Drag into the order, or Add</span>
+        </header>
+        <div class="to-adm__search to-ch__search">
+          <tabler-icon [icon]="icons['search']" [size]="15" />
+          <input
+            pInputText
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Search role ID or name"
+            aria-label="Search roles"
+          />
+        </div>
+
+        <div class="to-ch__role-head" aria-hidden="true">
+          <span>Role ID</span>
+          <span>Role name</span>
+        </div>
+        <div
+          class="to-ch__role-list"
+          cdkDropList
+          id="ch-roles"
+          [cdkDropListConnectedTo]="['ch-order']"
+          [cdkDropListSortingDisabled]="true"
+          (cdkDropListDropped)="dropOnRoles($event)"
+        >
+          @for (role of available(); track role.id) {
+            <div
+              class="to-ch__role"
+              [class.to-ch__role--blocked]="role.blocked"
+              cdkDrag
+              [cdkDragData]="role.id"
+              [cdkDragDisabled]="role.blocked || saving()"
+            >
+              <span class="to-ch__role-id to-numeric">{{ role.id }}</span>
+              <span class="to-ch__role-text">
+                <span class="to-ch__role-name">
+                  {{ role.name }}
+                  @if (role.blocked) {
+                    <span class="to-adm__flag" pTooltip="Deactivated roles cannot be added. Activate it on Roles first.">
+                      Inactive
+                    </span>
+                  }
+                </span>
+                @if (role.description && role.description !== role.name) {
+                  <span class="to-ch__role-desc">{{ role.description }}</span>
+                }
+              </span>
+              <button
+                type="button"
+                class="to-ch__icon-button to-ch__add"
+                [disabled]="role.blocked || saving() || saved() === null"
+                [attr.aria-label]="'Add ' + role.name + ' as the last step'"
+                (click)="add(role.id)"
+              >
+                <tabler-icon [icon]="icons['plus']" [size]="14" />
+                <span>Add</span>
+              </button>
+            </div>
+          } @empty {
+            <p class="to-ch__none">
+              {{ searchControl.value ? 'No role matches.' : 'Every role is in the order.' }}
+            </p>
+          }
+        </div>
+      </section>
+
+      <!-- ─── Approval order ───────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-ch__order" data-tour="ch-order" aria-label="Approval order">
+        <header class="to-ch__panel-head">
+          <h2 class="to-adm__subtitle">Approval order · {{ selectedName() }}</h2>
+          <span class="to-adm__form-hint to-numeric">
+            {{ steps().length }} {{ steps().length === 1 ? 'step' : 'steps' }} · first approver first
+          </span>
+        </header>
+
+        @if (loadingSelected()) {
+          <div class="to-ch__steps" aria-busy="true">
+            @for (row of skeletonRows; track row) {
+              <to-skeleton width="100%" height="48px" />
+            }
+          </div>
+        } @else if (failedSelected()) {
+          <to-empty-state icon="alert-triangle" [heading]="'Could not load the ' + selectedName() + ' hierarchy'">
+            <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retrySelected()">
+              Try again
+            </button>
+          </to-empty-state>
+        } @else {
+          @if (issues().ties.length > 0 || issues().gaps) {
+            <div class="to-adm__alert to-adm__alert--warn" role="note">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span>
+                @for (tie of issues().ties; track tie.sequence) {
+                  {{ tie.roleNames.join(' and ') }} are both stored as step {{ tie.sequence }}, so the approval procedures
+                  take them in no fixed order.
+                }
+                @if (issues().gaps) {
+                  The stored steps skip numbers.
+                }
+                Saving numbers the steps 1, 2, 3 in the order shown.
+              </span>
+            </div>
+          }
+
+          <ol
+            class="to-ch__steps"
+            cdkDropList
+            id="ch-order"
+            [cdkDropListConnectedTo]="['ch-roles']"
+            [cdkDropListDisabled]="saving()"
+            (cdkDropListDropped)="dropOnOrder($event)"
+          >
+            @for (step of steps(); track step.roleId; let index = $index; let first = $first; let last = $last) {
+              <li
+                class="to-ch__step"
+                [class.to-ch__step--new]="step.isNew"
+                cdkDrag
+                [cdkDragData]="step.roleId"
+              >
+                <button type="button" class="to-ch__handle" cdkDragHandle [attr.aria-label]="'Drag ' + step.name">
+                  <tabler-icon [icon]="icons['grip-vertical']" [size]="16" />
+                </button>
+                <span class="to-ch__position to-numeric">{{ step.position }}</span>
+                <span class="to-ch__step-text">
+                  <span class="to-ch__step-name">
+                    {{ step.name }}
+                    <span class="to-ch__role-id-inline to-numeric">#{{ step.roleId }}</span>
+                    @if (step.isNew) {
+                      <span class="to-ch__tag to-ch__tag--new">New</span>
+                    }
+                    @if (step.inactive) {
+                      <span class="to-adm__flag" pTooltip="Deactivated. It can stay, move or be removed, but not be added again.">
+                        Inactive
+                      </span>
+                    }
+                    @if (step.roleId === stepBackRoleId) {
+                      <span class="to-ch__tag" pTooltip="Claims are stepped back to this role.">Claim step-back</span>
+                    }
+                    @if (step.roleId === finalApprovalRoleId) {
+                      <span class="to-ch__tag" pTooltip="A claim is marked approved when this role approves.">
+                        Claim final approval
+                      </span>
+                    }
+                  </span>
+                  @if (step.description && step.description !== step.name) {
+                    <span class="to-ch__step-desc">{{ step.description }}</span>
+                  }
+                </span>
+                <span class="to-ch__step-actions">
+                  <button
+                    type="button"
+                    class="to-ch__icon-button"
+                    [disabled]="first || saving()"
+                    [attr.aria-label]="'Move ' + step.name + ' up'"
+                    (click)="move(index, -1)"
+                  >
+                    <tabler-icon [icon]="icons['arrow-up']" [size]="15" />
+                  </button>
+                  <button
+                    type="button"
+                    class="to-ch__icon-button"
+                    [disabled]="last || saving()"
+                    [attr.aria-label]="'Move ' + step.name + ' down'"
+                    (click)="move(index, 1)"
+                  >
+                    <tabler-icon [icon]="icons['arrow-down']" [size]="15" />
+                  </button>
+                  <button
+                    type="button"
+                    class="to-ch__icon-button to-ch__icon-button--danger"
+                    [disabled]="saving()"
+                    [attr.aria-label]="'Remove ' + step.name"
+                    (click)="remove(step.roleId)"
+                  >
+                    <tabler-icon [icon]="icons['x']" [size]="15" />
+                  </button>
+                </span>
+                <div *cdkDragPlaceholder class="to-ch__placeholder"></div>
+              </li>
+            } @empty {
+              <li class="to-ch__empty">
+                <tabler-icon [icon]="icons['route']" [size]="20" />
+                <span>No roles approve {{ selectedName() }} documents yet. Drag a role here, or press Add.</span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <!-- ─── Summary and save ─────────────────────────────────────────────────── -->
+      <aside class="to-adm__form-aside to-ch__aside" data-tour="ch-summary">
+        <div class="to-adm__summary">
+          <h2 class="to-adm__summary-title">
+            @if (diff().changed) {
+              Changes to save
+            } @else if (needsRenumber()) {
+              Save to renumber the steps
+            } @else {
+              No changes yet
+            }
+          </h2>
+
+          <dl class="to-adm__summary-list">
+            <div class="to-adm__summary-row">
+              <dt>Business type</dt>
+              <dd>{{ selectedName() }}</dd>
+            </div>
+            <div class="to-adm__summary-row">
+              <dt>Steps</dt>
+              <dd class="to-numeric">
+                {{ steps().length }}
+                @if (diff().changed && saved(); as current) {
+                  <span class="to-ch__was">(was {{ current.levels.length }})</span>
+                }
+              </dd>
+            </div>
+          </dl>
+
+          @if (diff().changed) {
+            <div class="to-adm__summary-block">
+              <ul class="to-adm__changes">
+                @if (summary().added.length > 0) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Added</span>
+                    <span class="to-ch__delta to-ch__delta--add">{{ summary().added.join(', ') }}</span>
+                  </li>
+                }
+                @if (summary().removed.length > 0) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Removed</span>
+                    <span class="to-ch__delta to-ch__delta--remove">{{ summary().removed.join(', ') }}</span>
+                  </li>
+                }
+                @if (summary().after) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Order changed</span>
+                    <span class="to-ch__chain"><s>{{ summary().before }}</s></span>
+                    <span class="to-ch__chain">{{ summary().after }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (warnings().length > 0) {
+            <ul class="to-ch__warnings" role="status">
+              @for (warning of warnings(); track warning) {
+                <li>
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="14" />
+                  {{ warning }}
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <p class="to-adm__form-hint">
+          Saving applies at once — to documents already in approval as well as new ones.
+        </p>
+
+        <div class="to-adm__form-actions">
+          <button
+            type="button"
+            pButton
+            class="p-button-text p-button-sm"
+            [disabled]="!diff().changed || saving()"
+            (click)="reset()"
+          >
+            Reset
+          </button>
+          <button type="button" pButton class="p-button-sm" [disabled]="!canSave()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save order' }}
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+}
+
+<to-confirm-dialog
+  [visible]="confirmingClear()"
+  (visibleChange)="confirmingClear.set(false)"
+  variant="danger"
+  [title]="'Clear the ' + selectedName() + ' hierarchy?'"
+  [message]="
+    'Every role will be removed. ' + selectedName() + ' documents, including those already in approval, will have no approvers until roles are added again.'
+  "
+  confirmLabel="Clear hierarchy"
+  (confirmed)="confirmClear()"
+  (cancelled)="confirmingClear.set(false)"
+/>

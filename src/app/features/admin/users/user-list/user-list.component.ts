@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -64,6 +64,13 @@ interface StatusTab {
   styleUrl: './user-list.component.scss',
 })
 export class UserListComponent {
+  /**
+   * `?tab=roles` — which facet of a user this list was opened for. Each Administration 1.0
+   * sub-menu ("Assign Role to User", "User Brand Mapping", …) lands here with its tab, and
+   * opening a user carries it through, so the user lands on the screen they asked for.
+   */
+  readonly tab = input<string | undefined>(undefined);
+
   private readonly usersApi = inject(AdminUsersApi);
   private readonly notifications = inject(NotificationService);
   private readonly menuAccess = inject(MenuAccessService);

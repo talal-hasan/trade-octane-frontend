@@ -1,0 +1,225 @@
+@if (loading()) {
+  <to-skeleton width="100%" height="280px" />
+} @else if (notFound()) {
+  <to-empty-state
+    icon="user-off"
+    heading="No resignation record for this account"
+    description="Resignation dates are kept against the user row this slice reads, and this login has no row there."
+  />
+} @else if (failed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load the resignation record"
+    description="This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (record(); as current) {
+  <section class="to-urg" data-tour="resignation-panel">
+    <div class="to-urg__head">
+      <div>
+        <h2 class="to-urg__title">Resignation</h2>
+        <p class="to-urg__note">
+          The day this person leaves the business. Recording it does not close their
+          account — use Deactivate in the header for that.
+        </p>
+      </div>
+      @if (hasDate() && editable()) {
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-outlined p-button-danger"
+          [disabled]="busy()"
+          (click)="confirmingClear.set(true)"
+        >
+          <tabler-icon [icon]="icons['trash']" [size]="15" />
+          {{ clearing() ? 'Clearing…' : 'Clear date' }}
+        </button>
+      }
+    </div>
+
+    <!-- What is on file, and where it came from. A date stamped by the deactivation path
+         is the moment the account was switched off, not the day the person left — the two
+         are different facts and the card says which this is. -->
+    <div
+      class="to-urg__current"
+      [class.to-urg__current--empty]="provenance() === 'none'"
+      [class.to-urg__current--stamped]="provenance() === 'stamped'"
+      data-tour="resignation-current"
+    >
+      <span class="to-urg__current-icon" aria-hidden="true">
+        @switch (provenance()) {
+          @case ('none') {
+            <tabler-icon [icon]="icons['circle-dot']" [size]="18" />
+          }
+          @case ('stamped') {
+            <tabler-icon [icon]="icons['clock']" [size]="18" />
+          }
+          @default {
+            <tabler-icon [icon]="icons['calendar-event']" [size]="18" />
+          }
+        }
+      </span>
+      <div class="to-urg__current-body">
+        @switch (provenance()) {
+          @case ('none') {
+            <p class="to-urg__current-value">No resignation recorded</p>
+            <p class="to-urg__current-meta">
+              As far as this system knows, {{ current.fullName || current.userId }} is still
+              with the business.
+            </p>
+          }
+          @case ('stamped') {
+            <p class="to-urg__current-value to-numeric">{{ storedLabel() }}</p>
+            <p class="to-urg__current-meta">
+              Stamped automatically when the account was deactivated@if (stampedTime()) {
+                <span class="to-numeric"> at {{ stampedTime() }}</span>
+              }, not entered by an administrator. If the person left on a different day,
+              correct it below.
+            </p>
+          }
+          @default {
+            <p class="to-urg__current-value to-numeric">{{ storedLabel() }}</p>
+            <p class="to-urg__current-meta">Recorded by an administrator.</p>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- The legacy format bug, per record. Shown while the stored value is still the
+         suspect one: once a different date is in the field, the warning is about a value
+         already being replaced. -->
+    @if (showSuspectBanner()) {
+      <div class="to-urg__suspect" role="note" data-tour="resignation-suspect">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" aria-hidden="true" />
+        <div class="to-urg__suspect-body">
+          <p class="to-urg__suspect-title">This date may have its day and month swapped</p>
+          <p class="to-urg__suspect-text">
+            It was recorded through the legacy screen, which pasted <code>dd-MM-yyyy</code>
+            text into the database and let the server decide which half was the day.
+            @if (alternativeLabel(); as alternative) {
+              <span>
+                It reads <strong>{{ storedLabel() }}</strong
+                >; the other reading is <strong>{{ alternative }}</strong
+                >. Only whoever entered it can say which was meant.
+              </span>
+            } @else {
+              <span>
+                It reads <strong>{{ storedLabel() }}</strong
+                >, and swapping the two halves does not give a real date — so this reading
+                is probably the intended one.
+              </span>
+            }
+          </p>
+          @if (alternativeLabel()) {
+            <button
+              type="button"
+              class="to-urg__suspect-action"
+              [disabled]="busy() || !editable()"
+              (click)="useAlternative()"
+            >
+              <tabler-icon [icon]="icons['arrows-exchange']" [size]="14" />
+              Use {{ alternativeLabel() }} instead
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- The field. type="date" renders in the administrator's own locale and yields
+         yyyy-MM-dd, so there is no format for either side to get wrong. -->
+    <form class="to-urg__form" [formGroup]="form" (ngSubmit)="save()">
+      <div class="to-urg__field">
+        <label class="to-urg__label" for="resignationDate">
+          {{ hasDate() ? 'Correct the date' : 'Resignation date' }}
+        </label>
+        <div class="to-urg__field-row">
+          <input
+            pInputText
+            id="resignationDate"
+            type="date"
+            class="to-urg__date to-numeric"
+            formControlName="resignationDate"
+            [min]="minDate"
+            [max]="maxDate"
+            [attr.aria-invalid]="problem() ? 'true' : null"
+            aria-describedby="resignationDateHelp"
+          />
+          <button
+            type="button"
+            class="to-urg__preset"
+            [disabled]="busy() || !editable()"
+            (click)="setToday()"
+            pTooltip="Set to today's date"
+            tooltipPosition="top"
+          >
+            Today
+          </button>
+        </div>
+        @if (problemMessage(); as message) {
+          <span class="to-urg__error" role="alert">{{ message }}</span>
+        } @else {
+          <span class="to-urg__help" id="resignationDateHelp">
+            Stored as an unambiguous date. Anything from
+            {{ minDate }} to {{ maxDate }} is accepted — a future date is fine for a
+            notice period or a planned retirement.
+          </span>
+        }
+      </div>
+
+      <div class="to-urg__actions">
+        <button type="submit" pButton class="p-button-sm" [disabled]="!canSave()">
+          {{ saving() ? 'Saving…' : hasDate() ? 'Update date' : 'Record resignation' }}
+        </button>
+        @if (dirty()) {
+          <button
+            type="button"
+            pButton
+            class="p-button-sm p-button-text"
+            [disabled]="busy()"
+            (click)="discard()"
+          >
+            Discard
+          </button>
+        }
+      </div>
+    </form>
+
+    <!-- Both of these surprise people, and both are cheaper to read here than to discover
+         later. The second is a real collision in the data, not a caveat. -->
+    <ul class="to-urg__facts">
+      <li>
+        <tabler-icon [icon]="icons['info-circle']" [size]="14" aria-hidden="true" />
+        <span>
+          The account stays active. A recorded resignation does not stop anyone signing in
+          — deactivate them when their access should end.
+        </span>
+      </li>
+      <li>
+        <tabler-icon [icon]="icons['alert-circle']" [size]="14" aria-hidden="true" />
+        <span>
+          Reactivating a deactivated account <strong>erases</strong> this date. If you ever
+          switch this account back on, come back and record it again.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <to-confirm-dialog
+    [visible]="confirmingClear()"
+    (visibleChange)="confirmingClear.set(false)"
+    variant="danger"
+    title="Clear the recorded resignation date?"
+    [message]="
+      'The date on file (' +
+      storedLabel() +
+      ') will be removed and this person will read as still employed. Their account is not changed either way.'
+    "
+    confirmLabel="Clear date"
+    (confirmed)="confirmClear()"
+    (cancelled)="confirmingClear.set(false)"
+  />
+}

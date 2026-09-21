@@ -89,4 +89,19 @@ export interface UserMenuResponse {
   /** Role *names*, not ids. The only place the signed-in user's roles are reported. */
   role: string[];
   menu: MenuItemResponse[];
+  /**
+   * **Region and brand *names*** — "Central Punjab", "Olper's" — the scope this user's data
+   * is limited to. Added 2026-09-20; before that the dashboard reported everyone's scope as
+   * empty, because nothing on the sign-in path carried it.
+   *
+   * This is the only call that reports it. `GET /admin/users/{id}/regions` reads the same
+   * mappings but sits behind the user-admin policy, so a non-admin asking for their own
+   * scope got a 403 — which is why it is here and not fetched separately.
+   *
+   * Optional on the wire: a deployment running an older API omits them, and empty is also a
+   * legitimate answer (177 of 547 accounts are mapped to no region). Those two cases are
+   * indistinguishable here, so nothing may treat empty as "not loaded yet".
+   */
+  regions?: string[];
+  brands?: string[];
 }

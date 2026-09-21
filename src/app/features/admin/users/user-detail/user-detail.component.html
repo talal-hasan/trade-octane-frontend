@@ -83,13 +83,28 @@
         </dd>
       </div>
       @if (currentUser.resignationDate) {
+        <!-- The raw column, which carries a time when the deactivation path stamped it —
+             so it is formatted rather than printed, and the Resignation tab is where the
+             provenance of that value is explained. -->
         <div class="to-ud__fact">
           <dt>Resigned</dt>
-          <dd>{{ currentUser.resignationDate }}</dd>
+          <dd class="to-numeric">{{ resignationLabel(currentUser.resignationDate) }}</dd>
         </div>
       }
     </dl>
   </div>
+
+  <!-- The client's rule (2026-09-21), stated once at the top rather than repeated as a
+       tooltip on every disabled control. Activate is in the header, a few pixels away. -->
+  @if (readOnly()) {
+    <div class="to-ud__frozen" role="status">
+      <tabler-icon [icon]="icons['lock']" [size]="16" aria-hidden="true" />
+      <span>
+        <strong>This account is deactivated, so it cannot be edited.</strong>
+        Activate it first — nothing on these tabs can be changed while it is switched off.
+      </span>
+    </div>
+  }
 
   @if (availableTabs().length === 0) {
     <to-empty-state
@@ -145,7 +160,7 @@
                   type="submit"
                   pButton
                   class="p-button-sm"
-                  [disabled]="savingProfile() || profileForm.pristine || profileForm.invalid"
+                  [disabled]="readOnly() || savingProfile() || profileForm.pristine || profileForm.invalid"
                 >
                   {{ savingProfile() ? 'Saving…' : 'Save details' }}
                 </button>
@@ -188,7 +203,7 @@
                   type="submit"
                   pButton
                   class="p-button-sm"
-                  [disabled]="savingPassword() || passwordForm.invalid"
+                  [disabled]="readOnly() || savingPassword() || passwordForm.invalid"
                 >
                   {{ savingPassword() ? 'Saving…' : 'Set password' }}
                 </button>
@@ -196,7 +211,7 @@
                   type="button"
                   pButton
                   class="p-button-sm p-button-text"
-                  [disabled]="savingPassword()"
+                  [disabled]="readOnly() || savingPassword()"
                   (click)="confirmingReset.set(true)"
                 >
                   Reset to default
@@ -225,6 +240,11 @@
                   <p class="to-ud__section-note">
                     Roles carry menu access. Changing them changes what this person can
                     reach, which is shown on the Access tab.
+                    @if (canManageRoles() && lockedRoleIds().size > 0) {
+                      <span id="role-locked-note">
+                        Inactive roles can't be assigned — activate them under Roles first.
+                      </span>
+                    }
                   </p>
                 </div>
                 @if (canManageRoles()) {
@@ -233,7 +253,7 @@
                       type="button"
                       pButton
                       class="p-button-sm p-button-text"
-                      [disabled]="!rolesDirty() || savingRoles()"
+                      [disabled]="readOnly() || !rolesDirty() || savingRoles()"
                       (click)="discardRoleChanges()"
                     >
                       Discard
@@ -242,7 +262,7 @@
                       type="button"
                       pButton
                       class="p-button-sm"
-                      [disabled]="!rolesDirty() || savingRoles()"
+                      [disabled]="readOnly() || !rolesDirty() || savingRoles()"
                       (click)="saveRoles()"
                     >
                       {{ savingRoles() ? 'Saving…' : 'Save roles' }}
@@ -333,20 +353,39 @@
 
               <ul class="to-ud__list">
                 @for (role of visibleRoles(); track role.roleId) {
+                  <!--
+                    An inactive role the user doesn't hold is locked: shown, so the catalogue
+                    reads complete, but not selectable. One they already hold is not locked —
+                    it stays removable, because it is a dead mapping worth cleaning up.
+                    The dimming and cursor are bound inline rather than as a modifier class:
+                    this component's stylesheet sits at its 8 kB budget with ~30 bytes spare.
+                  -->
                   <li
                     class="to-ud__list-row"
                     [class.to-ud__list-row--retired]="!role.isActive"
                     [class.to-ud__list-row--on]="roleSelection().has(+role.roleId)"
+                    [style.opacity]="lockedRoleIds().has(+role.roleId) ? 0.6 : null"
+                    pTooltip="This role is inactive, so it can't be assigned. Activate it under Roles first."
+                    tooltipPosition="top"
+                    [tooltipDisabled]="!canManageRoles() || !lockedRoleIds().has(+role.roleId)"
                   >
                     <input
                       type="checkbox"
                       class="to-ud__checkbox"
                       [id]="'role-' + role.roleId"
                       [checked]="roleSelection().has(+role.roleId)"
-                      [disabled]="!canManageRoles()"
+                      [disabled]="readOnly() || !canManageRoles() || lockedRoleIds().has(+role.roleId)"
+                      [attr.aria-describedby]="
+                        canManageRoles() && lockedRoleIds().has(+role.roleId) ? 'role-locked-note' : null
+                      "
+                      [style.cursor]="lockedRoleIds().has(+role.roleId) ? 'not-allowed' : null"
                       (change)="toggleRole(+role.roleId)"
                     />
-                    <label class="to-ud__list-label" [for]="'role-' + role.roleId">
+                    <label
+                      class="to-ud__list-label"
+                      [for]="'role-' + role.roleId"
+                      [style.cursor]="lockedRoleIds().has(+role.roleId) ? 'not-allowed' : null"
+                    >
                       <span class="to-ud__list-name">{{ role.roleName }}</span>
                       @if (role.roleDescription) {
                         <span class="to-ud__list-desc">{{ role.roleDescription }}</span>
@@ -390,7 +429,7 @@
                   type="button"
                   pButton
                   class="p-button-sm"
-                  [disabled]="!regionsDirty() || savingRegions()"
+                  [disabled]="readOnly() || !regionsDirty() || savingRegions()"
                   (click)="saveRegions()"
                 >
                   {{ savingRegions() ? 'Saving…' : 'Save regions' }}
@@ -432,13 +471,16 @@
                     (click)="toggleRegion(region.code)"
                     [attr.aria-pressed]="regionSelection().has(region.code)"
                   >
+                    <!-- No code on the card. A region's code is a tilde-joined geography
+                         path — "1000~4000~1000~0040~0002~0015" — which identifies nothing
+                         to the person reading it and crowded out the name. It is still the
+                         value sent back on save, and still matched by the search box. -->
                     <span class="to-ud__chip-name">{{ region.name }}</span>
-                    <span class="to-ud__chip-meta">
-                      <span class="to-ud__chip-code">{{ region.code }}</span>
-                      @if (!region.isActive) {
+                    @if (!region.isActive) {
+                      <span class="to-ud__chip-meta">
                         <span class="to-ud__chip-note">retired</span>
-                      }
-                    </span>
+                      </span>
+                    }
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No regions match that search.</p>
@@ -466,7 +508,7 @@
                   type="button"
                   pButton
                   class="p-button-sm"
-                  [disabled]="!brandsDirty() || savingBrands()"
+                  [disabled]="readOnly() || !brandsDirty() || savingBrands()"
                   (click)="saveBrands()"
                 >
                   {{ savingBrands() ? 'Saving…' : 'Save brands' }}
@@ -506,13 +548,16 @@
                     (click)="toggleBrand(brand.code)"
                     [attr.aria-pressed]="brandSelection().has(brand.code)"
                   >
+                    <!-- No code on the card, for the same reason as the region chips: a
+                         brand's code is a tilde-joined product path. The name is what
+                         identifies it; the code still goes back on save and is still
+                         matched by the search box. -->
                     <span class="to-ud__chip-name">{{ brand.name }}</span>
-                    <span class="to-ud__chip-meta">
-                      <span class="to-ud__chip-code">{{ brand.code }}</span>
-                      @if (!brand.hasMasterSku) {
+                    @if (!brand.hasMasterSku) {
+                      <span class="to-ud__chip-meta">
                         <span class="to-ud__chip-note">no SKU</span>
-                      }
-                    </span>
+                      </span>
+                    }
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No brands match that search.</p>
@@ -524,81 +569,18 @@
 
         <!-- ── Access ───────────────────────────────────────────────────────── -->
         @case ('access') {
-          @if (accessLoading()) {
-            <to-skeleton width="100%" height="320px" />
-          } @else if (access(); as accessState) {
-            <section class="to-ud__section">
-              <div class="to-ud__section-head">
-                <div>
-                  <h2 class="to-ud__section-title">Menu access</h2>
-                  <p class="to-ud__section-note">
-                    Ticking a row grants it <strong>directly</strong>. Rows a role already
-                    grants are locked — remove the role to revoke those.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  pButton
-                  class="p-button-sm"
-                  [disabled]="!accessDirty() || savingAccess()"
-                  (click)="saveAccess()"
-                >
-                  {{ savingAccess() ? 'Saving…' : 'Save access' }}
-                </button>
-              </div>
-
-              <!-- The three sets, stated. They are not interchangeable, and an admin who
-                   assumes they are will misread this screen. -->
-              <div class="to-ud__counters">
-                <span class="to-ud__counter">
-                  <span class="to-numeric">{{ directSelection().size }}</span> direct
-                </span>
-                <span class="to-ud__counter">
-                  <span class="to-numeric">{{ roleMenuIds().size }}</span> via roles
-                </span>
-                <span class="to-ud__counter to-ud__counter--strong">
-                  <span class="to-numeric">{{ accessState.effectiveMenuIds.length }}</span>
-                  effective
-                </span>
-                @if (accessState.orphanedMenuIds.length > 0) {
-                  <span class="to-ud__counter to-ud__counter--warn">
-                    <tabler-icon [icon]="icons['alert-triangle']" [size]="13" />
-                    <span class="to-numeric">{{ accessState.orphanedMenuIds.length }}</span>
-                    orphaned
-                  </span>
-                }
-              </div>
-
-              <div class="to-ud__filter">
-                <tabler-icon [icon]="icons['search']" [size]="15" />
-                <input
-                  pInputText
-                  type="search"
-                  [formControl]="accessFilterControl"
-                  (input)="onAccessFilter(accessFilterControl.value)"
-                  placeholder="Filter menu items"
-                  aria-label="Filter menu items"
-                />
-              </div>
-
-              <to-access-tree
-                [tree]="accessState.tree"
-                [selected]="directSelection()"
-                [inherited]="roleMenuIds()"
-                [filter]="accessFilter()"
-                [disabled]="savingAccess()"
-                (toggled)="onAccessToggled($event)"
-              />
-            </section>
-          }
+          <!-- Reloads on every visit, so a role changed on the Roles tab shows here at once. -->
+          <to-user-access-panel [userId]="userId()" [editable]="!readOnly()" />
         }
 
         <!-- ── Resignation ──────────────────────────────────────────────────── -->
         @case ('resignation') {
-          <to-empty-state
-            icon="external-link"
-            heading="Resignation is still in the legacy portal"
-            description="The endpoints exist, but this screen has not been built yet. Record resignations in the legacy system for now."
+          <!-- Writes return the resulting state, so the identity strip above updates from
+               the response rather than from a second read of the user. -->
+          <to-user-resignation
+            [userId]="userId()"
+            [editable]="!readOnly()"
+            (changed)="onResignationChanged($event)"
           />
         }
       }

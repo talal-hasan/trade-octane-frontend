@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -14,10 +14,9 @@ import {
   BrandResponse,
   RegionResponse,
   RoleResponse,
-  UserAccessResponse,
   UserResponse,
 } from '../../../../core/api/admin.models';
-import { int, intSet } from '../../../../core/api/api.types';
+import { int } from '../../../../core/api/api.types';
 import { MenuAccessService } from '../../../../core/services/menu-access.service';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -26,15 +25,16 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { StatusPillComponent } from '../../../../shared/components/status-pill/status-pill.component';
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
-import { AccessTreeComponent } from '../../shared/access-tree/access-tree.component';
-import { AdminAccessApi } from '../../services/admin-access.api';
 import { AdminRolesApi } from '../../services/admin-roles.api';
 import { AdminScopeApi } from '../../services/admin-scope.api';
 import { AdminUsersApi } from '../../services/admin-users.api';
+import { UserAccessPanelComponent } from '../../shared/user-access-panel/user-access-panel.component';
+import { UserResignationComponent } from '../user-resignation/user-resignation.component';
 import {
   USER_STATUS_LABELS,
   USER_STATUS_PILL,
   initialsOf,
+  resignationLabel,
   userStatusOf,
 } from '../user.util';
 
@@ -104,7 +104,8 @@ const TAB_LABELS: Record<UserTab, string> = {
     SkeletonComponent,
     StatusPillComponent,
     ConfirmDialogComponent,
-    AccessTreeComponent,
+    UserAccessPanelComponent,
+    UserResignationComponent,
   ],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss',
@@ -116,7 +117,6 @@ export class UserDetailComponent {
   private readonly usersApi = inject(AdminUsersApi);
   private readonly rolesApi = inject(AdminRolesApi);
   private readonly scopeApi = inject(AdminScopeApi);
-  private readonly accessApi = inject(AdminAccessApi);
   private readonly menuAccess = inject(MenuAccessService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
@@ -129,6 +129,7 @@ export class UserDetailComponent {
   protected readonly statusLabels = USER_STATUS_LABELS;
   protected readonly statusPill = USER_STATUS_PILL;
   protected readonly initialsOf = initialsOf;
+  protected readonly resignationLabel = resignationLabel;
 
   protected readonly user = signal<UserResponse | null>(null);
   protected readonly loading = signal(true);
@@ -138,6 +139,22 @@ export class UserDetailComponent {
   protected readonly status = computed(() => {
     const user = this.user();
     return user ? userStatusOf(user) : 'inactive';
+  });
+
+  /**
+   * A deactivated account is read-only — the client's rule, 2026-09-21: activate it first,
+   * then edit.
+   *
+   * Every per-user write endpoint refuses with `administration.users.account_inactive`
+   * (409), so this is the visible half of a rule the server owns. It disables the controls
+   * rather than hiding them: an admin needs to see what they are about to reactivate, and a
+   * form that vanishes reads as a missing permission rather than a state they can change.
+   *
+   * **Activating is deliberately not gated by it** — it is the only way out.
+   */
+  protected readonly readOnly = computed(() => {
+    const user = this.user();
+    return user !== null && !user.isActive;
   });
 
   // ─── Tabs ───────────────────────────────────────────────────────────────────
@@ -185,7 +202,27 @@ export class UserDetailComponent {
     });
   }
 
+  private readonly accessPanel = viewChild(UserAccessPanelComponent);
+  private readonly resignationPanel = viewChild(UserResignationComponent);
+
   protected selectTab(tab: UserTab): void {
+    if (tab === this.activeTab()) {
+      return;
+    }
+    // Both panels hold their own unsaved edits, and leaving the tab destroys them. A
+    // half-typed resignation date disappearing silently is the same failure as a lost tick.
+    if (
+      this.accessPanel()?.hasUnsavedChanges() &&
+      !confirm('You have unsaved access changes. Discard them?')
+    ) {
+      return;
+    }
+    if (
+      this.resignationPanel()?.hasUnsavedChanges() &&
+      !confirm('You have an unsaved resignation date. Discard it?')
+    ) {
+      return;
+    }
     this.requestedTab.set(tab);
     // Deep-linkable, so an admin can send a colleague straight to someone's access tab.
     this.router.navigate([], {
@@ -232,14 +269,22 @@ export class UserDetailComponent {
           this.loadBrands(userId);
         }
         break;
-      case 'access':
-        if (!this.accessLoaded()) {
-          this.loadAccess(userId);
-        }
-        break;
+      // `resignation` is absent deliberately: that panel owns its own request and fires it
+      // from its `userId` input, so routing it through here would only load it twice.
       default:
         break;
     }
+  }
+
+  /**
+   * Keeps the identity strip's "Resigned" fact in step with the Resignation tab.
+   *
+   * The write already returned the resulting row, so this is an assignment rather than a
+   * re-read — and it matters beyond tidiness: the strip is what an admin glances at after
+   * saving, and leaving it showing the old date would look like the save had not taken.
+   */
+  protected onResignationChanged(resignationDate: string | null): void {
+    this.user.update((current) => (current ? { ...current, resignationDate } : current));
   }
 
   // ─── Profile ────────────────────────────────────────────────────────────────
@@ -257,7 +302,7 @@ export class UserDetailComponent {
    */
   protected saveProfile(): void {
     const user = this.user();
-    if (!user || this.profileForm.invalid || this.savingProfile()) {
+    if (!user || this.readOnly() || this.profileForm.invalid || this.savingProfile()) {
       this.profileForm.markAllAsTouched();
       return;
     }
@@ -296,7 +341,7 @@ export class UserDetailComponent {
 
   protected setPassword(): void {
     const user = this.user();
-    if (!user || this.passwordForm.invalid || this.savingPassword()) {
+    if (!user || this.readOnly() || this.passwordForm.invalid || this.savingPassword()) {
       this.passwordForm.markAllAsTouched();
       return;
     }
@@ -332,7 +377,7 @@ export class UserDetailComponent {
   protected confirmReset(): void {
     const user = this.user();
     this.confirmingReset.set(false);
-    if (!user) {
+    if (!user || this.readOnly()) {
       return;
     }
     this.savingPassword.set(true);
@@ -451,6 +496,24 @@ export class UserDetailComponent {
     });
   });
 
+  /**
+   * Inactive roles this user does not already hold — listed, but not selectable.
+   *
+   * The server refuses to assign a retired role (`InactiveRoles`), and one would grant
+   * nothing if it could, so letting it be ticked only defers the failure to Save. A retired
+   * role the user *already* holds is deliberately left out of this set: that is a dead
+   * mapping, and it must stay removable. Unticking one and ticking it back only undoes a
+   * pending removal — the role is still held, so Save writes nothing for it.
+   */
+  protected readonly lockedRoleIds = computed<ReadonlySet<number>>(() => {
+    const held = new Set(this.assignedRoles().map((role) => int(role.roleId)));
+    return new Set(
+      this.allRoles()
+        .filter((role) => !role.isActive && !held.has(int(role.roleId)))
+        .map((role) => int(role.roleId)),
+    );
+  });
+
   /** How many roles each Show tab would reveal, so the counts are visible before clicking. */
   protected readonly availableCount = computed(
     () => this.allRoles().length - this.roleSelection().size,
@@ -482,6 +545,11 @@ export class UserDetailComponent {
     if (!this.canManageRoles()) {
       return;
     }
+    // Removing is always allowed; adding a locked role is not. The disabled checkbox is
+    // the visible half of this rule — this is the half that holds whatever calls in.
+    if (!this.roleSelection().has(roleId) && this.lockedRoleIds().has(roleId)) {
+      return;
+    }
     this.roleSelection.update((current) => {
       const next = new Set(current);
       if (!next.delete(roleId)) {
@@ -498,7 +566,7 @@ export class UserDetailComponent {
 
   protected saveRoles(): void {
     const user = this.user();
-    if (!user || this.savingRoles() || !this.canManageRoles()) {
+    if (!user || this.readOnly() || this.savingRoles() || !this.canManageRoles()) {
       return;
     }
     this.savingRoles.set(true);
@@ -513,8 +581,6 @@ export class UserDetailComponent {
           this.availableRoles.set(assignment.available);
           this.roleSelection.set(new Set(assignment.assigned.map((role) => int(role.roleId))));
           this.savingRoles.set(false);
-          // Roles supply menu grants, so the access tab is now stale.
-          this.accessLoaded.set(false);
           this.notifications.success('Roles updated.');
         },
         error: () => this.savingRoles.set(false),
@@ -683,7 +749,7 @@ export class UserDetailComponent {
 
   protected saveRegions(): void {
     const user = this.user();
-    if (!user || this.savingRegions()) {
+    if (!user || this.readOnly() || this.savingRegions()) {
       return;
     }
     this.savingRegions.set(true);
@@ -706,7 +772,7 @@ export class UserDetailComponent {
 
   protected saveBrands(): void {
     const user = this.user();
-    if (!user || this.savingBrands()) {
+    if (!user || this.readOnly() || this.savingBrands()) {
       return;
     }
     this.savingBrands.set(true);
@@ -722,100 +788,6 @@ export class UserDetailComponent {
           this.notifications.success('Brands updated.');
         },
         error: () => this.savingBrands.set(false),
-      });
-  }
-
-  // ─── Access ─────────────────────────────────────────────────────────────────
-
-  protected readonly accessLoaded = signal(false);
-  protected readonly accessLoading = signal(false);
-  protected readonly access = signal<UserAccessResponse | null>(null);
-  protected readonly directSelection = signal<ReadonlySet<number>>(new Set<number>());
-  private readonly originalDirect = signal<ReadonlySet<number>>(new Set<number>());
-  protected readonly savingAccess = signal(false);
-  protected readonly accessFilterControl = this.fb.nonNullable.control('');
-  protected readonly accessFilter = signal('');
-
-  private loadAccess(userId: string): void {
-    this.accessLoading.set(true);
-    this.accessApi
-      .userAccess(userId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.access.set(response);
-          // Bound to *direct* grants — the only set this endpoint's writes control.
-          const direct = intSet(response.directMenuIds);
-          this.directSelection.set(direct);
-          this.originalDirect.set(new Set(direct));
-          this.accessLoading.set(false);
-          this.accessLoaded.set(true);
-        },
-        error: () => this.accessLoading.set(false),
-      });
-  }
-
-  /** Role-supplied grants. Shown as locked in the tree — PUT here cannot remove them. */
-  protected readonly roleMenuIds = computed(() => intSet(this.access()?.roleMenuIds ?? []));
-
-  protected readonly accessDirty = computed(() => {
-    const original = this.originalDirect();
-    const current = this.directSelection();
-    if (original.size !== current.size) {
-      return true;
-    }
-    for (const id of current) {
-      if (!original.has(id)) {
-        return true;
-      }
-    }
-    return false;
-  });
-
-  protected onAccessToggled(event: { menuId: number; checked: boolean }): void {
-    this.directSelection.update((current) => {
-      const next = new Set(current);
-      if (event.checked) {
-        next.add(event.menuId);
-      } else {
-        next.delete(event.menuId);
-      }
-      return next;
-    });
-  }
-
-  protected onAccessFilter(value: string): void {
-    this.accessFilter.set(value);
-  }
-
-  protected saveAccess(): void {
-    const user = this.user();
-    if (!user || this.savingAccess()) {
-      return;
-    }
-    this.savingAccess.set(true);
-    this.accessApi
-      .replaceUserAccess(user.userId, [...this.directSelection()])
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.access.set(response.access);
-          const direct = intSet(response.access.directMenuIds);
-          this.directSelection.set(direct);
-          this.originalDirect.set(new Set(direct));
-          this.savingAccess.set(false);
-
-          // `noLongerEffective` is the interesting case: grants removed from the direct
-          // set that a role still supplies, so nothing actually changed for the user.
-          // Saying "saved" without saying that would be misleading.
-          const stillReachable = response.noLongerEffective?.length ?? 0;
-          this.notifications.success(
-            stillReachable > 0
-              ? `Access updated. ${stillReachable} item(s) are still reachable through a role.`
-              : 'Access updated.',
-          );
-        },
-        error: () => this.savingAccess.set(false),
       });
   }
 

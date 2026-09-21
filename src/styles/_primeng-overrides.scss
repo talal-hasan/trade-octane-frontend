@@ -213,6 +213,12 @@ a.p-button-success.p-button-outlined {
 // have to live here, globally, or not at all.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// The roles-by-region account drawer (Administration 2.0 → User Mapping). PrimeNG renders the
+// drawer's root outside the component's template, so its width has to be set here.
+.p-drawer.to-rr-drawer {
+  width: min(36rem, 100vw);
+}
+
 // Password fields fill their container, like every other input.
 //
 // `p-password` is a wrapper around its own `<input>`, so widening only the wrapper leaves

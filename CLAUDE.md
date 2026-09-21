@@ -22,7 +22,7 @@
 | Frontend Lead | Talal (you speak to him) |
 | Product Owner | Adil Saeed |
 | Project / Backend Lead | Zeeshan Aameer |
-| Backend Developer | Moiz Khan |
+| Backend Developer | Ali Hasan |
 | Backend Developer | Hassan Arif |
 | Business Analyst | Saima Aslam |
 | QA | Sana Tariq |
@@ -140,6 +140,22 @@ Four rules keep the blueprint safe to be incomplete:
    the user legitimately holds.
 4. **Legacy names stay findable.** Every folded label becomes a ⌘K alias, so a UAT user
    trained on "Re-Route Scheme" still lands in the right place.
+
+**The sidebar follows the Menus grid (revised 2026-09-18, client decision).** The sidebar no
+longer renders the fold's groups. It renders `MenuAccessService.sidebar`: the granted tree
+as `/admin/menus` (legacy Add_Menu_Items.aspx) defines it — every root under its grid name
+and icon, in grid order (OrderID, then MenuID), opening accordion-style onto its granted
+sub-menus, as the legacy master page did. The fold still drives route and tab gating and
+⌘K. The blueprint now only decides where a row opens: a ported row opens its screen (with
+`queryParams` for the facet, e.g. `/admin/users?tab=roles`); anything else opens
+`/legacy/<its own menuId>`. `hidden: true` keeps a granted row out of the sidebar ("Edit
+Password"; and at the client's request Administration 1.0's "Employee Resignation" (and,
+until 2026-09-21, "Hierarchy", now listed as its own screen), and Administration 2.0's "User Roles" and "User Regions"). `foldsInto` is the
+softer rule: "Assign Role to User", "User Region Mapping", "User Brand Mapping" and "Access
+Control" are tabs of the screen "Create User" opens, so they are listed only for someone
+without "Create User". Never use `hidden` for such a tab — the fold would drop the screen
+for its holders and MenuGuard would lock them out.
+Visibility is the grid's Visibility column: `/identity/menu` returns `Active = '1'` rows only.
 
 ### 4.2 Wire integers are `number | string` (added 2026-09-07)
 
@@ -791,6 +807,9 @@ Fill out the full 50–60 screen count as KT sessions complete and specs arrive 
 - **Repo:** GitHub (to be created — name: `trade-octane-frontend`)
 - **Branching:** `main` is always deployable. Feature branches: `feature/budget-initiation`, `feature/scheme-list-brd` etc. Executor writes to feature branches. Talal reviews and merges.
 - **Commits:** conventional commit format — `feat(budget): add initiation form with cascading selects`
+- **No AI attribution (added 2026-09-21):** never add `Co-Authored-By: Claude …` or any other Claude/AI
+  trailer, "Generated with Claude Code" line or similar to commit messages or pull request descriptions.
+  GitHub lists every co-author as a repository contributor, and the owner does not want Claude listed.
 - **CI:** GitHub Actions on every push — `ng lint`, `ng build`, `ng test --watch=false`. No push that breaks build or lint.
 - **Never commit:** `environment.prod.ts`, API keys, mock data files containing client-sensitive field values.
 

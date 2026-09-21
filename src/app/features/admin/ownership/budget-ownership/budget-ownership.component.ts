@@ -1,10 +1,12 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { Subscription } from 'rxjs';
 
 import { csvFilename, saveBlob } from '../../../../core/api/api-client.service';
 import { int } from '../../../../core/api/api.types';
@@ -43,10 +45,12 @@ import { AdminOperationsApi } from '../../services/admin-operations.api';
   selector: 'to-budget-ownership',
   standalone: true,
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     TablerIconComponent,
     ButtonModule,
     InputTextModule,
+    SelectModule,
     TooltipModule,
     EmptyStateComponent,
     SkeletonComponent,
@@ -151,7 +155,7 @@ export class BudgetOwnershipComponent {
     this.currentOwner.set(null);
     this.rows.set([]);
     this.selection.set(new Set<string>());
-    this.newOwnerControl.setValue('');
+    this.resetRecipient();
     this.pager.reset();
   }
 
@@ -169,7 +173,6 @@ export class BudgetOwnershipComponent {
   protected readonly scopeLoading = signal(false);
   protected readonly tables = signal<readonly BudgetTableResponse[]>([]);
   protected readonly owners = signal<readonly BudgetOwnerResponse[]>([]);
-  protected readonly eligibleOwners = signal<readonly BudgetOwnerResponse[]>([]);
   protected readonly totalShells = signal(0);
   protected readonly stuckShells = signal(0);
 
@@ -188,7 +191,9 @@ export class BudgetOwnershipComponent {
           const tables = scope.tables ?? [];
           this.tables.set(tables);
           this.owners.set(scope.currentOwners ?? []);
-          this.eligibleOwners.set(scope.eligibleOwners ?? []);
+          // `scope.eligibleOwners` is deliberately not read: it is empty unless a current
+          // owner is sent, and this reload runs after every transfer — it would blank the
+          // New owner dropdown. That list comes from `loadEligibleOwners` instead.
           this.totalShells.set(int(scope.totalShellCount));
           this.stuckShells.set(int(scope.stuckShellCount));
           // One table is the common case; skipping a pointless choice is worth a line.
@@ -210,6 +215,7 @@ export class BudgetOwnershipComponent {
     this.currentOwner.set(null);
     this.rows.set([]);
     this.selection.set(new Set<string>());
+    this.resetRecipient();
     this.pager.reset();
   }
 
@@ -238,9 +244,9 @@ export class BudgetOwnershipComponent {
   protected selectOwner(owner: BudgetOwnerResponse): void {
     this.currentOwner.set(owner);
     this.selection.set(new Set<string>());
-    this.newOwnerControl.setValue('');
     this.pager.reset();
     this.loadShells();
+    this.loadEligibleOwners(owner.userId);
   }
 
   // ─── Step 4 — shells ────────────────────────────────────────────────────────
@@ -371,32 +377,113 @@ export class BudgetOwnershipComponent {
       });
   }
 
-  // ─── Step 5 — transfer ──────────────────────────────────────────────────────
+  // ─── Step 5 — recipient & transfer ──────────────────────────────────────────
 
-  protected readonly newOwnerControl = new FormControl('', { nonNullable: true });
+  /**
+   * Who may receive the current owner's budgets — `/eligible-owners`, re-read on every change
+   * of current owner. Budgets move only between users who share a role, so this list belongs
+   * to one owner and is thrown away with them.
+   *
+   * The New owner field used to be free text over a datalist fed by the scope call, whose
+   * `eligibleOwners` is empty unless a current owner is sent — so it offered nobody, and any
+   * login name typed instead was refused by the transfer's same-role check. A picker over
+   * this list can only hold a recipient the transfer will accept.
+   */
+  protected readonly eligibleOwners = signal<readonly BudgetOwnerResponse[]>([]);
+  protected readonly eligibleLoading = signal(false);
+  protected readonly eligibleFailed = signal(false);
+  /** The chosen recipient's login name. Only ever a value `eligibleOwners` offered. */
+  protected readonly newOwnerId = signal<string | null>(null);
+  private eligibleRequest: Subscription | null = null;
+
   protected readonly transferring = signal(false);
   protected readonly confirming = signal(false);
 
+  /** Name first, login name as the hint: two people can share a name, never a login. */
+  protected readonly eligibleOwnerOptions = computed<PickerOption[]>(() =>
+    this.eligibleOwners().map((owner) => ({
+      value: owner.userId,
+      label: this.ownerLabel(owner),
+      hint: owner.fullName ? owner.userId : undefined,
+    })),
+  );
+
+  protected readonly newOwner = computed(
+    () => this.eligibleOwners().find((owner) => owner.userId === this.newOwnerId()) ?? null,
+  );
+
+  /** Why the dropdown is empty. The remedy is a role assignment, not another click. */
+  protected readonly noEligibleMessage = computed(() => {
+    const owner = this.currentOwner();
+    if (!owner) {
+      return '';
+    }
+    const name = this.ownerLabel(owner);
+    return owner.status === 'NotAUser'
+      ? `No one can receive these budgets. Budgets move only between users who share a role, and ${name} is not a user account, so there is no role to share.`
+      : `No one can receive these budgets. Budgets move only between users who share a role with Budget access, and no other active user shares one with ${name}.`;
+  });
+
+  private loadEligibleOwners(currentOwner: string): void {
+    // Cancels the previous owner's request first. Clicking down the owner list fires one
+    // call per click, and a slow reply for an earlier owner must not land last and offer
+    // the wrong people for the owner now selected.
+    this.resetRecipient();
+    this.eligibleLoading.set(true);
+    this.eligibleRequest = this.api
+      .eligibleBudgetOwners(currentOwner)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (owners) => {
+          this.eligibleOwners.set(owners ?? []);
+          this.eligibleLoading.set(false);
+        },
+        error: () => {
+          this.eligibleLoading.set(false);
+          this.eligibleFailed.set(true);
+        },
+      });
+  }
+
+  protected retryEligibleOwners(): void {
+    const owner = this.currentOwner();
+    if (owner) {
+      this.loadEligibleOwners(owner.userId);
+    }
+  }
+
+  /** Drops the recipient and the list it was picked from — both belong to one current owner. */
+  private resetRecipient(): void {
+    this.eligibleRequest?.unsubscribe();
+    this.eligibleRequest = null;
+    this.eligibleOwners.set([]);
+    this.eligibleLoading.set(false);
+    this.eligibleFailed.set(false);
+    this.newOwnerId.set(null);
+  }
+
+  // Signals throughout. This read a FormControl's `.value` before, which a computed cannot
+  // track, so typing a login name never re-enabled the button until something else changed.
   protected readonly canTransfer = computed(
     () =>
       this.currentOwner() !== null &&
       this.selection().size > 0 &&
-      this.newOwnerControl.value.trim().length > 0 &&
+      this.newOwner() !== null &&
       !this.transferring(),
   );
 
   protected readonly confirmMessage = computed(() => {
     const count = this.selection().size;
     const from = this.currentOwner();
-    const to = this.newOwnerControl.value;
+    const to = this.newOwner();
     const value = this.selectedValue();
-    return `${count} budget ${count === 1 ? 'shell' : 'shells'} worth PKR ${value.toLocaleString('en-PK')} will move from ${from?.fullName ?? from?.userId ?? 'the current owner'} to ${to}. Their approval rows move with them, and the whole transfer rolls back if the set changes first.`;
+    return `${count} budget ${count === 1 ? 'shell' : 'shells'} worth PKR ${value.toLocaleString('en-PK')} will move from ${from ? this.ownerWithLogin(from) : 'the current owner'} to ${to ? this.ownerWithLogin(to) : 'the new owner'}. Their approval rows move with them, and the whole transfer rolls back if the set changes first.`;
   });
 
   protected confirmTransfer(): void {
     this.confirming.set(false);
     const owner = this.currentOwner();
-    const newOwner = this.newOwnerControl.value.trim();
+    const newOwner = this.newOwner();
     if (!owner || !newOwner) {
       return;
     }
@@ -407,7 +494,7 @@ export class BudgetOwnershipComponent {
       .transferBudgetOwnership({
         shellCodes,
         currentOwner: owner.userId,
-        newOwner,
+        newOwner: newOwner.userId,
         expectedCount: shellCodes.length,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -427,6 +514,11 @@ export class BudgetOwnershipComponent {
 
   protected ownerLabel(owner: BudgetOwnerResponse): string {
     return owner.fullName || owner.userId;
+  }
+
+  /** "Nada Najeeb Ahmad (AhmadN03)" — for the confirmation, where a shared name must not pass. */
+  private ownerWithLogin(owner: BudgetOwnerResponse): string {
+    return owner.fullName ? `${owner.fullName} (${owner.userId})` : owner.userId;
   }
 
   protected formatPkr(value: number | string | null): string {

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, concat, defer, last, map, of, switchMap } from 'rxjs';
+import { EMPTY, Observable, concat, defer, expand, last, map, of, reduce, switchMap, take } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
 import { asList, int, unwrapData } from '../../../core/api/api.types';
@@ -8,6 +8,7 @@ import {
   CreateRoleResponse,
   RoleResponse,
   RoleStatusFilter,
+  RoleStatusResponse,
   UserRoleAssignmentResponse,
   UserRoleAssignmentWire,
   UserRolePageResponse,
@@ -67,6 +68,29 @@ export class AdminRolesApi {
    */
   createRole(request: CreateRoleRequest): Observable<CreateRoleResponse> {
     return this.api.post<CreateRoleResponse>('/admin/roles', request);
+  }
+
+  /**
+   * Restore a retired role — `Roles.Status = 1`.
+   *
+   * The access path honours grants only from active roles, so every holder gets this role's
+   * menus back at once, without waiting for the access cache to expire. Activating a role
+   * that is already active writes nothing and comes back `changed: false`.
+   */
+  activateRole(roleId: number): Observable<RoleStatusResponse> {
+    return this.api.post<RoleStatusResponse>(`/admin/roles/${roleId}/activate`);
+  }
+
+  /**
+   * Retire a role — `Roles.Status = 0`.
+   *
+   * The role and its user mappings stay in place; what goes is the access. Every holder
+   * loses this role's menus immediately, and `role.assignedUserCount` on the response says
+   * how many people that was — which is why the caller confirms first. Retiring an
+   * already-retired role writes nothing and comes back `changed: false`.
+   */
+  deactivateRole(roleId: number): Observable<RoleStatusResponse> {
+    return this.api.post<RoleStatusResponse>(`/admin/roles/${roleId}/deactivate`);
   }
 
   /**
@@ -161,6 +185,26 @@ export class AdminRolesApi {
 
   listUserRoleGrants(query: UserRoleGridQuery = {}): Observable<UserRolePageResponse> {
     return this.api.get<UserRolePageResponse>('/admin/user-roles', query as Query);
+  }
+
+  /**
+   * Login names of everyone mapped to one role — active or not, every page.
+   *
+   * Re-Route's Role filter: the legacy screen's first dropdown. Deactivated accounts are
+   * kept deliberately; their approvals are the ones most in need of moving.
+   */
+  roleMemberIds(roleId: number): Observable<string[]> {
+    const page = (cursor: string | null) =>
+      this.listUserRoleGrants({ roleId, pageSize: 200, ...(cursor ? { cursor } : {}) });
+
+    return page(null).pipe(
+      expand((response) => (response.nextCursor ? page(response.nextCursor) : EMPTY)),
+      take(20),
+      reduce<UserRolePageResponse, string[]>(
+        (ids, response) => ids.concat((response.data ?? []).map((row) => row.userId)),
+        [],
+      ),
+    );
   }
 
   exportUserRoleGrants(query: Omit<UserRoleGridQuery, 'pageSize' | 'cursor'> = {}): Observable<Blob> {

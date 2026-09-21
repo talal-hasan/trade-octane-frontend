@@ -1,0 +1,162 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-rro__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+
+  .to-adm__subtitle,
+  .to-adm__hint {
+    margin: 0;
+  }
+}
+
+.to-rro__matrix {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) repeat(4, minmax(0, 1fr));
+  gap: t.$to-space-2;
+}
+
+.to-rro__col {
+  padding-bottom: t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: right;
+  color: var(--to-text-muted);
+}
+
+.to-rro__row {
+  display: flex;
+  align-items: center;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// Heat is one step per order of magnitude — 9, 99, 999, 9,999 — because the queues span four
+// of them, and a linear scale would paint everything except Scheme · Level 2 white.
+.to-rro__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 56px;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  font-family: inherit;
+  cursor: pointer;
+  @include u.motion(background-color, border-color);
+
+  &--h1 {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+
+  &--h2 {
+    background: color-mix(in srgb, var(--to-accent) 10%, var(--to-bg-1));
+  }
+
+  &--h3 {
+    background: color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1));
+  }
+
+  &--h4 {
+    background: color-mix(in srgb, var(--to-accent) 24%, var(--to-bg-1));
+  }
+
+  &:hover:not(:disabled),
+  &--on {
+    border-color: var(--to-accent);
+  }
+
+  &--on {
+    box-shadow: var(--to-glow-accent-sm);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &--none {
+    border-style: dashed;
+    background: var(--to-bg-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-rro__value {
+  font-size: t.$to-font-size-md;
+  line-height: 1.2;
+  color: var(--to-text-primary);
+}
+
+.to-rro__sub {
+  @include u.truncate;
+  max-width: 100%;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+
+  &--stuck {
+    color: var(--to-warning);
+  }
+}
+
+.to-rro__steps {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rr-step;
+
+  li {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    column-gap: t.$to-space-3;
+    counter-increment: rr-step;
+
+    &::before {
+      content: counter(rr-step);
+      grid-row: span 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+      color: var(--to-accent-text);
+      font-size: t.$to-font-size-2xs;
+      font-weight: 500;
+    }
+  }
+}
+
+.to-rro__step-title {
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-rro__step-body {
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}

@@ -1,0 +1,298 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Filter, table, split and form chrome come from _admin.scss. Only what is particular to
+// this screen is declared here.
+
+.to-loa__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-loa__count {
+  margin-left: t.$to-space-1;
+  color: var(--to-text-muted);
+}
+
+.to-loa__muted {
+  color: var(--to-text-muted);
+}
+
+.to-loa__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// ─── Bands ────────────────────────────────────────────────────────────────────
+
+.to-loa__bands {
+  overflow: hidden;
+}
+
+.to-loa__bands-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3 t.$to-space-4;
+}
+
+.to-loa__table-scroll {
+  overflow-x: auto;
+}
+
+.to-loa__row {
+  // The row open in the panel carries the app's "you are here" rail.
+  &--editing {
+    box-shadow: inset 3px 0 0 var(--to-accent);
+    background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+  }
+
+  // The row just saved: a rail that stays, and a wash that settles.
+  &--fresh {
+    box-shadow: inset 3px 0 0 var(--to-accent);
+    @include u.enter(to-loa-fresh, 2400ms, ease-out);
+  }
+}
+
+@keyframes to-loa-fresh {
+  from {
+    background: color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1));
+  }
+
+  to {
+    background: var(--to-bg-1);
+  }
+}
+
+.to-loa__role {
+  color: var(--to-text-primary);
+}
+
+.to-loa__reach {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+
+  // "Every claim" is the case worth spotting at a glance: most of the table is 0 to 0.
+  &--all {
+    padding: 0 t.$to-space-2;
+    border: 1px solid var(--to-border);
+    border-radius: t.$to-radius-pill;
+    background: var(--to-bg-2);
+    font-size: t.$to-font-size-2xs;
+    line-height: 1.7;
+  }
+}
+
+.to-loa__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: t.$to-space-1 t.$to-space-2;
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Panel ────────────────────────────────────────────────────────────────────
+
+.to-loa__panel {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+
+  // The form is the admin's current task, so it takes the accent rail the summaries use.
+  &--form {
+    border-left: 3px solid var(--to-accent);
+  }
+}
+
+.to-loa__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.to-loa__close {
+  display: inline-flex;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover {
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-loa__pair-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.to-loa__select {
+  width: 100%;
+}
+
+.to-loa__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  width: 100%;
+  min-width: 0;
+}
+
+.to-loa__option-name {
+  @include u.truncate;
+}
+
+.to-loa__option-flag {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-loa__verdict {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+// The roles in the order a growing claim picks them up. Neutral until an amount is typed,
+// then in or out.
+.to-loa__ladder {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+}
+
+.to-loa__rung {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  @include u.motion(background-color, color);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  tabler-icon {
+    flex-shrink: 0;
+    color: var(--to-text-muted);
+  }
+
+  &--in {
+    background: color-mix(in srgb, var(--to-success-solid) 8%, var(--to-bg-1));
+    color: var(--to-text-primary);
+
+    tabler-icon {
+      color: var(--to-success-solid);
+    }
+  }
+
+  &--out {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-loa__rung-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-loa__rung-from {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-loa__rule {
+  margin: 0;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  color: var(--to-text-muted);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-secondary);
+  }
+}
+
+.to-loa__preview {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin: 0;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--to-accent);
+  }
+}
+
+.to-loa__changes {
+  padding-top: t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+}

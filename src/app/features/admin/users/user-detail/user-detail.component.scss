@@ -404,13 +404,19 @@
 }
 
 // Bigger than the previous pill: these are the primary controls on their tab, they are
-// clicked repeatedly, and at the old size the code and the retired marker had nowhere to
-// live. A two-line chip also gives the code somewhere honest to sit, which is what makes
-// searching by code verifiable.
+// clicked repeatedly, and at the old size the retired and no-SKU markers had nowhere to live.
+//
+// Neither region nor brand chips carry a code (client, 2026-09-21): both are tilde-joined
+// paths — "1000~4000~1000~0040~0002~0015" — that identify nothing to the person reading
+// them. So a chip is one line, and two only when it carries a marker. `grid-auto-rows: 1fr`
+// makes every chip the height of the tallest, so the content is centred rather than
+// top-aligned — otherwise one retired region would leave every other name floating above a
+// gap.
 .to-ud__chip {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: center;
   gap: 1px;
   padding: t.$to-space-2 t.$to-space-3;
   border: 1px solid var(--to-border);
@@ -461,25 +467,6 @@
   max-width: 100%;
 }
 
-.to-ud__chip-code {
-  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
-  font-size: t.$to-font-size-2xs;
-  line-height: 1.3;
-  color: var(--to-text-muted);
-}
-
-.to-ud__chip--on .to-ud__chip-meta {
-  display: flex;
-  align-items: center;
-  gap: t.$to-space-1;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.to-ud__chip-code {
-  color: color-mix(in srgb, var(--to-accent-text) 70%, transparent);
-}
-
 .to-ud__chip-note {
   margin-left: t.$to-space-1;
   padding: 0 4px;
@@ -488,49 +475,6 @@
   font-size: t.$to-font-size-2xs;
   line-height: 1.5;
   color: var(--to-warning);
-}
-
-// ─── Access counters & filter ─────────────────────────────────────────────────
-
-.to-ud__counters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: t.$to-space-3;
-  margin-bottom: t.$to-space-3;
-  padding: t.$to-space-2 t.$to-space-3;
-  background: var(--to-bg-2);
-  border-radius: t.$to-radius-control;
-  font-size: t.$to-font-size-xs;
-  color: var(--to-text-secondary);
-}
-
-.to-ud__counter {
-  display: inline-flex;
-  align-items: center;
-  gap: t.$to-space-1;
-
-  // "Effective" is the one that actually authorises requests, so it is the one that reads
-  // as the answer; direct and via-roles are its inputs.
-  &--strong {
-    color: var(--to-text-primary);
-  }
-
-  &--warn {
-    color: var(--to-warning);
-  }
-}
-
-.to-ud__filter {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: t.$to-space-2;
-  margin-bottom: t.$to-space-3;
-  color: var(--to-text-muted);
-
-  input {
-    flex: 1;
-  }
 }
 
 // ─── Roles tab ────────────────────────────────────────────────────────────────
@@ -549,6 +493,36 @@
 
   .to-ud__list-name {
     color: var(--to-text-primary);
+    font-weight: 500;
+  }
+}
+
+// ─── Deactivated accounts are read-only ──────────────────────────────────────
+// The client's rule, 2026-09-21. Stated once, above the tabs, because it applies to all of
+// them — repeating it on every disabled control would be noise, and saying it nowhere would
+// leave an admin wondering why Save does nothing.
+
+.to-ud__frozen {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--to-warning);
+  }
+
+  strong {
+    color: var(--to-warning);
     font-weight: 500;
   }
 }

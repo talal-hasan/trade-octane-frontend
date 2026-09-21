@@ -1,0 +1,349 @@
+<to-page-header
+  title="Distributors"
+  subtitle="Distributor sign-in accounts — who can sign in, and where each one sits."
+  [breadcrumbs]="[{ label: 'Administration 2.0' }, { label: 'Distributors' }]"
+>
+  <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm" data-tour="dst-new">
+    <tabler-icon [icon]="icons['plus']" [size]="15" />
+    New distributor
+  </a>
+</to-page-header>
+
+<div class="to-adm">
+  <!-- Status is a segmented control, not a dropdown: four mutually exclusive views an admin
+       flips between constantly, each with the count it will show. -->
+  <div class="to-dst__toolbar">
+    <div class="to-adm__segmented" role="tablist" aria-label="Filter by status" data-tour="dst-tabs">
+      @for (tab of tabs; track tab.key) {
+        <button
+          type="button"
+          role="tab"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="status() === tab.key"
+          [attr.aria-selected]="status() === tab.key"
+          [pTooltip]="tab.hint"
+          tooltipPosition="bottom"
+          [showDelay]="400"
+          (click)="setStatus(tab.key)"
+        >
+          {{ tab.label }}
+          @if (loaded()) {
+            <span class="to-numeric">{{ counts()[tab.key] }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="to-dst__filters">
+      <p-select
+        class="to-dst__type"
+        [formControl]="businessTypeControl"
+        [options]="businessTypeOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="All business types"
+        [showClear]="true"
+        [disabled]="!loaded()"
+        ariaLabel="Filter by business type"
+        appendTo="body"
+      />
+
+      <div class="to-adm__search to-dst__search" data-tour="dst-search">
+        <tabler-icon [icon]="icons['search']" [size]="15" />
+        <input
+          pInputText
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Search ID, name, city, location or contact"
+          aria-label="Search distributors"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="to-adm__table-wrap" aria-busy="true" aria-label="Loading distributors">
+      @for (row of skeletonRows; track row) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="9%" height="12px" />
+          <to-skeleton width="24%" height="12px" />
+          <to-skeleton width="8%" height="12px" />
+          <to-skeleton width="22%" height="12px" />
+          <to-skeleton width="12%" height="12px" />
+          <to-skeleton width="8%" height="18px" />
+        </div>
+      }
+    </div>
+  } @else if (failed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Could not load distributors"
+      description="The directory did not respond. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (counts().All === 0) {
+    <to-empty-state
+      icon="truck-delivery"
+      heading="No distributor accounts yet"
+      description="Create one for each distributor who needs to sign in."
+    >
+      <a actions pButton [routerLink]="[route, 'new']" class="p-button-sm">
+        <tabler-icon [icon]="icons['plus']" [size]="15" />
+        New distributor
+      </a>
+    </to-empty-state>
+  } @else if (filtered().length === 0) {
+    <to-empty-state
+      icon="list-search"
+      heading="No distributors match"
+      description="Try another status or business type, or clear the search."
+    >
+      @if (hasFilters()) {
+        <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+          Show all distributors
+        </button>
+      }
+    </to-empty-state>
+  } @else {
+    <div class="to-adm__table-wrap">
+      <table class="to-adm__table">
+        <thead>
+          <tr>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('distributorId')">
+              <button type="button" class="to-dst__sort" (click)="toggleSort('distributorId')">
+                ID
+                @if (sortKey() === 'distributorId') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('name')">
+              <button type="button" class="to-dst__sort" (click)="toggleSort('name')">
+                Distributor
+                @if (sortKey() === 'name') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('businessType')">
+              <button type="button" class="to-dst__sort" (click)="toggleSort('businessType')">
+                Business type
+                @if (sortKey() === 'businessType') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('location')">
+              <button type="button" class="to-dst__sort" (click)="toggleSort('location')">
+                Territory
+                @if (sortKey() === 'location') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th" [attr.aria-sort]="ariaSort('city')">
+              <button type="button" class="to-dst__sort" (click)="toggleSort('city')">
+                City
+                @if (sortKey() === 'city') {
+                  <tabler-icon [icon]="desc() ? icons['chevron-down'] : icons['chevron-up']" [size]="13" />
+                }
+              </button>
+            </th>
+            <th scope="col" class="to-adm__th">Contact</th>
+            <th scope="col" class="to-adm__th" data-tour="dst-status">Status</th>
+            <th scope="col" class="to-adm__th to-dst__th-actions" data-tour="dst-actions">
+              <span class="to-dst__sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of pageRows(); track row.account.distributorId) {
+            <tr
+              class="to-adm__row to-dst__row"
+              [class.to-adm__row--attention]="row.unresolvedLocation"
+              [class.to-dst__row--busy]="busyId() === row.account.distributorId"
+              [class.to-dst__row--fresh]="highlightId() === row.account.distributorId"
+            >
+              <td class="to-adm__td to-adm__td--mono">{{ row.account.distributorId }}</td>
+              <td class="to-adm__td to-dst__name-cell">
+                <a
+                  class="to-dst__name"
+                  [routerLink]="[route, row.account.distributorId]"
+                  [title]="row.account.name"
+                >{{ row.account.name || row.account.distributorId }}</a>
+              </td>
+              <td class="to-adm__td to-adm__td--muted">{{ row.account.businessType || '—' }}</td>
+              <!-- Territory over region · area: the three legacy columns in one, so the
+                   table fits without a horizontal scroll. Sorts region → area → territory. -->
+              <td class="to-adm__td to-adm__td--stacked to-dst__location">
+                @if (row.account.territory) {
+                  <span class="to-dst__primary">{{ row.account.territory }}</span>
+                } @else if (row.account.territoryCode) {
+                  <span
+                    class="to-adm__flag to-adm__flag--warn"
+                    [pTooltip]="'Territory ' + row.account.territoryCode + ' no longer exists in the geography master. Edit to pick a current one.'"
+                  >Unknown territory</span>
+                } @else {
+                  <span class="to-dst__primary">—</span>
+                }
+                <span class="to-dst__secondary">
+                  @if (row.account.region) {
+                    {{ row.account.region }}
+                  } @else if (row.account.regionCode) {
+                    <span
+                      class="to-adm__flag to-adm__flag--warn"
+                      [pTooltip]="'Region ' + row.account.regionCode + ' is no longer an active region.'"
+                    >Unknown region</span>
+                  }
+                  @if (row.account.area) {
+                    · {{ row.account.area }}
+                  }
+                </span>
+              </td>
+              <td class="to-adm__td to-adm__td--muted to-dst__city" [title]="row.account.city">{{ row.account.city || '—' }}</td>
+              <td class="to-adm__td to-adm__td--muted to-numeric">{{ row.account.contact || '—' }}</td>
+              <td class="to-adm__td">
+                <span class="to-dst__status">
+                  <to-status-pill [status]="statusPill[row.status]" [label]="statusLabels[row.status]" />
+                  @if (row.account.passwordChangeRequired && row.account.isActive) {
+                    <span
+                      class="to-adm__flag"
+                      pTooltip="They asked for a password reset, and must update their profile at next sign-in."
+                    >Reset pending</span>
+                  }
+                </span>
+              </td>
+              <td class="to-adm__td to-dst__actions">
+                <!-- An inactive account is read-only (client rule, 2026-09-21). The link is
+                     replaced rather than disabled: an <a> with a routerLink cannot be
+                     disabled, and a link that navigates to a form refusing every save is
+                     worse than one that is visibly unavailable. -->
+                @if (row.account.isActive) {
+                  <a
+                    class="to-dst__action"
+                    [routerLink]="[route, row.account.distributorId]"
+                    [attr.aria-label]="'Edit ' + row.account.name"
+                  >
+                    <tabler-icon [icon]="icons['edit']" [size]="15" />
+                    <span>Edit</span>
+                  </a>
+                } @else {
+                  <span
+                    class="to-dst__action to-dst__action--placeholder"
+                    pTooltip="Deactivated accounts cannot be edited. Activate this one first."
+                    tooltipPosition="right"
+                    [showDelay]="300"
+                  >
+                    <tabler-icon [icon]="icons['edit']" [size]="15" />
+                    <span>Edit</span>
+                  </span>
+                }
+                @if (row.account.isLocked) {
+                  <button
+                    type="button"
+                    class="to-dst__action"
+                    [disabled]="busyId() === row.account.distributorId"
+                    [attr.aria-label]="'Unlock ' + row.account.name"
+                    (click)="unlock(row.account)"
+                  >
+                    <tabler-icon [icon]="icons['lock-open']" [size]="15" />
+                    <span>Unlock</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="to-dst__action"
+                    pTooltip="Refuses SSO sign-in. Password sign-in does not check the lock."
+                    tooltipPosition="left"
+                    [showDelay]="400"
+                    [disabled]="busyId() === row.account.distributorId"
+                    [attr.aria-label]="'Lock ' + row.account.name"
+                    (click)="lock(row.account)"
+                  >
+                    <tabler-icon [icon]="icons['lock']" [size]="15" />
+                    <span>Lock</span>
+                  </button>
+                }
+                @if (row.account.isActive) {
+                  <button
+                    type="button"
+                    class="to-dst__action to-dst__action--danger"
+                    [disabled]="busyId() === row.account.distributorId"
+                    [attr.aria-label]="'Deactivate ' + row.account.name"
+                    (click)="requestDeactivate(row.account)"
+                  >
+                    <tabler-icon [icon]="icons['circle-x']" [size]="15" />
+                    <span>Deactivate</span>
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="to-dst__action"
+                    pTooltip="Reinstates the account so it can sign in and be edited."
+                    tooltipPosition="left"
+                    [showDelay]="400"
+                    [disabled]="busyId() === row.account.distributorId"
+                    [attr.aria-label]="'Activate ' + row.account.name"
+                    (click)="activate(row.account)"
+                  >
+                    <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                    <span>Activate</span>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- The whole filtered set is already in memory, so paging is instant and exact. -->
+    <div class="to-adm__pager">
+      <span class="to-adm__pager-range to-numeric">
+        {{ rangeLabel() }}
+        @if (refreshing()) {
+          <span class="to-dst__refreshing">· updating…</span>
+        }
+      </span>
+      @if (pageCount() > 1) {
+        <div class="to-adm__pager-buttons">
+          <button
+            type="button"
+            pButton
+            class="p-button-sm p-button-text"
+            [disabled]="page() === 0"
+            (click)="previousPage()"
+          >
+            <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+            Previous
+          </button>
+          <button
+            type="button"
+            pButton
+            class="p-button-sm p-button-text"
+            [disabled]="page() >= pageCount() - 1"
+            (click)="nextPage()"
+          >
+            Next
+            <tabler-icon [icon]="icons['arrow-right']" [size]="15" />
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="pendingDeactivation() !== null"
+  (visibleChange)="pendingDeactivation.set(null)"
+  variant="danger"
+  title="Deactivate this distributor?"
+  [message]="deactivateMessage()"
+  confirmLabel="Deactivate"
+  (confirmed)="confirmDeactivate()"
+  (cancelled)="pendingDeactivation.set(null)"
+/>

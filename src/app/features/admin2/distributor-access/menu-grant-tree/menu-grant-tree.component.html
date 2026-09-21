@@ -1,0 +1,83 @@
+@if (isEmpty()) {
+  <p class="to-mgt__empty">No menu items match this filter.</p>
+} @else {
+  <ul class="to-mgt" role="tree">
+    @for (row of rows(); track row.menuId) {
+      <li
+        class="to-mgt__row"
+        [class.to-mgt__row--child]="row.depth > 0"
+        [class.to-mgt__row--mixed]="spreadLabel(row) !== null"
+        role="treeitem"
+        [attr.aria-level]="row.depth + 1"
+        [attr.aria-selected]="row.checked"
+        [attr.aria-expanded]="row.hasChildren ? row.expanded : null"
+      >
+        <span class="to-mgt__twisty">
+          @if (row.hasChildren) {
+            <button
+              type="button"
+              class="to-mgt__twisty-btn"
+              (click)="toggleExpand(row.menuId)"
+              [attr.aria-label]="(row.expanded ? 'Collapse ' : 'Expand ') + row.item.menuName"
+            >
+              <tabler-icon [icon]="row.expanded ? icons['chevron-down'] : icons['chevron-right']" [size]="14" />
+            </button>
+          }
+        </span>
+
+        <!-- A native control, not p-checkbox: PrimeNG's checkbox needs an ngModel or a form
+             control, and this tree is driven by a signal set rather than a FormGroup.
+             Template-driven forms are banned outright (CLAUDE.md §3), so the native input is
+             the honest choice — it is styled to match in the stylesheet. -->
+        <input
+          type="checkbox"
+          class="to-mgt__checkbox"
+          [id]="'dmenu-' + row.menuId"
+          [checked]="row.checked"
+          [disabled]="disabled()"
+          (change)="onToggle(row)"
+        />
+
+        <label class="to-mgt__label" [for]="'dmenu-' + row.menuId">
+          <span class="to-mgt__name">{{ row.item.menuName }}</span>
+          @if (row.item.menuPage) {
+            <span class="to-mgt__page">{{ row.item.menuPage }}</span>
+          }
+        </label>
+
+        <span class="to-mgt__flags">
+          @if (spreadLabel(row); as spread) {
+            <span
+              class="to-mgt__flag to-mgt__flag--spread to-numeric"
+              [pTooltip]="spreadTooltip(row)"
+              tooltipPosition="left"
+              [showDelay]="200"
+            >{{ spread }}</span>
+          }
+          @if (row.storedOrphan) {
+            <span
+              class="to-mgt__flag to-mgt__flag--dead"
+              pTooltip="Stored without its parent, so the distributor portal never lists it."
+              tooltipPosition="left"
+            >
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="12" />
+              hidden
+            </span>
+          }
+          @if (row.subtree; as subtree) {
+            <button
+              type="button"
+              class="to-mgt__subtree to-numeric"
+              [class.to-mgt__subtree--full]="subtree.ticked === subtree.total"
+              [disabled]="disabled()"
+              [pTooltip]="subtreeTooltip(row)"
+              tooltipPosition="left"
+              [showDelay]="300"
+              (click)="onSubtree(row)"
+            >{{ subtree.ticked }}/{{ subtree.total }}</button>
+          }
+        </span>
+      </li>
+    }
+  </ul>
+}

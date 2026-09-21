@@ -1,0 +1,395 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Cards, chips, alerts, the summary and the change list come from _admin.scss. The drag
+// preview is a clone of a step or role, cloned with its encapsulation attributes, so the flat
+// classes below style it wherever the CDK puts it.
+
+// Roles | approval order | summary, as legacy put roles left and the hierarchy right.
+.to-ch__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(260px, 300px);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@media (max-width: 1360px) {
+  .to-ch__layout {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  }
+
+  .to-ch__aside {
+    grid-column: 2;
+  }
+}
+
+@include u.respond-to(tablet) {
+  .to-ch__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .to-ch__aside {
+    grid-column: auto;
+  }
+}
+
+.to-ch__count {
+  margin-left: t.$to-space-1;
+  color: var(--to-text-muted);
+}
+
+.to-ch__panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-2;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-ch__icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: t.$to-space-1;
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &--danger:hover:not(:disabled) {
+    border-color: var(--to-danger);
+    background: var(--to-danger-subtle);
+    color: var(--to-danger);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Roles ────────────────────────────────────────────────────────────────────
+
+.to-ch__roles {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.to-ch__search {
+  max-width: none;
+  margin: 0 t.$to-space-4 t.$to-space-2;
+}
+
+.to-ch__role-head {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+  border-bottom: 1px solid var(--to-border);
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+// Scrolls on its own, so a role can be dragged across to the order without the page moving.
+.to-ch__role-list {
+  max-height: calc(100vh - 340px);
+  min-height: 200px;
+  overflow-y: auto;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-ch__role {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3 t.$to-space-2 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+  background: var(--to-bg-1);
+  cursor: grab;
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  &--blocked {
+    cursor: default;
+
+    .to-ch__role-name {
+      color: var(--to-text-muted);
+    }
+  }
+}
+
+.to-ch__role-id {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ch__role-text,
+.to-ch__step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.to-ch__role-name {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ch__role-desc,
+.to-ch__step-desc {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ch__add {
+  color: var(--to-accent-text);
+}
+
+.to-ch__none {
+  margin: 0;
+  padding: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Approval order ───────────────────────────────────────────────────────────
+
+.to-ch__order {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding-bottom: t.$to-space-4;
+
+  .to-adm__alert {
+    margin: 0 t.$to-space-4;
+  }
+}
+
+.to-ch__steps {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  // Tall enough to take a drop even when the order is empty.
+  min-height: 120px;
+  margin: 0;
+  padding: 0 t.$to-space-4;
+  list-style: none;
+}
+
+.to-ch__step {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-2 t.$to-space-2 t.$to-space-1;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+
+  &--new {
+    border-left-color: var(--to-success-solid);
+  }
+}
+
+// While a step or role is dragged: the clone lifts, the list animates around it.
+.to-ch__step.cdk-drag-preview,
+.to-ch__role.cdk-drag-preview {
+  border: 1px solid var(--to-accent);
+  border-radius: t.$to-radius-control;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.to-ch__steps.cdk-drop-list-dragging .to-ch__step:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .to-ch__steps.cdk-drop-list-dragging .to-ch__step:not(.cdk-drag-placeholder) {
+    transition: none;
+  }
+}
+
+.to-ch__placeholder {
+  min-height: 48px;
+  border: 2px dashed var(--to-accent);
+  border-radius: t.$to-radius-control;
+  background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+}
+
+// A role dragged in from the list shows where it will land in the order.
+.to-ch__steps .to-ch__role.cdk-drag-placeholder {
+  border: 2px dashed var(--to-accent);
+  border-radius: t.$to-radius-control;
+  opacity: 0.7;
+}
+
+.to-ch__handle {
+  display: inline-flex;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-muted);
+  cursor: grab;
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-ch__position {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-xs;
+  font-weight: 500;
+}
+
+.to-ch__step-text {
+  flex: 1;
+}
+
+.to-ch__step-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ch__role-id-inline {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ch__tag {
+  padding: 0 t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.7;
+  color: var(--to-text-secondary);
+
+  &--new {
+    border-color: var(--to-success-solid);
+    background: color-mix(in srgb, var(--to-success-solid) 10%, var(--to-bg-1));
+    color: var(--to-success);
+  }
+}
+
+.to-ch__step-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.to-ch__empty {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-6 t.$to-space-4;
+  border: 2px dashed var(--to-border);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+.to-ch__was {
+  margin-left: t.$to-space-1;
+  color: var(--to-text-muted);
+}
+
+.to-ch__delta {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+
+  &--add {
+    color: var(--to-success);
+  }
+
+  &--remove {
+    color: var(--to-danger);
+  }
+}
+
+.to-ch__chain {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-primary);
+
+  s {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-ch__warnings {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: t.$to-space-3 0 0;
+  padding: t.$to-space-3 0 0;
+  border-top: 1px solid var(--to-border);
+  list-style: none;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-warning);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: t.$to-space-1;
+  }
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
