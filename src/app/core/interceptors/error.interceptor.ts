@@ -20,7 +20,7 @@ import { NotificationService } from '../services/notification.service';
  * is shown as information. Only refusals are softened — see `isRefusal`. A server fault, a
  * lost connection or an expired session is an error either way.
  */
-export type FailureNotice = 'error' | 'info';
+export type FailureNotice = 'error' | 'info' | 'silent';
 export const FAILURE_NOTICE = new HttpContextToken<FailureNotice>(() => 'error');
 
 /**
@@ -29,6 +29,18 @@ export const FAILURE_NOTICE = new HttpContextToken<FailureNotice>(() => 'error')
  */
 export function refusalsAsInfo(): HttpContext {
   return new HttpContext().set(FAILURE_NOTICE, 'info');
+}
+
+/**
+ * A request context for callers that show refusals themselves, in place.
+ *
+ * Re-Route moves several queues one request at a time and reports each outcome on its own
+ * line; a toast per refused queue would stack up over the very lines that explain them. As
+ * with `'info'`, only refusals are affected — a server fault or an expired session is still
+ * an error toast.
+ */
+export function refusalsSilent(): HttpContext {
+  return new HttpContext().set(FAILURE_NOTICE, 'silent');
 }
 
 /**
@@ -149,7 +161,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse) {
-        if (req.context.get(FAILURE_NOTICE) === 'info' && isRefusal(error)) {
+        const notice = req.context.get(FAILURE_NOTICE);
+        if (notice === 'silent' && isRefusal(error)) {
+          // The caller reports it in place — see `refusalsSilent`.
+        } else if (notice === 'info' && isRefusal(error)) {
           notificationService.info(messageFor(error));
         } else {
           notificationService.error(messageFor(error));

@@ -183,15 +183,16 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     ported: true,
   },
 
-  // → Approval routing is "Re-Route Scheme": it moves a stuck approval queue to someone who
-  //   can act on it. "Hierarchy" (Hierarchy.aspx) designs the chains themselves — its own
-  //   screen, Approval Hierarchy, built like Administration 2.0's Claim Hierarchy.
+  // → Re-Route Scheme moves pending approvals from one approver to another — above all off
+  //   people who cannot act on them. "Hierarchy" (Hierarchy.aspx) designs the chains
+  //   themselves — its own screen, Approval Hierarchy, built like Administration 2.0's Claim
+  //   Hierarchy. The route was `/admin/approval-routing` while the two shared a destination;
+  //   that path now redirects here.
   {
     menuId: 22,
     legacyName: 'Re-Route Scheme',
-    route: '/admin/approval-routing',
-    tab: 're-route',
-    navLabel: 'Approval Routing',
+    route: '/admin/re-route',
+    navLabel: 'Re-Route Scheme',
     icon: 'route',
     group: NAV_GROUP_ADMIN,
     ported: true,

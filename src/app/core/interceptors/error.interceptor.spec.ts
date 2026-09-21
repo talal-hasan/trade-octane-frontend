@@ -14,6 +14,7 @@ import {
   isRefusal,
   messageFor,
   refusalsAsInfo,
+  refusalsSilent,
   serverDetail,
 } from './error.interceptor';
 
@@ -168,6 +169,19 @@ describe('errorInterceptor', () => {
   it('still reports a server fault or an expired session as an error when the request opts in', () => {
     fail(refusalsAsInfo(), 500, 'Timeout.');
     fail(refusalsAsInfo(), 401, 'Unauthorized');
+    expect(notices.map((notice) => notice.severity)).toEqual(['error', 'error']);
+  });
+
+  // Re-Route: each queue's refusal is shown on its own line of the result instead.
+  it('leaves a refusal to the caller when the request says it reports refusals itself', () => {
+    fail(refusalsSilent(), 409, 'Expected 12 pending approvals but found 13.');
+    fail(refusalsSilent(), 429, 'Too many requests.');
+    expect(notices).toEqual([]);
+  });
+
+  it('still reports a server fault or an expired session when refusals are the caller’s', () => {
+    fail(refusalsSilent(), 500, 'Timeout.');
+    fail(refusalsSilent(), 401, 'Unauthorized');
     expect(notices.map((notice) => notice.severity)).toEqual(['error', 'error']);
   });
 });

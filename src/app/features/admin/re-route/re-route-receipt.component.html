@@ -1,0 +1,88 @@
+@let r = run();
+<div class="to-adm__card to-rrr" [class.to-rrr--done]="r.done" role="status">
+  <header class="to-rrr__head">
+    <span class="to-rrr__mark" [class.to-rrr__mark--warn]="r.done && moved() === 0" aria-hidden="true">
+      <tabler-icon [icon]="icons[markIcon()]" [size]="22" [class.to-rrr__spin]="!r.done" />
+    </span>
+    <div>
+      <h2 class="to-rrr__title">
+        @if (!r.done) {
+          Re-routing… {{ current() }} of {{ r.lines.length }}
+        } @else if (moved() > 0) {
+          {{ fmt(moved()) }} {{ moved() === 1 ? 'approval' : 'approvals' }} moved to {{ recipient() }}
+        } @else {
+          Nothing was moved
+        }
+      </h2>
+      <p class="to-rrr__sub">From {{ r.fromName }}</p>
+    </div>
+  </header>
+
+  <ul class="to-rrr__lines">
+    @for (line of r.lines; track line.key) {
+      <li class="to-rrr__line to-rrr__line--{{ line.state }}">
+        <tabler-icon
+          class="to-rrr__icon"
+          [icon]="icons[lineIcon(line.state)]"
+          [size]="16"
+          [class.to-rrr__spin]="line.state === 'moving'"
+        />
+        <span class="to-rrr__main">
+          <span class="to-rrr__label">{{ queueLabel(line) }}</span>
+          @if (line.message) {
+            <span class="to-rrr__message">{{ line.message }}</span>
+          }
+        </span>
+        <span class="to-rrr__count to-numeric">
+          @switch (line.state) {
+            @case ('moved') {
+              {{ fmt(line.moved) }} moved
+            }
+            @case ('waiting') {
+              {{ fmt(line.expected) }} waiting
+            }
+            @case ('moving') {
+              Moving {{ fmt(line.expected) }}…
+            }
+            @default {
+              0 moved
+            }
+          }
+        </span>
+      </li>
+    }
+  </ul>
+
+  @if (r.done && movedKeys().length > 0) {
+    <details class="to-rrr__keys">
+      <summary>
+        What moved
+        @if (keysTruncated()) {
+          <span class="to-adm__hint">— the first 500 of each queue</span>
+        }
+      </summary>
+      <ul class="to-rrr__keys-list">
+        @for (item of movedKeys(); track $index) {
+          <li>
+            <span class="to-rrr__keys-queue">{{ item.label }}</span>
+            <span class="to-rrr__keys-key">{{ item.key }}</span>
+          </li>
+        }
+      </ul>
+    </details>
+  }
+
+  @if (r.done) {
+    <footer class="to-rrr__actions">
+      @if (moved() > 0) {
+        <button type="button" pButton class="p-button-sm p-button-outlined" (click)="openRecipient.emit()">
+          <tabler-icon [icon]="icons['user']" [size]="15" />
+          Open {{ recipient() }}
+        </button>
+      }
+      <button type="button" pButton class="p-button-sm" (click)="dismiss.emit()">
+        {{ allMoved() ? 'Done' : 'Back to this approver' }}
+      </button>
+    </footer>
+  }
+</div>

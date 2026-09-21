@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce, take } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
 import { AdminApiRoot, unwrapData } from '../../../core/api/api.types';
-import { refusalsAsInfo } from '../../../core/interceptors/error.interceptor';
+import { refusalsAsInfo, refusalsSilent } from '../../../core/interceptors/error.interceptor';
 import {
   ActivityCandidateResponse,
   ActivityCandidateScope,
@@ -17,6 +17,7 @@ import {
   ActivityScopeResponse,
   ActivitySortField,
   ApprovalQueuePageResponse,
+  ApprovalQueueResponse,
   ApprovalQueueSortField,
   ApprovalStage,
   ApprovalTable,
@@ -124,6 +125,12 @@ export interface ActivityLogQuery {
  * half-moved. Callers must pass the count from the preview they showed — never a
  * recomputed or assumed one, which would defeat the guard entirely.
  */
+/** The server's `MaxPageSize`. A larger request is clamped to it, not refused. */
+const CENSUS_PAGE_SIZE = 200;
+
+/** A backstop against a cursor that never ends — twenty pages is 4,000 queues. */
+const CENSUS_MAX_PAGES = 20;
+
 @Injectable({ providedIn: 'root' })
 export class AdminOperationsApi {
   private readonly api = inject(ApiClient);
@@ -137,6 +144,29 @@ export class AdminOperationsApi {
         query as Query,
       )
       .pipe(map(unwrapData));
+  }
+
+  /**
+   * Every queue in the census, unfiltered — in one request today.
+   *
+   * The census is small (100 queues across 87 approvers hold all 19,644 pending approvals)
+   * but expensive: each request is eleven full scans of unindexed heaps, whatever the page
+   * size. So it is read once at the largest page the server allows and filtered in memory,
+   * rather than re-read per filter click. The server pages in memory after the scans, so a
+   * second page would cost the scans again; it is followed only if the census outgrows one.
+   */
+  approvalQueueCensus(): Observable<ApprovalQueueResponse[]> {
+    const page = (cursor: string | null) =>
+      this.approvalQueues({ pageSize: CENSUS_PAGE_SIZE, ...(cursor ? { cursor } : {}) });
+
+    return page(null).pipe(
+      expand((response) => (response.nextCursor ? page(response.nextCursor) : EMPTY)),
+      take(CENSUS_MAX_PAGES),
+      reduce<ApprovalQueuePageResponse, ApprovalQueueResponse[]>(
+        (all, response) => all.concat(response.items ?? []),
+        [],
+      ),
+    );
   }
 
   exportApprovalQueues(query: Omit<ApprovalQueueQuery, 'pageSize' | 'cursor'> = {}): Observable<Blob> {
@@ -175,11 +205,19 @@ export class AdminOperationsApi {
       .pipe(map(unwrapData));
   }
 
+  /**
+   * Moves one queue. Refusals are not toasted: a re-route of several queues reports each
+   * queue's outcome on its own line, and a 409 there is a routine "look again", not an alarm.
+   * A server fault is still an error toast.
+   */
   reRoute(request: ReRouteRequest, allowInactiveNewHolder = false): Observable<ReRouteResponse> {
     return this.api
-      .post<ReRouteResponse | { data: ReRouteResponse }>('/admin/re-route', request, {
-        allowInactiveNewHolder,
-      })
+      .post<ReRouteResponse | { data: ReRouteResponse }>(
+        '/admin/re-route',
+        request,
+        { allowInactiveNewHolder },
+        refusalsSilent(),
+      )
       .pipe(map(unwrapData));
   }
 

@@ -7,6 +7,11 @@ import { ICON_REGISTRY } from '../../icon-registry';
 
 export type ConfirmDialogVariant = 'default' | 'danger';
 
+export interface ConfirmDetail {
+  label: string;
+  value?: string;
+}
+
 // PrimeNG Dialog wrapper always used for destructive actions (CLAUDE.md §9), e.g. scheme
 // expiry, which fires instantly via API and must be confirmed first (CLAUDE.md §8 Schemes).
 @Component({
@@ -24,6 +29,13 @@ export class ConfirmDialogComponent {
 
   readonly title = input<string>('Are you sure?');
   readonly message = input.required<string>();
+  /**
+   * Itemised lines under the message — what exactly the action covers, one row each
+   * ("Scheme approvals · Level 2 — 6,609"). Optional; most confirmations need only a message.
+   */
+  readonly details = input<readonly ConfirmDetail[]>([]);
+  /** A caution under the details: the one consequence worth reading twice. */
+  readonly note = input<string | null>(null);
   readonly confirmLabel = input<string>('Confirm');
   readonly cancelLabel = input<string>('Cancel');
   readonly variant = input<ConfirmDialogVariant>('default');

@@ -1314,3 +1314,76 @@ Mapping / Menu access switch, since the rule governs both views rather than one.
   and distributors are in neither `USERS` table — so neither filter applies and it would
   need a third check against `Promo_Management_2.dbo.Distributor.IsActive`. Say so if the
   client means that screen too.
+
+---
+
+## Re-Route Scheme — rebuilt from scratch (2026-09-21)
+
+User request: rebuild Administration 1.0 "Re-Route Scheme" from the ground up — fast,
+optimised, and in the new frontend's UI/UX — against the five `/api/v1/admin/re-route`
+endpoints. The old `features/admin/approval-routing/` screen is **deleted**; the new one is
+`features/admin/re-route/` at **`/admin/re-route`**. `/admin/approval-routing` redirects
+there, and the blueprint row for menu 22 is now labelled "Re-Route Scheme" (no `tab`).
+
+### What the data says (local copy)
+
+- The whole census is **100 queues across 87 approvers** holding 19,644 pending approvals.
+  75 approvers hold one queue, 11 hold two, one holds three.
+- Scheme · Level 2 alone is 13,690 of them. `<-- FORWARD TO -->` (7,250) and
+  `Please Select` (6,663) are the two biggest "approvers".
+- **`SELECT NEW USER` holds 27 rows** — the legacy Re-Route screen's own placeholder, saved
+  whenever Re-Route was clicked without picking a new user. The panel says so.
+- **A blank approver holds 27 rows in two queues.** Every endpoint refuses a blank holder,
+  so it is listed (the backlog adds up) but not selectable, with the reason on hover.
+
+### Shape
+
+- **Status tiles** (All / Needs re-routing / Deactivated / Not a user / Active) are the
+  status filter; each shows pending + approvers.
+- **Toolbar** = the old dropdowns as filters: search, Table chips, Level chips, **Role**
+  (the old first dropdown — `/admin/user-roles?roleId=` fetched only when picked, cached).
+  Budget + RMC chips disable each other (no such columns).
+- **Left**: one row per approver (not per queue), every table/level they hold, oldest wait,
+  amber rail when stuck. Sort by pending / waiting longest / A–Z. Arrow keys walk it.
+- **Right, nothing selected**: `to-re-route-overview` — table × level heat grid (click a cell
+  = Table + Level filter) and the three steps.
+- **Right, approver selected**: who (status, login, roles from eligible-holders), a callout
+  explaining why it is stuck, then **1 · What moves** (every queue, ticked by default — or
+  only those matching the Table/Level filter), **2 · Who takes them** (eligible list; each
+  candidate shows what they already hold; merge warning when the target already holds that
+  table/level), **3 · Check the rows** (preview per queue, 50 a page), and a sticky action
+  bar that states the count and route, or why the button is off.
+- **Run**: ticked queues re-route one after another, each with its own previewed
+  `expectedCount`. `to-re-route-receipt` reports each line — moved N / changed since you
+  looked (parsed from the 409's detail) / failed with the server's reason — plus the moved
+  keys (first 500 each), "Open <recipient>" and "Back to this approver".
+- Filters and the approver are in the URL: `?view=&table=&stage=&role=&holder=`.
+
+### Why it is fast
+
+- **One census request per visit** (`AdminOperationsApi.approvalQueueCensus`, page size 200,
+  follows the cursor only if the census ever outgrows a page). Each census request is eleven
+  heap scans; the old screen re-ran it on every filter click and page.
+- All filtering, facets, grouping, sorting and the matrix are computed signals in memory
+  (`re-route.util.ts`, pure, 24 specs).
+- Previews go **one at a time** through a `concatMap` queue, are cached per queue for the
+  visit, and a queued preview for an approver the admin has already left is dropped unsent.
+- **Export is built client-side** from the census already loaded, so it matches the screen
+  exactly (Role filter and search included) and costs no scans. `/queues/export` is kept in
+  the service but no longer called.
+
+### Shared changes
+
+- `error.interceptor`: new `FailureNotice` `'silent'` + `refusalsSilent()` — 4xx left to the
+  caller, 5xx/401 still toast. Used by `reRoute` so a multi-queue run does not stack toasts
+  over the lines that explain them. 2 specs.
+- `to-confirm-dialog`: optional `details` (label/value rows) and `note` (amber caution).
+  Backwards compatible.
+- `AdminRolesApi.roleMemberIds(roleId)`.
+
+### Not done
+
+- **Not visually checked against the live API yet** — the in-app browser needs someone
+  signed in. Build, lint and 175 specs pass.
+- `re-route.component.scss` is 10.9 kB, over the 8 kB warning (under the 16 kB error), like
+  Approval Hierarchy. The overview and receipt were split out to get it there.
