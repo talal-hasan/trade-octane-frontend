@@ -226,7 +226,7 @@ export class ReRouteComponent {
 
   protected readonly sortOptions: readonly { value: HolderSort; label: string }[] = [
     { value: 'pending', label: 'Most pending' },
-    { value: 'waiting', label: 'Waiting longest' },
+    { value: 'waiting', label: 'Longest wait' },
     { value: 'name', label: 'A–Z' },
   ];
 
