@@ -149,8 +149,8 @@ sub-menus, as the legacy master page did. The fold still drives route and tab ga
 ⌘K. The blueprint now only decides where a row opens: a ported row opens its screen (with
 `queryParams` for the facet, e.g. `/admin/users?tab=roles`); anything else opens
 `/legacy/<its own menuId>`. `hidden: true` keeps a granted row out of the sidebar ("Edit
-Password"; and at the client's request Administration 1.0's "Employee Resignation" and
-"Hierarchy", and Administration 2.0's "User Roles" and "User Regions"). `foldsInto` is the
+Password"; and at the client's request Administration 1.0's "Employee Resignation" (and,
+until 2026-09-21, "Hierarchy", now listed as its own screen), and Administration 2.0's "User Roles" and "User Regions"). `foldsInto` is the
 softer rule: "Assign Role to User", "User Region Mapping", "User Brand Mapping" and "Access
 Control" are tabs of the screen "Create User" opens, so they are listed only for someone
 without "Create User". Never use `hidden` for such a tab — the fold would drop the screen
