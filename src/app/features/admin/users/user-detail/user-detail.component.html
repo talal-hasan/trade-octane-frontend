@@ -83,13 +83,28 @@
         </dd>
       </div>
       @if (currentUser.resignationDate) {
+        <!-- The raw column, which carries a time when the deactivation path stamped it —
+             so it is formatted rather than printed, and the Resignation tab is where the
+             provenance of that value is explained. -->
         <div class="to-ud__fact">
           <dt>Resigned</dt>
-          <dd>{{ currentUser.resignationDate }}</dd>
+          <dd class="to-numeric">{{ resignationLabel(currentUser.resignationDate) }}</dd>
         </div>
       }
     </dl>
   </div>
+
+  <!-- The client's rule (2026-09-21), stated once at the top rather than repeated as a
+       tooltip on every disabled control. Activate is in the header, a few pixels away. -->
+  @if (readOnly()) {
+    <div class="to-ud__frozen" role="status">
+      <tabler-icon [icon]="icons['lock']" [size]="16" aria-hidden="true" />
+      <span>
+        <strong>This account is deactivated, so it cannot be edited.</strong>
+        Activate it first — nothing on these tabs can be changed while it is switched off.
+      </span>
+    </div>
+  }
 
   @if (availableTabs().length === 0) {
     <to-empty-state
@@ -145,7 +160,7 @@
                   type="submit"
                   pButton
                   class="p-button-sm"
-                  [disabled]="savingProfile() || profileForm.pristine || profileForm.invalid"
+                  [disabled]="readOnly() || savingProfile() || profileForm.pristine || profileForm.invalid"
                 >
                   {{ savingProfile() ? 'Saving…' : 'Save details' }}
                 </button>
@@ -188,7 +203,7 @@
                   type="submit"
                   pButton
                   class="p-button-sm"
-                  [disabled]="savingPassword() || passwordForm.invalid"
+                  [disabled]="readOnly() || savingPassword() || passwordForm.invalid"
                 >
                   {{ savingPassword() ? 'Saving…' : 'Set password' }}
                 </button>
@@ -196,7 +211,7 @@
                   type="button"
                   pButton
                   class="p-button-sm p-button-text"
-                  [disabled]="savingPassword()"
+                  [disabled]="readOnly() || savingPassword()"
                   (click)="confirmingReset.set(true)"
                 >
                   Reset to default
@@ -238,7 +253,7 @@
                       type="button"
                       pButton
                       class="p-button-sm p-button-text"
-                      [disabled]="!rolesDirty() || savingRoles()"
+                      [disabled]="readOnly() || !rolesDirty() || savingRoles()"
                       (click)="discardRoleChanges()"
                     >
                       Discard
@@ -247,7 +262,7 @@
                       type="button"
                       pButton
                       class="p-button-sm"
-                      [disabled]="!rolesDirty() || savingRoles()"
+                      [disabled]="readOnly() || !rolesDirty() || savingRoles()"
                       (click)="saveRoles()"
                     >
                       {{ savingRoles() ? 'Saving…' : 'Save roles' }}
@@ -359,7 +374,7 @@
                       class="to-ud__checkbox"
                       [id]="'role-' + role.roleId"
                       [checked]="roleSelection().has(+role.roleId)"
-                      [disabled]="!canManageRoles() || lockedRoleIds().has(+role.roleId)"
+                      [disabled]="readOnly() || !canManageRoles() || lockedRoleIds().has(+role.roleId)"
                       [attr.aria-describedby]="
                         canManageRoles() && lockedRoleIds().has(+role.roleId) ? 'role-locked-note' : null
                       "
@@ -414,7 +429,7 @@
                   type="button"
                   pButton
                   class="p-button-sm"
-                  [disabled]="!regionsDirty() || savingRegions()"
+                  [disabled]="readOnly() || !regionsDirty() || savingRegions()"
                   (click)="saveRegions()"
                 >
                   {{ savingRegions() ? 'Saving…' : 'Save regions' }}
@@ -456,13 +471,16 @@
                     (click)="toggleRegion(region.code)"
                     [attr.aria-pressed]="regionSelection().has(region.code)"
                   >
+                    <!-- No code on the card. A region's code is a tilde-joined geography
+                         path — "1000~4000~1000~0040~0002~0015" — which identifies nothing
+                         to the person reading it and crowded out the name. It is still the
+                         value sent back on save, and still matched by the search box. -->
                     <span class="to-ud__chip-name">{{ region.name }}</span>
-                    <span class="to-ud__chip-meta">
-                      <span class="to-ud__chip-code">{{ region.code }}</span>
-                      @if (!region.isActive) {
+                    @if (!region.isActive) {
+                      <span class="to-ud__chip-meta">
                         <span class="to-ud__chip-note">retired</span>
-                      }
-                    </span>
+                      </span>
+                    }
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No regions match that search.</p>
@@ -490,7 +508,7 @@
                   type="button"
                   pButton
                   class="p-button-sm"
-                  [disabled]="!brandsDirty() || savingBrands()"
+                  [disabled]="readOnly() || !brandsDirty() || savingBrands()"
                   (click)="saveBrands()"
                 >
                   {{ savingBrands() ? 'Saving…' : 'Save brands' }}
@@ -530,13 +548,16 @@
                     (click)="toggleBrand(brand.code)"
                     [attr.aria-pressed]="brandSelection().has(brand.code)"
                   >
+                    <!-- No code on the card, for the same reason as the region chips: a
+                         brand's code is a tilde-joined product path. The name is what
+                         identifies it; the code still goes back on save and is still
+                         matched by the search box. -->
                     <span class="to-ud__chip-name">{{ brand.name }}</span>
-                    <span class="to-ud__chip-meta">
-                      <span class="to-ud__chip-code">{{ brand.code }}</span>
-                      @if (!brand.hasMasterSku) {
+                    @if (!brand.hasMasterSku) {
+                      <span class="to-ud__chip-meta">
                         <span class="to-ud__chip-note">no SKU</span>
-                      }
-                    </span>
+                      </span>
+                    }
                   </button>
                 } @empty {
                   <p class="to-ud__section-note">No brands match that search.</p>
@@ -549,15 +570,17 @@
         <!-- ── Access ───────────────────────────────────────────────────────── -->
         @case ('access') {
           <!-- Reloads on every visit, so a role changed on the Roles tab shows here at once. -->
-          <to-user-access-panel [userId]="userId()" />
+          <to-user-access-panel [userId]="userId()" [editable]="!readOnly()" />
         }
 
         <!-- ── Resignation ──────────────────────────────────────────────────── -->
         @case ('resignation') {
-          <to-empty-state
-            icon="external-link"
-            heading="Resignation is still in the legacy portal"
-            description="The endpoints exist, but this screen has not been built yet. Record resignations in the legacy system for now."
+          <!-- Writes return the resulting state, so the identity strip above updates from
+               the response rather than from a second read of the user. -->
+          <to-user-resignation
+            [userId]="userId()"
+            [editable]="!readOnly()"
+            (changed)="onResignationChanged($event)"
           />
         }
       }

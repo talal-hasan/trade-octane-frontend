@@ -4,7 +4,7 @@ import { Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs'
 import { environment } from '../../../environments/environment';
 import { AdminUsersApi } from '../../features/admin/services/admin-users.api';
 import { IdentityApi } from '../api/identity.api';
-import { LoginResponse, LoginStatus } from '../api/identity.models';
+import { LoginResponse, LoginStatus, UserMenuResponse } from '../api/identity.models';
 import { int } from '../api/api.types';
 import { MOCK_USERS } from '../models/mock-users.data';
 import { Role } from '../models/role.model';
@@ -149,7 +149,7 @@ export class AuthService {
         // `isAdmin` is derived from the grants inside MenuAccessService, not passed in —
         // AccountResponse carries no admin flag. See ADMINISTRATION_MENU_IDS.
         this.menuAccess.setMenu(menu);
-        this.syncPermissionContext(menu.userId, name, menu.role);
+        this.syncPermissionContext(menu.userId, name, menu);
         if (account?.mustChangePassword) {
           this.statusSignal.set('PasswordChangeRequired');
         }
@@ -164,17 +164,26 @@ export class AuthService {
    * `permissions` is intentionally empty: the API has no permission catalogue, and
    * inventing values here would recreate the fiction this rewrite removes. Roles are real
    * — they come from `/identity/menu` — and are mapped where they match our enum.
+   *
+   * **Regions and brands are real too, since 2026-09-20.** They were hardcoded to `[]`
+   * here because none of the three calls this context is composed from carried scope, and
+   * the dashboard consequently told every user they had "0 regions · 0 brands" while its
+   * charts, reading the same empty arrays as "no filter", quietly rendered the whole
+   * country under a chip that said *your scope only*. `/identity/menu` now reports both.
    */
-  private syncPermissionContext(userId: string, name: string, roleNames: readonly string[]): void {
+  private syncPermissionContext(userId: string, name: string, menu: UserMenuResponse): void {
     const known = new Set<string>(this.availableRoles);
     const context: UserContext = {
       userId,
       name,
-      roles: roleNames
+      roles: menu.role
         .map((role) => role.toUpperCase().replace(/\s+/g, '_'))
         .filter((role): role is Role => known.has(role)),
-      regions: [],
-      brands: [],
+      // `?? []` covers a deployment whose API predates the scope fields. It is not a
+      // "missing" marker — an empty scope is a legitimate answer for 177 of 547 accounts,
+      // and nothing downstream may treat the two cases differently.
+      regions: menu.regions ?? [],
+      brands: menu.brands ?? [],
       permissions: [],
     };
     this.permissionService.setContext(context);

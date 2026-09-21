@@ -252,6 +252,23 @@ export class MappingEditorComponent {
   protected readonly plan = computed<SavePlan>(() => planSave(this.savedDraft(), this.draft()));
   protected readonly dirty = computed(() => this.diff().count > 0);
 
+  /**
+   * A deactivated Administration 2.0 account is read-only — the client's rule, 2026-09-21:
+   * activate it first, then edit. It covers this mapping **and** the menu access view.
+   *
+   * `userIsActive` is tri-state, matching `Promo_Management_2.dbo.USERS.Active` (`bit null`).
+   * NULL is not active: legacy's own `Proc_GetMenuItem` applies a user's Octane 2 role grants
+   * only when `Active = 1`, so an account whose flag was never set already reaches nothing.
+   *
+   * The server refuses these writes with `administration2.users.account_inactive` (409), so
+   * this decides whether the controls are inert or the admin finds out on save. 255 of 540
+   * accounts are inactive, so it is the common case rather than an edge.
+   */
+  protected readonly readOnly = computed(() => {
+    const mapping = this.saved();
+    return mapping !== null && mapping.userIsActive !== true;
+  });
+
   // ─── What the editor offers ─────────────────────────────────────────────────
 
   /** Active roles, plus the one the user holds even if it has been deactivated since. */
@@ -552,7 +569,7 @@ export class MappingEditorComponent {
   protected submit(): void {
     this.attempted.set(true);
     const plan = this.plan();
-    if (plan.kind === 'none' || plan.kind === 'blocked' || this.saving()) {
+    if (plan.kind === 'none' || plan.kind === 'blocked' || this.saving() || this.readOnly()) {
       return;
     }
     // A role change moves someone in approval routing — confirmed, with their names in it.

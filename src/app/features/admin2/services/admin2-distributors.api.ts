@@ -112,6 +112,18 @@ export class Admin2DistributorsApi {
     return this.api.post<DistributorAccountWriteResponse>(`${path(distributorId)}/deactivate`);
   }
 
+  /**
+   * The inverse of `deactivate`: `IsActive = 1`, `IsDeleted = 0`.
+   *
+   * **No legacy equivalent** — that screen could deactivate and never reinstate. Added
+   * 2026-09-21 alongside the client's rule that an inactive account cannot be edited: this
+   * is the "activate it first" the rule tells people to do, and without it a deactivated
+   * distributor would be frozen for good.
+   */
+  activate(distributorId: string): Observable<DistributorAccountWriteResponse> {
+    return this.api.post<DistributorAccountWriteResponse>(`${path(distributorId)}/activate`);
+  }
+
   lock(distributorId: string): Observable<DistributorAccountWriteResponse> {
     return this.api.post<DistributorAccountWriteResponse>(`${path(distributorId)}/lock`);
   }

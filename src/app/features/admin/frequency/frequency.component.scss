@@ -5,6 +5,119 @@
   width: 40px;
 }
 
+// ─── Scheme group filter ──────────────────────────────────────────────────────
+// Legacy's checkbox list, laid out as wrapping ticked pills so all 26 groups fit in a few
+// lines above the grid instead of a 200px scroll box.
+.to-frq__groups-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+}
+
+.to-frq__groups-title {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-frq__groups-count {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-frq__groups-actions {
+  display: inline-flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  margin-left: auto;
+}
+
+.to-frq__divider {
+  color: var(--to-border-strong);
+}
+
+.to-frq__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: var(--to-text-muted);
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-frq__group-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-frq__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px t.$to-space-3 3px t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  // Keyboard focus rings the whole pill; the checkbox's own ring would sit inside it.
+  &:has(.to-frq__checkbox:focus-visible) {
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+
+    .to-frq__checkbox {
+      outline: none;
+    }
+  }
+
+  &--on {
+    border-color: color-mix(in srgb, var(--to-accent) 45%, transparent);
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+  }
+}
+
+.to-frq__group-count {
+  color: var(--to-text-muted);
+  font-size: t.$to-font-size-2xs;
+}
+
+.to-frq__shown {
+  margin-left: auto;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
 .to-frq__checkbox {
   width: 15px;
   height: 15px;

@@ -1006,3 +1006,311 @@ never dropped, so for those holders each one now renders on its own under **More
 - The panel sits to the right of the grid and stacks under it below 1100px, rather than
   always below it as in legacy. Sticky keeps the tree and the save in view while rows are
   ticked; say so if it should always sit underneath.
+
+---
+
+## Administration 1.0 — Employee Resignation (2026-09-20)
+
+Legacy `UpdateResignation.aspx`, menuId 133, over `/api/v1/admin/resignations`. Built as
+the **Resignation tab of a user**, replacing the placeholder that pointed at the legacy
+portal. The blueprint row is now `ported: true`; it stays `hidden` in the sidebar (the
+client's 2026-09-18 decision) and is reached through Create User, which is where it
+belongs: legacy made you find the same person twice, once in a dropdown and once in a grid
+underneath it.
+
+### Built
+
+- `features/admin/users/user-resignation/` — the panel (`to-user-resignation`), with a
+  `userId` input and a `changed` output that keeps the identity strip above it in step.
+- `services/admin-resignations.api.ts` — `get` / `set` / `clear`, the per-account verbs.
+- `shared/validators/resignation-date.validator.ts` (+ 11 specs) — mirrors the server's
+  bounds (year ≥ 2000, ≤ 730 days ahead) so a typo costs no round trip, and carries
+  `toIsoDate`, which uses the **local** calendar: `toISOString()` shifts the day in PKT.
+- **The date is never text.** `type="date"`, so the browser renders it in the
+  administrator's own locale while its value is always `yyyy-MM-dd`. That is the bug this
+  screen exists to close: legacy pasted `dd-MM-yyyy` into the SQL and let the server read
+  it under the connection's `DATEFORMAT` (`mdy`), so a day above 12 failed loudly and a day
+  of 12 or below was stored transposed, silently — 5 March became 3 May.
+- **Dates already stored are flagged, not trusted.** When `dateFormatSuspect` is set the
+  panel shows both readings side by side with a one-click correction. It stops showing once
+  a different date is in the field — by then it is warning about a value being replaced.
+- **A stamped date is distinguished from a typed one.** Deactivating an account stamps
+  `getdate()` into the same column, which is when the account was switched off, not the day
+  the person left. The card says which it is, and shows the time for a stamped one.
+- **Clearing exists**, behind a confirm dialog, and the toast names the value that went.
+  Legacy had no way to remove a date: an empty box wrote `''`, which SQL Server stores as
+  1900-01-01, so the only way to clear a wrong date was to store a different wrong one.
+- Two facts stated under the form rather than left to be discovered: the account **stays
+  active**, and **reactivating it erases this date**.
+- Own tour (`user-resignation`), matched on `?tab=resignation` ahead of the user-detail one.
+- The identity strip's "Resigned" fact now formats the value instead of printing the raw
+  `2026-09-11T09:42:14.86` the column returns.
+
+### Fast by construction
+
+One GET when the tab is opened, and none after a write: `PUT` and `DELETE` both return the
+resulting row, so the panel and the header update from the response. The tab is only
+instantiated when it is active, and the parent's tab-switch guard now covers a half-typed
+date as well as unsaved access ticks.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- **No directory-wide view.** `GET /admin/resignations` and `/export` are built on the
+  server and answer the two questions legacy's grid could not — "who has left and has not
+  been recorded" (`recorded=NotRecorded`) and "which stored dates may be transposed"
+  (`suspectOnly=true`, with the alternative reading in its own CSV column) — plus
+  `totalCount` / `recordedCount` / `suspectCount`. Nothing calls them: the Users list
+  already carries a Resignation column, and the tab is per-user by design. Worth a screen
+  if the suspect-date cleanup is going to be done as a batch.
+
+---
+
+## Dashboard scope — "0 regions · 0 brands" (2026-09-20)
+
+Reported against a live sign-in: the dashboard greeted `t_SufyaM01` with "0 regions · 0
+brands" for an account mapped to **9 regions and 23 brands**.
+
+### Cause
+
+`AuthService.syncPermissionContext` hardcoded `regions: []` / `brands: []`. It had to: the
+context is composed from `/identity/me`, `/identity/menu` and `/admin/account`, and **none
+of the three carried scope**. The only reader of those mappings was
+`GET /admin/users/{id}/regions`, behind the user-admin policy — so a client asking for its
+*own* scope had to be an administrator to get an answer.
+
+The zero was the visible half. The damaging half was that every consumer treats an empty
+list as *no filter* (`MockDashboardService`: `regions.length === 0 || regions.includes(…)`),
+so the charts rendered the whole country under a chip reading **"Live · your scope only"**.
+
+### Fixed
+
+- **Backend** (`E:\trade-octane-backend`, Identity module): `/identity/menu` now returns
+  `regions[]` and `brands[]` — names, not the tilde-path codes. `AccessSql.UserRegions` /
+  `UserBrands` left-join `GEO_LEVEL6` / `PROD_LEVEL6` in `Centegy_SnDPro_DR` and fall back
+  to the raw code, so an orphaned mapping is surfaced rather than dropped (t_SufyaM01 has
+  one). Predicate is user id alone — what the legacy scoping procs use; the mapping's own
+  `Active` column is `'1'` on all 6,861 rows and legacy never filters it.
+- Batched with the existing roles query as three result sets on **one** round trip.
+- `UserAccessProvider` no longer skips that query when the menu is empty: holding no menu
+  is not holding no scope, and `/dashboard` needs no grant, so the 40 grant-less accounts
+  were exactly the ones being told "0 regions".
+- **Frontend**: `syncPermissionContext` reads them (`?? []` for an older API). The subtitle
+  reports an empty dimension as **"All regions"**, not "0 regions" — empty means unfiltered
+  everywhere it is consumed. The chip reads "Live · all data" and turns amber when the
+  account is mapped to nothing, so it stops claiming a scope it is not applying.
+- **POC chart data realigned to real names.** `MockDashboardService` filters by name, and
+  its fictional geography ("Punjab-North", "Sindh") matches nothing a real account holds —
+  so feeding it real scope would have silently emptied every live user's charts. Regions are
+  now the five most widely held (South, Lahore, Central Punjab, Islamabad, KPK) and brands
+  are Olper's / Tarang / Dairy Omung. `MOCK_USERS` follows, so the role switcher still
+  demonstrates scoping. Figures are still invented; only the names are real.
+
+### Not done
+
+- **The API must be restarted** for this to take effect — it was running from Visual Studio
+  during the change, so only the copy-to-`bin` step failed (0 compile errors).
+- Verified the batched SQL directly against the local database: 1 role, 9 regions, 23
+  brands for `t_SufyaM01`, with the orphaned brand falling back to its code. Not yet
+  verified through the running API.
+
+---
+
+## Re-Route Scheme — same role for Current User and New User (2026-09-21)
+
+Client requirement: the new screen must apply the legacy rule that the current holder and
+the new holder share a role.
+
+### What legacy actually did
+
+`Re_Route_Role_Based.aspx.cs` → `ddl_user_role_SelectedIndexChanged` calls
+`clsInterface.GetUserRoles(roleId)` **once** and binds the **same DataTable** to both
+`ddl_cur_user` and `ddl_new_user`. So the rule was never a check — a mismatched pair was
+simply unreachable. The query behind it:
+
+```sql
+select USERS.FULL_NAME, USERS.USER_ID, User_Role_Mapping.ROLE_ID
+from USERS left join User_Role_Mapping on USERS.USER_ID = User_Role_Mapping.USER_ID
+where ACTIVE = 1 and ROLE_ID = '<roleid>'
+```
+
+### Why it could not be applied as-is
+
+The new screen starts from a queue, not a role picker, and it deliberately surfaces holders
+legacy could never select — its Current User list was `ACTIVE = 1`, so a deactivated
+account or a placeholder was unreachable. Measured on `Scheme_Approvals`:
+
+| Current holder | Pending rows | Role? |
+|---|---|---|
+| `<-- FORWARD TO -->`, `Please Select`, `SELECT NEW USER` | 13,940 | not a user |
+| 5 real accounts with no role mapping | 142 | no |
+| 4 accounts whose role no other active user holds | 382 | yes, list empty |
+| 67 holders with a usable same-role list | 1,345 | yes |
+
+A strict rule would have made **91% of the backlog un-re-routable** — the rows this screen
+exists to clear. Confirmed with the user (2026-09-21): apply the rule where there is a role
+to match, fall back where there is not.
+
+### Built
+
+- **Backend**: `GET /api/v1/admin/re-route/eligible-holders?currentHolder=…` →
+  `EligibleHoldersResponse { roleConstrained, currentHolderIsUser, currentHolderRoles,
+  candidates }`. `ReRouteSql.SharesRoleWithCurrentHolder` is the legacy set expressed as
+  "shares a role with the holder"; `AllActiveHolders` is the fallback. No menu condition,
+  unlike `BudgetOwnershipSql.SharesBudgetRole` — legacy's re-route had none.
+- `POST /admin/re-route` enforces the same test (`ReRouteErrors.RoleMismatch`), and the
+  test rides in the **same statement** as the existence/active lookup so a role mapping
+  edited between two reads cannot let a write through.
+- **Frontend**: "Move to" was a free-text datalist over *all 200 active users*, cached for
+  the life of the screen — it let a queue go to anyone. It is now a select over the
+  eligible list, re-read per selection, with the role named under it.
+- Three distinct states, because they need different remedies: **constrained** ("Same role
+  as the current holder — RSM. 5 users can take this queue"); **rule inapplicable** (amber,
+  names the placeholder, lists everyone); **constrained but empty** ("No other active user
+  holds the RTM role … grant that role to someone first" — widening would hand work to a
+  role that cannot action it).
+
+### Verified against the local database
+
+- `Abbas.Zia` → RSM → other active RSMs (Ather Hussain Changazi, Faisal Iqbal Ghouri, …).
+- `MaqsoM01` → RTM → **0** eligible; the 322-row queue now says why, instead of offering
+  everyone.
+- `<-- FORWARD TO -->` → not a user, 0 roles → fallback list of 194 active users.
+
+### Not done
+
+- **The API must be restarted** to pick this up.
+- The grid rows do not show each holder's role. It would mean joining `User_Role_Mapping`
+  into a census that already scans three unindexed heaps; the role is shown in the panel,
+  where the choice is actually made. Say so if the client wants it on every row.
+
+---
+
+## Inactive users are read-only, in both Administration apps (2026-09-21)
+
+Client business rule: **an inactive user cannot be edited in Administration 1.0 or 2.0 —
+activate it first, then edit.**
+
+### What it replaced
+
+Nothing enforced it. `AccountCommandHandler` had an explicit comment the other way:
+"Inactive and resigned accounts are not refused… an accident of the picker rather than a
+rule." That judgement is now overridden by the client.
+
+Legacy had in fact enforced it almost everywhere, by construction rather than by design:
+`clsLogin.Get_AllUser` (`select * from Users Where ACTIVE = 1`) fed the pickers on Change
+User Details, Assign Role, User Region Mapping, User Brand Mapping and Update Resignation,
+so an inactive account could not be selected. The one exception was `Access_Rights.aspx`,
+which used `clsInterface.GetAllUsers` — no filter. Treated here as the inconsistency it
+looks like: the rule is applied uniformly, menu access included.
+
+353 of 547 accounts are inactive, so this is not an edge case.
+
+### Administration 1.0 — one filter, not a check per slice
+
+`Infrastructure/ActiveAccountFilter.cs` is an `IEndpointFilter` reading the `{userId}`
+route value against the resident directory. Applied to every per-user **write**: profile
+and password, roles, regions, brands, menu access, resignation. Reads are untouched — an
+admin must be able to see what they are about to reactivate.
+
+- **A filter rather than six copies of a check**, because a rule pasted into six handlers
+  is a rule that will be missing from the seventh.
+- **Activate is deliberately not covered** — it is the only way out of the state. Deactivate
+  and unlock are not either.
+- **The snapshot is safe to read**: activate/deactivate call `IUserDirectory.Invalidate()`
+  synchronously, so an admin who has just clicked Activate is never told it is still off.
+- An unknown login name passes through, so the handler still answers 404 rather than the
+  filter reporting "deactivated" for something that was never an account.
+- 409, not 403: the caller is allowed, the *account* is in a state that forbids it.
+
+### Administration 2.0 — the rule needed an Activate to exist first
+
+Distributors had deactivate, lock and unlock but **no way back** — legacy had no
+reactivation either. Applying the rule without one would have frozen every deactivated
+distributor permanently. So this adds `POST /api/v1/admin2/distributors/{id}/activate`
+(`IsActive = 1, IsDeleted = 0`, the exact inverse of deactivate), and only then refuses the
+edit (`DistributorWriteOutcome.Inactive`), decided **inside the write transaction** on the
+row the UPDATE is about to touch.
+
+### Frontend
+
+- User detail: a `readOnly` computed drives an amber banner above the tabs and disables
+  every save, the role checkboxes, the access tree and the resignation field. Stated once
+  rather than as a tooltip per control. Activate stays live in the header.
+- The resignation date input is `disable()`d, not merely unsaveable — typing into a field
+  that can never submit is a worse way to learn the account is off.
+- Distributor list: Edit is replaced by an inert label with the reason, and the old
+  column-width placeholder becomes the **Activate** button. The deactivate dialog no longer
+  says "there is no screen to reactivate it — that needs a database change", which was true
+  until today.
+
+### Not done
+
+- **The API must be restarted.**
+- ~~Admin 2.0 User Mapping writes are not gated~~ — **closed the same day**, see the entry
+  below: the client confirmed the rule covers 2.0 menu access and User Mapping too.
+
+---
+
+## Region and brand chips drop the code (2026-09-21)
+
+Client: the region card in the Regions tab of Create User should not show the region code —
+then the same for brands.
+
+Both codes are tilde-joined paths from the Centegy geography and product hierarchies —
+`1000~4000~1000~0040~0002~0015` — so the card was spending its second line on a string that
+identifies nothing to the person reading it.
+
+- Removed from both chips. The markers stay: **retired** on a region, **no SKU** on a brand.
+- The code is still the value sent back on save, and `filterByName` still matches it, so
+  pasting a code into the search box works — it just is not printed on the card.
+- `.to-ud__chip-code` and a duplicated `.to-ud__chip--on .to-ud__chip-meta` rule that
+  restated the base rule are now dead and removed.
+- Chips are `justify-content: center`. The grid is `grid-auto-rows: 1fr`, so with most chips
+  now one line, a single retired region would otherwise leave every other name top-aligned
+  above a gap.
+
+---
+
+## The inactive-user rule reaches Admin 2.0 menu access and User Mapping (2026-09-21)
+
+Client, extending the rule the same day: **in Administration 2.0, an inactive user's menus
+(access) and User Mapping cannot be edited either.** This closes the gap flagged above.
+
+### Why it needed a second filter
+
+`ActiveAccountFilter` reads the resident `Promo_Management` directory. Administration 2.0
+users are `Promo_Management_2.dbo.USERS` — a different table holding different people — so
+neither filter can stand in for the other. `Octane2ActiveAccountFilter` is the 2.0 form:
+
+- **A query, not a snapshot.** The 2.0 slices deliberately read straight from SQL rather
+  than holding a directory, so there is nothing cached to consult. One seek on the clustered
+  key, on a path that opens a transaction immediately afterwards.
+- **`Active` is `bit null`, and NULL is not active** — legacy's own `Proc_GetMenuItem`
+  applies a user's Octane 2 role grants only when `Active = 1`, so an account whose flag was
+  never set already reaches nothing. Treating NULL as editable would let an admin maintain
+  access for an account the legacy app does not serve.
+- Its own error code, `administration2.users.account_inactive`, rather than sharing the 1.0
+  one: the two name accounts in different databases, and a shared code would send a caller
+  to activate a user that may not exist in the table they are looking at.
+- An unknown login name passes through, so the handler still answers 404.
+
+Applied to `PUT|POST|DELETE /api/v1/admin2/users/{userId}/access` (3 verbs) and every
+`/api/v1/admin2/user-mapping/users/{userId}` verb (5). Reads untouched.
+
+### Frontend
+
+`mapping-editor` gained a `readOnly` computed off `UserMappingResponse.userIsActive`. It
+disables Save and Discard, passes `[editable]="!readOnly()"` into the shared access panel —
+which already had that input from the 1.0 work — and shows one amber banner **above** the
+Mapping / Menu access switch, since the rule governs both views rather than one.
+
+**255 of 540 Promo_2 accounts are inactive**, so this is the common case, not an edge.
+
+### Not done
+
+- **The API must be restarted.**
+- Distributor Access (MenuID 93) is not gated. Its subject is a distributor, not a 2.0 user,
+  and distributors are in neither `USERS` table — so neither filter applies and it would
+  need a third check against `Promo_Management_2.dbo.Distributor.IsActive`. Say so if the
+  client means that screen too.

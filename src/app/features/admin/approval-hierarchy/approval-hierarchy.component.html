@@ -1,0 +1,431 @@
+<to-page-header
+  title="Approval Hierarchy"
+  subtitle="Who initiates and who approves, for each business type, group and scheme."
+  [breadcrumbs]="[{ label: 'Administration 1.0' }, { label: 'Approval Hierarchy' }]"
+/>
+
+@if (catalogueFailed()) {
+  <to-empty-state
+    icon="alert-triangle"
+    heading="Could not load business types, groups, schemes and roles"
+    description="This is usually temporary."
+  >
+    <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="loadCatalogue()">
+      <tabler-icon [icon]="icons['refresh']" [size]="15" />
+      Try again
+    </button>
+  </to-empty-state>
+} @else if (!catalogue()) {
+  <div class="to-adm" aria-busy="true" aria-label="Loading">
+    <to-skeleton width="100%" height="120px" />
+    <div class="to-ah__layout">
+      <to-skeleton width="100%" height="420px" />
+      <to-skeleton width="100%" height="420px" />
+      <to-skeleton width="100%" height="220px" />
+    </div>
+  </div>
+} @else {
+  <div class="to-adm">
+    <!-- ─── Which hierarchy ──────────────────────────────────────────────────── -->
+    <!-- Legacy's three dropdowns and a Search button. Chips instead: every option is one
+         click away, nothing needs a Search, and each scheme shows its step count. -->
+    <section class="to-adm__card to-adm__card--pad to-ah__scope" aria-label="Hierarchy" data-tour="ah-scope">
+      <div class="to-ah__scope-row">
+        <span class="to-ah__scope-label" id="ah-type">Business type</span>
+        <div class="to-adm__chipset" role="radiogroup" aria-labelledby="ah-type">
+          @for (option of businessTypes(); track option.id) {
+            <button
+              type="button"
+              role="radio"
+              class="to-adm__chip"
+              [class.to-adm__chip--on]="businessTypeId() === option.id"
+              [attr.aria-checked]="businessTypeId() === option.id"
+              (click)="select('businessType', option.id)"
+            >
+              {{ option.name }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="to-ah__scope-row">
+        <span class="to-ah__scope-label" id="ah-group">Group</span>
+        <div class="to-adm__chipset" role="radiogroup" aria-labelledby="ah-group">
+          @for (option of groups(); track option.id) {
+            <button
+              type="button"
+              role="radio"
+              class="to-adm__chip"
+              [class.to-adm__chip--on]="groupId() === option.id"
+              [attr.aria-checked]="groupId() === option.id"
+              (click)="select('group', option.id)"
+            >
+              {{ option.name }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="to-ah__scope-row">
+        <span class="to-ah__scope-label" id="ah-scheme">Scheme</span>
+        <div class="to-ah__schemes" role="radiogroup" aria-labelledby="ah-scheme">
+          @for (option of schemes(); track option.id) {
+            <button
+              type="button"
+              role="radio"
+              class="to-ah__scheme"
+              [class.to-ah__scheme--on]="schemeId() === option.id"
+              [class.to-ah__scheme--empty]="stepCount(option.id) === 0"
+              [attr.aria-checked]="schemeId() === option.id"
+              [pTooltip]="option.id !== option.name ? 'Key ' + option.id : undefined"
+              tooltipPosition="top"
+              (click)="select('scheme', option.id)"
+            >
+              {{ option.name }}
+              @if (stepCount(option.id); as count) {
+                <span class="to-ah__scheme-count to-numeric" [attr.aria-label]="count + ' steps'">{{ count }}</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+
+    <div class="to-ah__layout">
+      <!-- ─── Roles ────────────────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-ah__roles" data-tour="ah-roles" aria-label="Roles">
+        <header class="to-ah__panel-head">
+          <h2 class="to-adm__subtitle">Roles</h2>
+          <span class="to-adm__form-hint">Drag into the steps, or Add</span>
+        </header>
+        <div class="to-adm__search to-ah__search">
+          <tabler-icon [icon]="icons['search']" [size]="15" />
+          <input
+            pInputText
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Search role ID or name"
+            aria-label="Search roles"
+          />
+        </div>
+
+        <div class="to-ah__role-head" aria-hidden="true">
+          <span>Role ID</span>
+          <span>Role name</span>
+        </div>
+        <div
+          class="to-ah__role-list"
+          cdkDropList
+          id="ah-roles"
+          [cdkDropListConnectedTo]="['ah-steps']"
+          [cdkDropListSortingDisabled]="true"
+          (cdkDropListDropped)="dropOnRoles($event)"
+        >
+          @for (role of available(); track role.id) {
+            <div
+              class="to-ah__role"
+              [class.to-ah__role--blocked]="role.blocked"
+              cdkDrag
+              [cdkDragData]="role.id"
+              [cdkDragDisabled]="role.blocked || saving() || saved() === null"
+            >
+              <span class="to-ah__role-id to-numeric">{{ role.id }}</span>
+              <span class="to-ah__role-text">
+                <span class="to-ah__role-name">
+                  {{ role.name }}
+                  @if (role.blocked) {
+                    <span class="to-adm__flag" pTooltip="Deactivated roles cannot be added. Activate it on Roles first.">
+                      Inactive
+                    </span>
+                  }
+                </span>
+                @if (role.description && role.description !== role.name) {
+                  <span class="to-ah__role-desc">{{ role.description }}</span>
+                }
+              </span>
+              <button
+                type="button"
+                class="to-ah__icon-button to-ah__add"
+                [disabled]="role.blocked || saving() || saved() === null"
+                [attr.aria-label]="'Add ' + role.name + ' as the last step'"
+                (click)="add(role.id)"
+              >
+                <tabler-icon [icon]="icons['plus']" [size]="14" />
+                <span>Add</span>
+              </button>
+            </div>
+          } @empty {
+            <p class="to-ah__none">
+              {{ searchControl.value ? 'No role matches.' : 'Every role is in the hierarchy.' }}
+            </p>
+          }
+        </div>
+      </section>
+
+      <!-- ─── Steps ────────────────────────────────────────────────────────────── -->
+      <section class="to-adm__card to-ah__order" data-tour="ah-steps" aria-label="Steps">
+        <header class="to-ah__panel-head">
+          <h2 class="to-adm__subtitle">
+            Steps · {{ scopeLabel().scheme }} <span class="to-ah__muted">· {{ scopeLabel().group }} · {{ scopeLabel().businessType }}</span>
+          </h2>
+          <span class="to-adm__form-hint to-numeric">
+            {{ steps().length }} {{ steps().length === 1 ? 'step' : 'steps' }} · {{ roleTotal() }}
+            {{ roleTotal() === 1 ? 'role' : 'roles' }}
+          </span>
+        </header>
+
+        @if (loadingSelected()) {
+          <div class="to-ah__steps" aria-busy="true">
+            @for (row of skeletonRows; track row) {
+              <to-skeleton width="100%" height="52px" />
+            }
+          </div>
+        } @else if (failedSelected()) {
+          <to-empty-state icon="alert-triangle" [heading]="'Could not load the ' + scopeLabel().scheme + ' hierarchy'">
+            <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retrySelected()">
+              Try again
+            </button>
+          </to-empty-state>
+        } @else {
+          @if (needsRenumber()) {
+            <div class="to-adm__alert to-adm__alert--warn" role="note">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span>The stored sequence numbers skip a number. Saving numbers the steps without gaps, in the order shown.</span>
+            </div>
+          }
+
+          <ol
+            class="to-ah__steps"
+            cdkDropList
+            id="ah-steps"
+            [cdkDropListConnectedTo]="['ah-roles']"
+            [cdkDropListDisabled]="saving()"
+            (cdkDropListDropped)="dropOnOrder($event)"
+          >
+            @for (step of steps(); track step.key; let first = $first; let last = $last) {
+              <li
+                class="to-ah__step"
+                [class.to-ah__step--initiates]="step.initiates"
+                cdkDrag
+                [cdkDragData]="step.index"
+              >
+                <button type="button" class="to-ah__handle" cdkDragHandle [attr.aria-label]="'Drag step ' + step.sequence">
+                  <tabler-icon [icon]="icons['grip-vertical']" [size]="16" />
+                </button>
+                <span class="to-ah__sequence">
+                  <span class="to-ah__sequence-no to-numeric" [attr.aria-label]="'Sequence ' + step.sequence">{{ step.sequence }}</span>
+                  <span class="to-ah__sequence-role">{{ step.initiates ? 'Initiates' : 'Approves' }}</span>
+                </span>
+
+                <ul class="to-ah__step-roles" [attr.aria-label]="'Roles at sequence ' + step.sequence">
+                  @for (role of step.roles; track role.id) {
+                    <li class="to-ah__step-role" [class.to-ah__step-role--new]="role.isNew">
+                      <span class="to-ah__step-role-text">
+                        <span class="to-ah__step-name">
+                          {{ role.name }}
+                          <span class="to-ah__role-id-inline to-numeric">#{{ role.id }}</span>
+                          @if (role.isNew) {
+                            <span class="to-ah__tag to-ah__tag--new">New</span>
+                          }
+                          @if (role.inactive) {
+                            <span class="to-adm__flag" pTooltip="Deactivated. It can stay, move or be removed, but not be added again.">
+                              Inactive
+                            </span>
+                          }
+                        </span>
+                        @if (role.description && role.description !== role.name) {
+                          <span class="to-ah__step-desc">{{ role.description }}</span>
+                        }
+                      </span>
+                      @if (step.roles.length > 1) {
+                        <button
+                          type="button"
+                          class="to-ah__icon-button"
+                          [disabled]="saving()"
+                          [pTooltip]="'Give ' + role.name + ' a step of its own'"
+                          [attr.aria-label]="'Give ' + role.name + ' a step of its own'"
+                          (click)="split(role.id)"
+                        >
+                          <tabler-icon [icon]="icons['unlink']" [size]="14" />
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="to-ah__icon-button to-ah__icon-button--danger"
+                        [disabled]="saving()"
+                        [attr.aria-label]="'Remove ' + role.name"
+                        (click)="remove(role.id)"
+                      >
+                        <tabler-icon [icon]="icons['x']" [size]="14" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+
+                <span class="to-ah__step-actions">
+                  <button
+                    type="button"
+                    class="to-ah__icon-button"
+                    [disabled]="first || saving()"
+                    [pTooltip]="first ? undefined : 'Share the step above'"
+                    [attr.aria-label]="'Share sequence ' + (step.sequence - 1) + ' with the roles there'"
+                    (click)="join(step.index)"
+                  >
+                    <tabler-icon [icon]="icons['link']" [size]="15" />
+                  </button>
+                  <button
+                    type="button"
+                    class="to-ah__icon-button"
+                    [disabled]="first || saving()"
+                    [attr.aria-label]="'Move sequence ' + step.sequence + ' up'"
+                    (click)="move(step.index, -1)"
+                  >
+                    <tabler-icon [icon]="icons['arrow-up']" [size]="15" />
+                  </button>
+                  <button
+                    type="button"
+                    class="to-ah__icon-button"
+                    [disabled]="last || saving()"
+                    [attr.aria-label]="'Move sequence ' + step.sequence + ' down'"
+                    (click)="move(step.index, 1)"
+                  >
+                    <tabler-icon [icon]="icons['arrow-down']" [size]="15" />
+                  </button>
+                </span>
+                <div *cdkDragPlaceholder class="to-ah__placeholder"></div>
+              </li>
+            } @empty {
+              <li class="to-ah__empty">
+                <tabler-icon [icon]="icons['hierarchy-2']" [size]="20" />
+                <span>
+                  Nobody initiates or approves {{ scopeLabel().scheme }} under {{ scopeLabel().group }} yet. Drag a role here,
+                  or press Add.
+                </span>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <!-- ─── Summary and save ─────────────────────────────────────────────────── -->
+      <aside class="to-adm__form-aside to-ah__aside" data-tour="ah-summary">
+        <div class="to-adm__summary">
+          <h2 class="to-adm__summary-title">
+            @if (changed()) {
+              Changes to save
+            } @else if (needsRenumber()) {
+              Save to renumber the steps
+            } @else {
+              No changes yet
+            }
+          </h2>
+
+          <dl class="to-adm__summary-list">
+            <div class="to-adm__summary-row">
+              <dt>Scheme</dt>
+              <dd>{{ scopeLabel().scheme }}</dd>
+            </div>
+            <div class="to-adm__summary-row">
+              <dt>Group</dt>
+              <dd>{{ scopeLabel().group }} · {{ scopeLabel().businessType }}</dd>
+            </div>
+            <div class="to-adm__summary-row">
+              <dt>Steps</dt>
+              <dd class="to-numeric">
+                {{ steps().length }}
+                @if (changed() && saved()) {
+                  <span class="to-ah__was">(was {{ stored().steps.length }})</span>
+                }
+              </dd>
+            </div>
+          </dl>
+
+          <!-- Sequence 0 is the one budget initiation reads. Three ACTIVITY hierarchies have no
+               initiating role and start at 1; that is kept, not assumed away. -->
+          <label class="to-ah__first">
+            <input
+              type="checkbox"
+              class="to-ah__checkbox"
+              [checked]="firstSequence() === 0"
+              [disabled]="saving() || steps().length === 0"
+              (change)="setFirstSequence(firstSequence() === 0 ? 1 : 0)"
+            />
+            <span>
+              <span class="to-ah__first-title">The first step initiates</span>
+              <span class="to-ah__first-hint">
+                Stored as sequence 0. Untick when no role initiates and the first step approves, stored from 1.
+              </span>
+            </span>
+          </label>
+
+          @if (changed()) {
+            <div class="to-adm__summary-block">
+              <ul class="to-adm__changes">
+                @if (summary().added.length > 0) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Added</span>
+                    <span class="to-ah__delta to-ah__delta--add">{{ summary().added.join(', ') }}</span>
+                  </li>
+                }
+                @if (summary().removed.length > 0) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Removed</span>
+                    <span class="to-ah__delta to-ah__delta--remove">{{ summary().removed.join(', ') }}</span>
+                  </li>
+                }
+                @if (summary().after) {
+                  <li class="to-adm__change">
+                    <span class="to-adm__change-label">Steps changed</span>
+                    <span class="to-ah__chain"><s>{{ summary().before }}</s></span>
+                    <span class="to-ah__chain">{{ summary().after }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (warnings().length > 0) {
+            <ul class="to-ah__warnings" role="status">
+              @for (warning of warnings(); track warning) {
+                <li>
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="14" />
+                  {{ warning }}
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <p class="to-adm__form-hint">Saving applies at once, from each document's next approval step.</p>
+
+        <div class="to-adm__form-actions">
+          <button
+            type="button"
+            pButton
+            class="p-button-text p-button-sm"
+            [disabled]="!changed() || saving()"
+            (click)="reset()"
+          >
+            Reset
+          </button>
+          <button type="button" pButton class="p-button-sm" [disabled]="!canSave()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save steps' }}
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+}
+
+<to-confirm-dialog
+  [visible]="confirmingClear()"
+  (visibleChange)="confirmingClear.set(false)"
+  variant="danger"
+  [title]="'Clear the ' + scopeLabel().scheme + ' hierarchy?'"
+  [message]="
+    'Every role will be removed from ' + scopeLabel().scheme + ' under ' + scopeLabel().group + '. Nobody will initiate or approve it until roles are added again.'
+  "
+  confirmLabel="Clear hierarchy"
+  (confirmed)="confirmClear()"
+  (cancelled)="confirmingClear.set(false)"
+/>

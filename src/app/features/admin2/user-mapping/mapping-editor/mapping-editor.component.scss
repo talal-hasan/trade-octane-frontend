@@ -463,3 +463,32 @@
   border-radius: t.$to-radius-pill;
   background: var(--to-warning-solid);
 }
+
+// ─── Deactivated accounts are read-only ──────────────────────────────────────
+// The client's rule, 2026-09-21. Above the Mapping / Menu access switch, because it governs
+// both views — repeating it inside each would say the same thing twice.
+
+.to-um__frozen {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--to-warning);
+  }
+
+  strong {
+    color: var(--to-warning);
+    font-weight: 500;
+  }
+}

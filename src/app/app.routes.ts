@@ -147,6 +147,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // One screen: the hierarchy is `?businessType=&group=&scheme=`, so it can be linked to.
+        path: 'admin/approval-hierarchy',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/admin/approval-hierarchy/approval-hierarchy.component').then(
+            (m) => m.ApprovalHierarchyComponent,
+          ),
+      },
+      {
         path: 'admin/ownership',
         canActivate: [MenuGuard],
         loadComponent: () =>

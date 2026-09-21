@@ -2,6 +2,7 @@ import { MenuItemResponse } from '../api/identity.models';
 import { int } from '../api/api.types';
 import {
   ADMIN_ONLY_ROUTES,
+  ADMINISTRATION_ROOT_MENU_ID,
   BLUEPRINT_BY_MENU_ID,
   BLUEPRINT_BY_NAME,
   MenuBlueprintEntry,
@@ -49,8 +50,30 @@ export interface MenuNearMiss {
   matchedEntryMenuId: number;
 }
 
+/**
+ * One entry of the sidebar, in the shape of the Menus grid (`/admin/menus`, legacy
+ * Add_Menu_Items.aspx): a root module and the screens under it, named, iconned and ordered
+ * as the grid defines them — the way the legacy master page rendered the same tree.
+ */
+export interface SidebarMenuNode {
+  menuId: number;
+  /** The grid's MenuName, verbatim apart from surrounding whitespace. */
+  label: string;
+  icon: string;
+  /** Where the entry opens: its ported screen, or the legacy placeholder for this row. */
+  route: string;
+  queryParams: Readonly<Record<string, string>> | null;
+  /** True when the screen is not built yet and the entry opens the legacy placeholder. */
+  pending: boolean;
+  /** The granted sub-menus, in grid order. Empty on a root that is itself a screen. */
+  children: SidebarMenuNode[];
+}
+
 export interface MenuTransformResult {
+  /** The folded destinations. Route gating, tabs and the command palette read these. */
   sections: TransformedNavSection[];
+  /** The granted menu as the grid lays it out. The sidebar renders this. */
+  sidebar: SidebarMenuNode[];
   /** Every granted menuId, flattened. The gating set. */
   grantedMenuIds: ReadonlySet<number>;
   /** Granted rows with no blueprint entry at all. Surfaced, never dropped. */
@@ -71,10 +94,10 @@ const GROUP_ORDER: readonly string[] = [
 ];
 
 /**
- * FontAwesome 4 (what the legacy menu stores in `icon`) to Tabler (what we render).
- * Only 34 of 95 rows carry an icon at all, and only root rows in practice — the rest fall
- * back to the blueprint's icon, then to a generic one. An unmapped FA name is not an
- * error; it just falls through to the default.
+ * FontAwesome 4 (what the Menus grid stores in `Icons`) to Tabler (what we render).
+ * Only root rows carry an icon in practice — every FA name used on one is listed here. A
+ * row without one falls back to the blueprint's icon, then to a generic one; an unmapped
+ * FA name is not an error, it just falls through the same way.
  */
 const FA4_TO_TABLER: Readonly<Record<string, string>> = {
   cogs: 'settings',
@@ -84,6 +107,7 @@ const FA4_TO_TABLER: Readonly<Record<string, string>> = {
   'envelope-o': 'mail',
   'stack-overflow': 'database-cog',
   check: 'check',
+  'check-square': 'square-check',
   'files-o': 'files',
   flash: 'bolt',
   tachometer: 'gauge',
@@ -92,6 +116,14 @@ const FA4_TO_TABLER: Readonly<Record<string, string>> = {
   'bar-chart-o': 'chart-bar',
   desktop: 'device-desktop',
   'flag-o': 'flag',
+  calculator: 'calculator',
+  'map-marker': 'map-pin',
+  certificate: 'certificate',
+  truck: 'truck',
+  sliders: 'adjustments-horizontal',
+  phone: 'phone',
+  mobile: 'device-mobile',
+  car: 'car',
 };
 
 const DEFAULT_ICON = 'circle-dot';
@@ -320,7 +352,94 @@ export function transformMenu(menu: readonly MenuItemResponse[]): MenuTransformR
   }
 
   const sections = assembleSections(byRoute);
-  return { sections, grantedMenuIds, unmapped, nearMisses };
+  const sidebar = buildSidebar(menu, entryOf, grantedMenuIds);
+  return { sections, sidebar, grantedMenuIds, unmapped, nearMisses };
+}
+
+/**
+ * The granted tree, kept in the shape the server sent it: roots in grid order, each with
+ * its granted children. Unlike the fold, nothing is merged, renamed or regrouped — every
+ * row is its own entry under its own grid name. The blueprint only decides where an entry
+ * opens: a ported row opens its screen, anything else the legacy placeholder for *that*
+ * row, so "BRD Schemes" is not sent to its module's page.
+ */
+function buildSidebar(
+  menu: readonly MenuItemResponse[],
+  entryOf: ReadonlyMap<number, MenuBlueprintEntry | null>,
+  grantedMenuIds: ReadonlySet<number>,
+): SidebarMenuNode[] {
+  const toNodes = (rows: readonly MenuItemResponse[] | undefined): SidebarMenuNode[] => {
+    const nodes: SidebarMenuNode[] = [];
+    for (const row of rows ?? []) {
+      const menuId = int(row.menuId, -1);
+      if (menuId < 0) {
+        continue;
+      }
+      const entry = entryOf.get(menuId) ?? null;
+      // Deliberately absent from the sidebar ("Edit Password" is in the avatar menu). The row
+      // stays in `grantedMenuIds`, so hiding it takes nothing away from the user's access.
+      if (entry?.hidden === true) {
+        continue;
+      }
+      // A tab of a screen whose own row is granted is reached through that row's entry.
+      if (entry?.foldsInto !== undefined && grantedMenuIds.has(entry.foldsInto)) {
+        continue;
+      }
+      const ported = entry?.ported === true;
+      nodes.push({
+        menuId,
+        label: row.name.trim(),
+        // The grid's icon first: it is what the client configured for the module.
+        icon: tablerIconFor(row.icon) ?? entry?.icon ?? DEFAULT_ICON,
+        route: ported ? entry.route : `/legacy/${menuId}`,
+        queryParams: (ported ? entry.queryParams : undefined) ?? null,
+        pending: !ported,
+        children: toNodes(row.children),
+      });
+    }
+    return nodes;
+  };
+  return toNodes(menu);
+}
+
+/**
+ * Lists ADMIN_ONLY_ROUTES under the Administration 1.0 root for administrators, with their
+ * grid names, unless the menu already carries them. Kept out of `transformMenu` for the same
+ * reason as `withAdminOnlyRoutes`: it depends on the user, not the menu.
+ */
+export function withAdminOnlySidebarEntries(
+  sidebar: readonly SidebarMenuNode[],
+  isAdmin: boolean,
+): SidebarMenuNode[] {
+  if (!isAdmin) {
+    return [...sidebar];
+  }
+  return sidebar.map((root) => {
+    if (root.menuId !== ADMINISTRATION_ROOT_MENU_ID) {
+      return root;
+    }
+    const missing = ADMIN_ONLY_ROUTES.filter(
+      (extra) => !root.children.some((child) => child.route === extra.route),
+    );
+    if (missing.length === 0) {
+      return root;
+    }
+    return {
+      ...root,
+      children: [
+        ...root.children,
+        ...missing.map((extra) => ({
+          menuId: extra.menuId,
+          label: extra.legacyName,
+          icon: extra.icon,
+          route: extra.route,
+          queryParams: null,
+          pending: false,
+          children: [],
+        })),
+      ],
+    };
+  });
 }
 
 /**

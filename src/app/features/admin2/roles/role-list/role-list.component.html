@@ -148,7 +148,9 @@
             >
               <td class="to-adm__td to-adm__td--mono to-numeric">{{ row.roleId }}</td>
               <td class="to-adm__td to-adm__td--stacked to-r2__role">
-                @if (canEditDetails()) {
+                @if (namesOpenAccess()) {
+                  <a class="to-r2__name" [routerLink]="[route, row.roleId, 'access']">{{ row.role.roleName }}</a>
+                } @else if (canEditDetails()) {
                   <a class="to-r2__name" [routerLink]="[route, row.roleId]">{{ row.role.roleName }}</a>
                 } @else {
                   <span class="to-r2__name">{{ row.role.roleName }}</span>

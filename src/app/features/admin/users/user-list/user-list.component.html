@@ -131,7 +131,11 @@
           @for (user of rows(); track user.userId) {
             <tr class="to-users__row" [class.to-users__row--busy]="busyUserId() === user.userId">
               <td class="to-users__td">
-                <a class="to-users__identity" [routerLink]="['/admin/users', user.userId]">
+                <a
+                  class="to-users__identity"
+                  [routerLink]="['/admin/users', user.userId]"
+                  [queryParams]="tab() ? { tab: tab() } : null"
+                >
                   <span class="to-users__avatar" aria-hidden="true">{{ initialsOf(user) }}</span>
                   <span class="to-users__identity-text">
                     <span class="to-users__name">{{ user.fullName || user.userId }}</span>

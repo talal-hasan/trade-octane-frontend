@@ -195,25 +195,55 @@
             pending {{ previewCount() === 1 ? 'approval' : 'approvals' }} would move
           </div>
 
+          <!-- Legacy bound one GetUserRoles(roleId) result to both the Current User and the
+               New User dropdown, so the two always shared a role. The queue already names
+               the holder, so the list here is the rest of that same set. -->
           <div class="to-adm__field">
             <label class="to-adm__label" for="newHolder">Move to</label>
-            <input
-              pInputText
-              id="newHolder"
-              type="text"
-              list="to-adm-holders"
-              [formControl]="newHolderControl"
-              placeholder="Login name"
-            />
-            <datalist id="to-adm-holders">
-              @for (option of holderOptions(); track option.userId) {
-                <option [value]="option.userId">{{ option.fullName }}</option>
-              }
-            </datalist>
-            <span class="to-adm__hint">
-              The new holder is validated against the user list — the point is to hand work
-              to someone who can act on it.
-            </span>
+            @if (holderOptionsLoading()) {
+              <to-skeleton width="100%" height="32px" />
+            } @else if (noEligibleHolders()) {
+              <p class="to-ar__role-empty">
+                No other active user holds
+                {{ holderRoles() ? 'the ' + holderRoles() + ' role' : 'this holder’s role' }},
+                so there is nobody this queue can move to. Grant that role to someone first —
+                widening the list here would hand the work to a role that cannot action it.
+              </p>
+            } @else {
+              <select
+                id="newHolder"
+                class="to-ar__holder-select"
+                [formControl]="newHolderControl"
+              >
+                <option value="">Select new user</option>
+                @for (option of holderOptions(); track option.userId) {
+                  <option [value]="option.userId">
+                    {{ option.fullName || option.userId }} ({{ option.userId }})
+                  </option>
+                }
+              </select>
+            }
+            @if (roleConstrained() === true) {
+              <span class="to-adm__hint">
+                Same role as the current holder{{ holderRoles() ? ' — ' + holderRoles() : '' }}.
+                {{ holderOptions().length }} user{{ holderOptions().length === 1 ? '' : 's' }}
+                can take this queue.
+              </span>
+            } @else if (roleConstrained() === false) {
+              <!-- Not a loophole: the rule is "same role as the current holder", and this
+                   holder has none to match. Legacy could not select these rows at all. -->
+              <span class="to-adm__hint to-ar__hint--warn">
+                <tabler-icon [icon]="icons['alert-triangle']" [size]="14" aria-hidden="true" />
+                @if (eligibility()?.currentHolderIsUser) {
+                  This holder has no role, so there is no role to match. Every active user is
+                  listed — pick someone who actually works this stage.
+                } @else {
+                  “{{ selected()?.holder }}” is a leftover dropdown label, not a person, so
+                  there is no role to match. Every active user is listed — pick someone who
+                  actually works this stage.
+                }
+              </span>
+            }
           </div>
 
           <button

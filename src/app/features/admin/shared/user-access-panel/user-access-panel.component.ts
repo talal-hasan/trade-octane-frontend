@@ -44,6 +44,15 @@ export class UserAccessPanelComponent {
   readonly userId = input.required<string>();
   readonly apiRoot = input<AdminApiRoot>('admin');
 
+  /**
+   * False when the account is deactivated — the client's rule of 2026-09-21: an inactive
+   * user cannot be edited, activate it first.
+   *
+   * Defaults true because the other host of this panel (Administration 2.0's User Mapping)
+   * reaches it through a different account population and decides for itself.
+   */
+  readonly editable = input(true);
+
   private readonly api = inject(AdminAccessApi);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -70,6 +79,9 @@ export class UserAccessPanelComponent {
   protected readonly roleNames = computed(() =>
     (this.access()?.roles ?? []).map((role) => role.roleName).filter(Boolean).join(', '),
   );
+
+  /** Ticking is pointless when the save can never land, so the tree is locked instead. */
+  protected readonly locked = computed(() => !this.editable());
 
   protected readonly dirty = computed(() => {
     const original = this.originalDirect();
@@ -138,7 +150,7 @@ export class UserAccessPanelComponent {
   }
 
   protected save(): void {
-    if (this.saving() || !this.dirty()) {
+    if (this.saving() || !this.dirty() || this.locked()) {
       return;
     }
     this.saving.set(true);

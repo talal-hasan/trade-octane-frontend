@@ -15,6 +15,8 @@ import {
   ApprovalQueueResponse,
   ApprovalStage,
   ApprovalTable,
+  EligibleHolderResponse,
+  EligibleHoldersResponse,
   PendingApprovalResponse,
 } from '../../../core/api/operations.models';
 import { CursorPager } from '../../../core/api/cursor-pager';
@@ -25,7 +27,6 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { SkeletonComponent } from '../../../shared/components/skeleton/skeleton.component';
 import { ICON_REGISTRY } from '../../../shared/icon-registry';
 import { AdminOperationsApi } from '../services/admin-operations.api';
-import { AdminUsersApi } from '../services/admin-users.api';
 
 /**
  * Re-Route Scheme — moving a stuck approval queue to someone who can act on it.
@@ -64,7 +65,6 @@ import { AdminUsersApi } from '../services/admin-users.api';
 })
 export class ApprovalRoutingComponent {
   private readonly operationsApi = inject(AdminOperationsApi);
-  private readonly usersApi = inject(AdminUsersApi);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -207,7 +207,10 @@ export class ApprovalRoutingComponent {
   protected readonly previewTruncated = signal(false);
 
   protected readonly newHolderControl = new FormControl('', { nonNullable: true });
-  protected readonly holderOptions = signal<readonly { userId: string; fullName: string }[]>([]);
+  protected readonly holderOptions = signal<readonly EligibleHolderResponse[]>([]);
+  protected readonly holderOptionsLoading = signal(false);
+  /** Null until the first queue is selected — the eligibility read is per holder. */
+  protected readonly eligibility = signal<EligibleHoldersResponse | null>(null);
   protected readonly transferring = signal(false);
   protected readonly confirming = signal(false);
 
@@ -217,7 +220,7 @@ export class ApprovalRoutingComponent {
     this.previewCount.set(0);
     this.newHolderControl.setValue('');
     this.loadPreview(queue);
-    this.loadHolderOptions();
+    this.loadEligibleHolders(queue.holder);
   }
 
   protected clearSelection(): void {
@@ -248,25 +251,62 @@ export class ApprovalRoutingComponent {
       });
   }
 
-  /** Active users, as the destinations a queue can be handed to. */
-  private loadHolderOptions(): void {
-    if (this.holderOptions().length > 0) {
-      return;
-    }
-    this.usersApi
-      .list({ status: 'Active', sort: 'FullName', pageSize: 200 })
+  /**
+   * The destinations this queue can be handed to.
+   *
+   * **Not cached, and not the whole user directory.** It used to be both: one read of every
+   * active account, kept for the life of the screen. That let a queue be handed to anyone,
+   * which the legacy screen made impossible by construction — it bound a single
+   * `GetUserRoles(roleId)` result to *both* the Current User and the New User dropdown, so
+   * the pair always shared a role. The answer therefore depends on the selected holder and
+   * has to be re-read per selection.
+   */
+  private loadEligibleHolders(holder: string): void {
+    this.holderOptionsLoading.set(true);
+    this.holderOptions.set([]);
+    this.eligibility.set(null);
+    this.operationsApi
+      .eligibleReRouteHolders(holder)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (page) =>
-          this.holderOptions.set(
-            (page.data ?? []).map((user) => ({
-              userId: user.userId,
-              fullName: user.fullName || user.userId,
-            })),
-          ),
-        error: () => this.holderOptions.set([]),
+        next: (response) => {
+          this.eligibility.set(response);
+          this.holderOptions.set(response.candidates ?? []);
+          this.holderOptionsLoading.set(false);
+        },
+        error: () => {
+          this.holderOptions.set([]);
+          this.holderOptionsLoading.set(false);
+        },
       });
   }
+
+  /**
+   * Whether the list on screen is the same-role one or the fallback.
+   *
+   * Null while it is still loading, so the hint does not assert a rule before it knows
+   * which one applies.
+   */
+  protected readonly roleConstrained = computed(() => this.eligibility()?.roleConstrained ?? null);
+
+  /** The role names the candidate list was drawn from — "ASM", legacy's first dropdown. */
+  protected readonly holderRoles = computed(() =>
+    (this.eligibility()?.currentHolderRoles ?? []).join(', '),
+  );
+
+  /**
+   * The same-role rule is in force but nobody else holds the role.
+   *
+   * Distinct from the rule not applying: the remedy here is to grant that role to someone,
+   * not to pick from a wider list, and the panel says so instead of showing an empty picker
+   * with no explanation.
+   */
+  protected readonly noEligibleHolders = computed(
+    () =>
+      this.roleConstrained() === true &&
+      !this.holderOptionsLoading() &&
+      this.holderOptions().length === 0,
+  );
 
   protected readonly canTransfer = computed(
     () =>

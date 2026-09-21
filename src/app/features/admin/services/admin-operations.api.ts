@@ -26,6 +26,7 @@ import {
   BudgetScopeResponse,
   BudgetShellPageResponse,
   BudgetShellSortField,
+  EligibleHoldersResponse,
   FrequencyConfigurationResponse,
   FrequencyConfigurationWriteResponse,
   FrequencyGroupResponse,
@@ -154,6 +155,22 @@ export class AdminOperationsApi {
       .get<PendingApprovalPageResponse | { data: PendingApprovalPageResponse }>(
         '/admin/re-route/pending',
         query as Query,
+      )
+      .pipe(map(unwrapData));
+  }
+
+  /**
+   * The New User list for one queue: active accounts sharing a role with its current holder.
+   *
+   * Called per selection rather than cached, because the answer depends on the holder. See
+   * `EligibleHoldersResponse` for what `roleConstrained: false` means — it is the legacy
+   * rule not applying, not the rule being waived.
+   */
+  eligibleReRouteHolders(currentHolder: string): Observable<EligibleHoldersResponse> {
+    return this.api
+      .get<EligibleHoldersResponse | { data: EligibleHoldersResponse }>(
+        '/admin/re-route/eligible-holders',
+        { currentHolder },
       )
       .pipe(map(unwrapData));
   }
@@ -356,12 +373,8 @@ export class AdminOperationsApi {
 
   // ─── Frequency Configuration ────────────────────────────────────────────────
 
-  frequencyConfigurations(query: {
-    search?: string;
-    groupKey?: string;
-    schemeId?: string;
-    activeOnly?: boolean;
-  } = {}): Observable<FrequencyConfigurationResponse[]> {
+  /** The whole grid, narrowed by `search` only — the endpoint takes no group; filter by group in memory. */
+  frequencyConfigurations(query: { search?: string } = {}): Observable<FrequencyConfigurationResponse[]> {
     return this.api
       .get<FrequencyConfigurationResponse[] | { data: FrequencyConfigurationResponse[] }>(
         '/admin/frequency-configurations',
@@ -386,7 +399,7 @@ export class AdminOperationsApi {
       .pipe(map(unwrapData));
   }
 
-  exportFrequencyConfigurations(query: { search?: string; groupKey?: string } = {}): Observable<Blob> {
+  exportFrequencyConfigurations(query: { search?: string } = {}): Observable<Blob> {
     return this.api.downloadCsv('/admin/frequency-configurations/export', query as Query);
   }
 

@@ -217,3 +217,46 @@
     font-size: t.$to-font-size-xs;
   }
 }
+
+// ─── The same-role picker ────────────────────────────────────────────────────
+// The New User list is the current holder's role, as legacy enforced by binding one query
+// to both dropdowns. A select rather than a free-text datalist: the set is bounded and
+// server-validated, and typing a login name that is refused on save is a worse experience
+// than not being offered it.
+
+.to-ar__holder-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-text-primary);
+  font: inherit;
+  font-size: t.$to-font-size-xs;
+}
+
+.to-ar__hint--warn {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-1;
+  color: var(--to-warning);
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+// The rule applies and yields nobody — a different problem from the rule not applying, and
+// the remedy is a role grant rather than a wider list.
+.to-ar__role-empty {
+  margin: 0;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-control;
+  background: var(--to-warning-subtle);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+}

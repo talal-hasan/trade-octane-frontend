@@ -145,6 +145,19 @@
           />
         </section>
 
+        <!-- The client's rule (2026-09-21), stated once above both views because it applies
+             to each of them: an inactive account's mapping and menu access are read-only. -->
+        @if (readOnly()) {
+          <div class="to-um__frozen" role="status">
+            <tabler-icon [icon]="icons['lock']" [size]="16" aria-hidden="true" />
+            <span>
+              <strong>This account is deactivated, so it cannot be edited.</strong>
+              Neither its mapping nor its menu access can change while it is switched off —
+              activate it first.
+            </span>
+          </div>
+        }
+
         @if (canMap() && canAccess()) {
           <div class="to-adm__segmented to-um__views" role="tablist" aria-label="Account view" data-tour="um-views">
             <button
@@ -175,7 +188,12 @@
 
         <!-- Kept alive once opened, so switching back to it costs nothing and unsaved ticks survive. -->
         @if (accessVisited()) {
-          <to-user-access-panel [userId]="mapping.userId" apiRoot="admin2" [hidden]="view() !== 'access'" />
+          <to-user-access-panel
+            [userId]="mapping.userId"
+            apiRoot="admin2"
+            [editable]="!readOnly()"
+            [hidden]="view() !== 'access'"
+          />
         }
         @if (view() === 'mapping') {
         <!-- Role and business types -->
@@ -418,12 +436,12 @@
           type="button"
           pButton
           class="p-button-text p-button-sm"
-          [disabled]="!dirty() || saving()"
+          [disabled]="!dirty() || saving() || readOnly()"
           (click)="resetDraft()"
         >
           Reset
         </button>
-        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving()" (click)="submit()">
+        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving() || readOnly()" (click)="submit()">
           {{ saving() ? 'Saving…' : 'Save mapping' }}
         </button>
       </div>

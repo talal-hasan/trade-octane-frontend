@@ -76,6 +76,33 @@ export const USER_DETAIL_TOUR: TourDefinition = {
   ],
 };
 
+/**
+ * The Resignation tab has its own tour rather than a step inside the user-detail one,
+ * because what it has to explain is not "where things are" — it is that the screen it
+ * replaces was storing wrong dates, and how to tell whether this record is one of them.
+ */
+export const USER_RESIGNATION_TOUR: TourDefinition = {
+  id: 'user-resignation',
+  label: 'How resignation dates work',
+  steps: [
+    {
+      target: '[data-tour="resignation-current"]',
+      title: 'A stamped date is not a leaving date',
+      body: 'Deactivating an account puts the current moment in this column when nothing is recorded. That is when the account was switched off, not the day the person left — the card tells you which of the two you are looking at.',
+    },
+    {
+      target: '[data-tour="resignation-panel"]',
+      title: 'The date is never typed as text',
+      body: 'The legacy screen took dd-MM-yyyy as free text and let the database decide which half was the day, so 5 March could be stored as 3 May. The field here hands over an unambiguous date, whatever format your browser shows you.',
+    },
+    {
+      target: '[data-tour="resignation-panel"]',
+      title: 'Recording a resignation grants and revokes nothing',
+      body: 'The account still works. Deactivate them in the header when their access should actually end — and note that reactivating an account erases the date recorded here.',
+    },
+  ],
+};
+
 export const USER_CREATE_TOUR: TourDefinition = {
   id: 'user-create',
   label: 'How to create a user',
@@ -239,6 +266,11 @@ export const FREQUENCY_TOUR: TourDefinition = {
   id: 'frequency',
   label: 'How to configure scheme frequency',
   steps: [
+    {
+      target: '[data-tour="freq-groups"]',
+      title: 'Pick the scheme groups to work on',
+      body: 'Tick as many groups as you need — every group starts ticked. Select all and None set them in one click. Unticking a group also unticks its schemes, so a prior-month change never reaches a scheme you cannot see.',
+    },
     {
       target: '[data-tour="freq-table"]',
       title: 'Edit in place, compare down the column',
@@ -512,6 +544,33 @@ export const REGION_ROLES_TOUR: TourDefinition = {
   ],
 };
 
+export const APPROVAL_HIERARCHY_TOUR: TourDefinition = {
+  id: 'approval-hierarchy',
+  label: 'How to set an approval hierarchy',
+  steps: [
+    {
+      target: '[data-tour="ah-scope"]',
+      title: 'One hierarchy per business type, group and scheme',
+      body: 'Pick all three — there is no Search to press. The number on a scheme is how many steps its hierarchy has; schemes without a number have none yet.',
+    },
+    {
+      target: '[data-tour="ah-steps"]',
+      title: 'Sequence 0 initiates, the rest approve',
+      body: 'Budget initiation offers the scheme to the roles at sequence 0, and approval runs 1, 2, 3 from there. Drag a step by its handle, or use the arrows. The link button lets a step share the one above it: any of its roles can then act.',
+    },
+    {
+      target: '[data-tour="ah-roles"]',
+      title: 'Add a role',
+      body: 'Drag it into the steps where it belongs, or press Add to make it the last step. Deactivated roles cannot be added.',
+    },
+    {
+      target: '[data-tour="ah-summary"]',
+      title: 'Saving applies at once',
+      body: 'The summary lists every change before you save, and warns when the initiating roles change. Untick "The first step initiates" only for a hierarchy where no role initiates.',
+    },
+  ],
+};
+
 export const CLAIM_HIERARCHY_TOUR: TourDefinition = {
   id: 'admin2-claim-hierarchy',
   label: 'How to set a claim hierarchy',
@@ -560,6 +619,10 @@ const startsWith = (route: string) => (path: string) => path.startsWith(route);
  */
 const ROUTE_TOURS: RouteTour[] = [
   { match: exact('/admin/users/new'), tour: USER_CREATE_TOUR },
+  {
+    match: (p, q) => /^\/admin\/users\/[^/]+$/.test(p) && q.get('tab') === 'resignation',
+    tour: USER_RESIGNATION_TOUR,
+  },
   { match: (p) => /^\/admin\/users\/[^/]+$/.test(p), tour: USER_DETAIL_TOUR },
   { match: exact('/admin/users'), tour: USERS_LIST_TOUR },
 
@@ -569,6 +632,7 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: startsWith('/admin/access-explorer'), tour: ACCESS_EXPLORER_TOUR },
   { match: exact('/admin/menus'), tour: MENUS_TOUR },
   { match: startsWith('/admin/approval-routing'), tour: APPROVAL_ROUTING_TOUR },
+  { match: exact('/admin/approval-hierarchy'), tour: APPROVAL_HIERARCHY_TOUR },
   { match: startsWith('/admin/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
   { match: startsWith('/admin/frequency'), tour: FREQUENCY_TOUR },
   { match: startsWith('/admin/integration'), tour: INTEGRATION_TOUR },

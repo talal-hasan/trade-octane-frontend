@@ -100,6 +100,11 @@ function toRow(role: Octane2RoleResponse): RoleRow {
 export class Admin2RoleListComponent {
   /** `?saved=<roleId>` — set by the form after a save, so the row can be found and marked. */
   readonly saved = input<string | undefined>(undefined);
+  /**
+   * `?view=access` — opened from "Access Control | By Role" (154) rather than "Create Role"
+   * (88), so a role's name opens its menu access instead of its details.
+   */
+  readonly view = input<string | undefined>(undefined);
 
   private readonly api = inject(Admin2RolesApi);
   private readonly store = inject(Octane2RolesStore);
@@ -110,6 +115,10 @@ export class Admin2RoleListComponent {
   protected readonly icons = ICON_REGISTRY;
   protected readonly canEditDetails = computed(() => this.menuAccess.tabsFor(ROLES_2_ROUTE).includes(ROLES_2_TAB_DETAILS));
   protected readonly canEditAccess = computed(() => this.menuAccess.tabsFor(ROLES_2_ROUTE).includes(ROLES_2_TAB_ACCESS));
+  /** Whether a role's name opens its menu access: asked for, or the only facet held. */
+  protected readonly namesOpenAccess = computed(
+    () => this.canEditAccess() && (this.view() === 'access' || !this.canEditDetails()),
+  );
   protected readonly flags = ROLE_FLAGS;
   protected readonly route = ROLES_2_ROUTE;
   protected readonly plural = plural;

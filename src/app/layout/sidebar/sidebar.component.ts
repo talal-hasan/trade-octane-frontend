@@ -1,44 +1,28 @@
-import { Component, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, inject, linkedSignal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { TooltipModule } from 'primeng/tooltip';
+import { filter, map } from 'rxjs';
 
 import { MenuAccessService } from '../../core/services/menu-access.service';
 import { SidebarService } from '../../core/services/sidebar.service';
-import {
-  NAV_GROUP_INSIGHTS,
-  NAV_GROUP_OPERATIONS,
-  NAV_GROUP_TRADE,
-} from '../../core/menu/menu-blueprint';
-import { TransformedNavItem, TransformedNavSection } from '../../core/menu/menu-transform';
+import { SidebarMenuNode } from '../../core/menu/menu-transform';
 import { ICON_REGISTRY } from '../../shared/icon-registry';
-import { ClaimsService } from '../../features/claims/services/claims.service';
 
 /**
- * Groups the sidebar lists without a heading. They are still ordered and separated by the
- * section divider — only the label is dropped. Administration and More keep theirs.
- */
-const UNLABELLED_GROUPS: ReadonlySet<string> = new Set([
-  NAV_GROUP_TRADE,
-  NAV_GROUP_INSIGHTS,
-  NAV_GROUP_OPERATIONS,
-]);
-
-/**
- * The sidebar renders the user's **real menu grants**, folded (CLAUDE.md §4: "the nav is
- * generated dynamically from what the current user can access — never hardcoded").
+ * The sidebar renders the user's **real menu grants** in the shape the Menus grid
+ * (`/admin/menus`, legacy Add_Menu_Items.aspx) gives them — the client's requirement, and
+ * what the legacy master page drew: each root module under its grid name and icon, in grid
+ * order, opening onto the sub-menus the user holds.
  *
- * It used to filter a static NAV_SECTIONS array against invented permission strings. It
- * now reads MenuAccessService, which folds `GET /identity/menu` through the blueprint —
- * so 95 legacy menu rows become ~28 destinations, and a user who was granted only "User
- * Brand Mapping" sees one "Users" item rather than nothing.
- *
- * There is no filtering left to do here: an item exists only because a grant produced it.
+ * There is no filtering left to do here: an entry exists only because a grant produced it,
+ * and only Visible rows are granted (see `AccessSql.EffectiveMenu`).
  */
 @Component({
   selector: 'to-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, TablerIconComponent, TooltipModule],
+  imports: [RouterLink, TablerIconComponent, TooltipModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
 })
@@ -48,52 +32,87 @@ export class SidebarComponent {
   protected readonly collapsed = this.sidebarService.collapsed;
 
   private readonly menuAccess = inject(MenuAccessService);
-  private readonly claimsService = inject(ClaimsService);
+  private readonly router = inject(Router);
 
-  protected readonly sections = this.menuAccess.sections;
+  protected readonly menu = this.menuAccess.sidebar;
 
-  // Pending-count badges (CLAUDE.md §6). Sourced from the live claims store, so a claim
-  // approved anywhere in the app decrements the badge with no refetch — the same rule the
-  // Dashboard follows.
-  private readonly pendingClaims = computed(
-    () => this.claimsService.claims().filter((claim) => claim.status === 'pending').length,
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
   );
 
   /**
-   * Badges attach by route rather than by a `badgeKey` on a static definition, because the
-   * nav items are now derived and carry no hand-authored metadata.
+   * The one entry that is "you are here". Several entries can open the same screen — the
+   * six Users rows all open `/admin/users` — so `routerLinkActive` would light every one of
+   * them; this picks a single winner instead. See `activeEntry`.
    */
-  protected badgeFor(item: TransformedNavItem): number {
-    if (item.pending) {
-      return 0;
-    }
-    return item.route === '/claims' || item.route === '/workspace' ? this.pendingClaims() : 0;
-  }
+  protected readonly activeMenuId = computed(
+    () => activeEntry(this.menu(), this.url(), this.router.parseUrl(this.url()).queryParams)?.menuId ?? null,
+  );
+
+  /** The module holding the active entry. */
+  protected readonly activeModuleId = computed(() => {
+    const active = this.activeMenuId();
+    const holder = this.menu().find(
+      (root) => root.menuId === active || root.children.some((child) => child.menuId === active),
+    );
+    return holder?.menuId ?? null;
+  });
 
   /**
-   * Tooltip text. In the icon rail the label alone is not always enough — a folded item
-   * absorbed several legacy screens, and naming them is how someone trained on the old
-   * menu recognises where their screen went.
+   * The open module. One at a time, as legacy's accordion was; it follows navigation to the
+   * module being worked in, and can be opened or closed by hand in between.
    */
-  protected tooltipFor(item: TransformedNavItem): string {
-    const extras = item.aliases.filter((alias) => alias !== item.label);
-    if (extras.length === 0) {
-      return item.label;
-    }
-    return `${item.label} — ${extras.slice(0, 4).join(', ')}${extras.length > 4 ? '…' : ''}`;
-  }
+  protected readonly openModuleId = linkedSignal(() => this.activeModuleId());
 
-  /** The heading shows in the expanded sidebar only, and never for an unlabelled group. */
-  protected showsLabel(section: TransformedNavSection): boolean {
-    return !!section.label && !this.collapsed() && !UNLABELLED_GROUPS.has(section.label);
+  protected toggleModule(root: SidebarMenuNode): void {
+    // The rail has no room for sub-menus, so a module opens the sidebar rather than a flyout.
+    if (this.collapsed()) {
+      this.sidebarService.toggle();
+      this.openModuleId.set(root.menuId);
+      return;
+    }
+    this.openModuleId.update((open) => (open === root.menuId ? null : root.menuId));
   }
 
   /** Falls back to a known-present icon so an unmapped legacy icon never renders blank. */
-  protected iconFor(item: TransformedNavItem): string {
-    return item.icon in this.icons ? item.icon : 'circle-dot';
+  protected iconFor(node: SidebarMenuNode): string {
+    return node.icon in this.icons ? node.icon : 'circle-dot';
   }
 
   toggle(): void {
     this.sidebarService.toggle();
   }
+}
+
+/**
+ * The entry the URL is on: among entries whose route is the path or a prefix of it, the
+ * longest route wins; on a tie, one whose facet the URL is on beats one that names none,
+ * which beats one naming a different facet (`/admin/ownership?tab=activity` is Change
+ * Activity Ownership, not Change Budget Ownership). The facet can also be the last path
+ * segment, since a role's access tree is `/admin2/roles/7/access`. Remaining ties go to the
+ * first in grid order.
+ */
+function activeEntry(menu: readonly SidebarMenuNode[], url: string, query: Params): SidebarMenuNode | null {
+  const path = url.split(/[?#]/)[0];
+  const lastSegment = path.slice(path.lastIndexOf('/') + 1);
+  let best: SidebarMenuNode | null = null;
+  let bestScore = -1;
+  for (const node of menu.flatMap((root) => (root.children.length > 0 ? root.children : [root]))) {
+    if (path !== node.route && !path.startsWith(`${node.route}/`)) {
+      continue;
+    }
+    const params = node.queryParams;
+    const onFacet = (entry: [string, string]): boolean => query[entry[0]] === entry[1] || lastSegment === entry[1];
+    const facet = !params ? 1 : Object.entries(params).every(onFacet) ? 2 : 0;
+    const score = node.route.length * 3 + facet;
+    if (score > bestScore) {
+      best = node;
+      bestScore = score;
+    }
+  }
+  return best;
 }

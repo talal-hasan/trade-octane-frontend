@@ -344,6 +344,23 @@ export class DistributorListComponent {
     );
   }
 
+  /**
+   * Puts a deactivated account back, which is also what makes it editable again — the
+   * client's rule of 2026-09-21 is "activate it first, then edit".
+   *
+   * No confirmation: it grants nothing beyond what the account held before it was switched
+   * off, and it is the reversible half of a pair whose destructive half is the one that
+   * asks.
+   */
+  protected activate(account: DistributorAccountResponse): void {
+    this.run(
+      account,
+      this.api.activate(account.distributorId),
+      `${account.name} activated. They can sign in, and the account can be edited again.`,
+      `${account.name} was already active. Nothing changed.`,
+    );
+  }
+
   protected requestDeactivate(account: DistributorAccountResponse): void {
     this.pendingDeactivation.set(account);
   }
@@ -368,8 +385,9 @@ export class DistributorListComponent {
       return '';
     }
     return (
-      `${account.name} (${account.distributorId}) will no longer be able to sign in. The account and ` +
-      'its claims are kept, but there is no screen to reactivate it — that needs a database change.'
+      `${account.name} (${account.distributorId}) will no longer be able to sign in, and the ` +
+      'account cannot be edited while it is off. Its claims and menu access are kept, and ' +
+      'Activate on the row puts it back.'
     );
   });
 

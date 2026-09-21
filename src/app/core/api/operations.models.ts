@@ -69,6 +69,36 @@ export interface PendingApprovalPageResponse {
   totalCount: ApiInt;
 }
 
+export interface EligibleHolderResponse {
+  userId: string;
+  fullName: string;
+}
+
+/**
+ * Who a queue may be handed to — **the legacy screen's New User dropdown**.
+ *
+ * `Re_Route_Role_Based.aspx` asked for a role, ran `GetUserRoles(roleId)` once, and bound
+ * that single result to *both* Current User and New User, so the two could never differ in
+ * role. This screen starts from a queue that already names the holder, so the role is
+ * derived from them and this is the rest of that same list.
+ *
+ * `roleConstrained` is false when the holder has no role at all — every placeholder value
+ * (`<-- FORWARD TO -->`, `Please Select`) and five real accounts. The rule then has nothing
+ * to match on and `candidates` is every active user instead. **Do not read that as the rule
+ * being optional:** `POST /admin/re-route` applies the identical test, so a mismatch is a
+ * 400 whenever the holder does have a role.
+ *
+ * An empty `candidates` with `roleConstrained: true` is a different problem — nobody else
+ * holds that role — and the remedy is to grant it, not to widen the list.
+ */
+export interface EligibleHoldersResponse {
+  currentHolder: string;
+  roleConstrained: boolean;
+  currentHolderIsUser: boolean;
+  currentHolderRoles: string[];
+  candidates: EligibleHolderResponse[];
+}
+
 /**
  * `expectedCount` is **required and load-bearing**: it comes from the preview, the UPDATE's
  * row count is compared against it, and the whole transaction rolls back with a 409 if they

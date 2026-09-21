@@ -218,14 +218,30 @@
                 </span>
               </td>
               <td class="to-adm__td to-dst__actions">
-                <a
-                  class="to-dst__action"
-                  [routerLink]="[route, row.account.distributorId]"
-                  [attr.aria-label]="'Edit ' + row.account.name"
-                >
-                  <tabler-icon [icon]="icons['edit']" [size]="15" />
-                  <span>Edit</span>
-                </a>
+                <!-- An inactive account is read-only (client rule, 2026-09-21). The link is
+                     replaced rather than disabled: an <a> with a routerLink cannot be
+                     disabled, and a link that navigates to a form refusing every save is
+                     worse than one that is visibly unavailable. -->
+                @if (row.account.isActive) {
+                  <a
+                    class="to-dst__action"
+                    [routerLink]="[route, row.account.distributorId]"
+                    [attr.aria-label]="'Edit ' + row.account.name"
+                  >
+                    <tabler-icon [icon]="icons['edit']" [size]="15" />
+                    <span>Edit</span>
+                  </a>
+                } @else {
+                  <span
+                    class="to-dst__action to-dst__action--placeholder"
+                    pTooltip="Deactivated accounts cannot be edited. Activate this one first."
+                    tooltipPosition="right"
+                    [showDelay]="300"
+                  >
+                    <tabler-icon [icon]="icons['edit']" [size]="15" />
+                    <span>Edit</span>
+                  </span>
+                }
                 @if (row.account.isLocked) {
                   <button
                     type="button"
@@ -264,11 +280,19 @@
                     <span>Deactivate</span>
                   </button>
                 } @else {
-                  <!-- Holds the column width, so Edit and Lock line up on every row. -->
-                  <span class="to-dst__action to-dst__action--placeholder" aria-hidden="true">
-                    <tabler-icon [icon]="icons['circle-x']" [size]="15" />
-                    <span>Deactivate</span>
-                  </span>
+                  <button
+                    type="button"
+                    class="to-dst__action"
+                    pTooltip="Reinstates the account so it can sign in and be edited."
+                    tooltipPosition="left"
+                    [showDelay]="400"
+                    [disabled]="busyId() === row.account.distributorId"
+                    [attr.aria-label]="'Activate ' + row.account.name"
+                    (click)="activate(row.account)"
+                  >
+                    <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                    <span>Activate</span>
+                  </button>
                 }
               </td>
             </tr>

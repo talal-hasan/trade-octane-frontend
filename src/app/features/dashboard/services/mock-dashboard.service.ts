@@ -14,6 +14,14 @@ import { DashboardService } from './dashboard.service';
 // the regions/brands on their UserContext — so switching roles in the dev panel visibly
 // changes the numbers, which is the point the client needs to see demonstrated.
 
+// The figures are invented; **the region and brand names are not**. They are real
+// `GEO_LEVEL6.SDESC` / `PROD_LEVEL6.SDESC` values — the five most widely held regions
+// (South, Lahore, Central Punjab, Islamabad, KPK) and three of the most held brands —
+// because since 2026-09-20 `/identity/menu` reports the signed-in user's *actual* scope,
+// and this service filters on it by name. Fictional names ("Punjab-North", "Sindh") would
+// match nothing a real account holds, so every live user's charts would silently empty out.
+// Keep any row added here joined to a name that exists in the directory.
+
 interface RegionSpend {
   region: string;
   committed: number;
@@ -23,19 +31,19 @@ interface RegionSpend {
 
 const SPEND_BY_REGION: RegionSpend[] = [
   {
-    region: 'Punjab-North',
+    region: 'Central Punjab',
     committed: 41_200_000,
     allocated: 52_000_000,
     delta: { percent: 4.2, direction: 'up', comparedTo: 'vs last month', good: true },
   },
   {
-    region: 'Punjab-South',
+    region: 'Lahore',
     committed: 28_900_000,
     allocated: 38_000_000,
     delta: { percent: 1.8, direction: 'down', comparedTo: 'vs last month', good: false },
   },
   {
-    region: 'Sindh',
+    region: 'South',
     committed: 47_600_000,
     allocated: 45_000_000,
     delta: { percent: 12.4, direction: 'up', comparedTo: 'vs last month', good: false },
@@ -47,7 +55,7 @@ const SPEND_BY_REGION: RegionSpend[] = [
     delta: { percent: 6.1, direction: 'up', comparedTo: 'vs last month', good: true },
   },
   {
-    region: 'Balochistan',
+    region: 'Islamabad',
     committed: 6_100_000,
     allocated: 14_000_000,
     delta: { percent: 0, direction: 'flat', comparedTo: 'vs last month', good: true },
@@ -56,9 +64,9 @@ const SPEND_BY_REGION: RegionSpend[] = [
 
 // Litres, not cartons — the industry unit throughout (KT §8 Confirmed Business Rules).
 const VOLUME_BY_BRAND: (BarDatum & { brand: string })[] = [
-  { brand: 'Olpers', label: 'Olpers', value: 1_840_000 },
+  { brand: "Olper's", label: "Olper's", value: 1_840_000 },
   { brand: 'Tarang', label: 'Tarang', value: 1_210_000 },
-  { brand: 'Nurpur', label: 'Nurpur', value: 640_000 },
+  { brand: 'Dairy Omung', label: 'Dairy Omung', value: 640_000 },
 ];
 
 const APPROVALS_CLEARED = [
@@ -73,7 +81,7 @@ const APPROVALS_CLEARED = [
 const ATTENTION: (AttentionItem & { region: string })[] = [
   {
     id: 'att-1',
-    region: 'Sindh',
+    region: 'South',
     reference: 'BUD-2026-009',
     title: 'Sindh / Olpers Q3 budget is overrun',
     reason: 'Committed spend exceeds the approved allocation by PKR 2,600,000.',
@@ -85,7 +93,7 @@ const ATTENTION: (AttentionItem & { region: string })[] = [
   },
   {
     id: 'att-2',
-    region: 'Punjab-North',
+    region: 'Central Punjab',
     reference: 'BRD-0042',
     title: 'Master SKU changed on a live scheme',
     reason: 'SAP master data moved this SKU mid-flight — verify before the next claim run.',
@@ -97,7 +105,7 @@ const ATTENTION: (AttentionItem & { region: string })[] = [
   },
   {
     id: 'att-3',
-    region: 'Punjab-South',
+    region: 'Lahore',
     reference: 'TO-0113',
     title: 'Trade Offer expires in 3 days',
     reason: 'Scheme ends 21 Aug. Extend it or let it close — no action means it closes.',
@@ -121,7 +129,7 @@ const ATTENTION: (AttentionItem & { region: string })[] = [
   },
   {
     id: 'att-5',
-    region: 'Punjab-North',
+    region: 'Central Punjab',
     reference: 'CLM-2026-201',
     title: 'Damage claim missing supporting document',
     reason: 'Distributor submitted without the required damage report. Blocked at VBase.',

@@ -38,6 +38,10 @@ interface RowEdit {
  * The API takes `schemeIds[]` for them, and in practice they are set to one policy across
  * many schemes at once; making it per-row would turn one decision into fifty edits.
  *
+ * Scheme groups filter the grid as legacy's "Select Scheme Group All | None" list did:
+ * several at once, every group ticked on arrival. The list endpoint returns every scheme (72),
+ * so the filter runs in memory — the API has no group parameter on it.
+ *
  * This screen has no legacy menu row (see ADMIN_ONLY_ROUTES) — it is gated on holding an
  * Administration grant.
  */
@@ -73,8 +77,81 @@ export class FrequencyComponent {
 
   protected readonly rows = signal<readonly FrequencyConfigurationResponse[]>([]);
   protected readonly groups = signal<readonly FrequencyGroupResponse[]>([]);
-  protected readonly groupKey = signal<string | null>(null);
   protected readonly searchControl = new FormControl('', { nonNullable: true });
+
+  // ─── Scheme group filter ────────────────────────────────────────────────────
+
+  /**
+   * The groups *un*ticked. Stored this way round so every group starts ticked, as legacy's
+   * did, and a group that appears later is ticked too rather than silently filtered out.
+   */
+  private readonly excludedGroups = signal<ReadonlySet<string>>(new Set<string>());
+
+  /**
+   * Group names, once each. Names rather than keys: key B15 is filed under both DBDP and
+   * VTR-1, so filtering by key listed "VTR-1" twice and pulled DBDP schemes in under it.
+   * A name the groups endpoint did not return still gets a chip if a scheme carries it.
+   */
+  protected readonly groupNames = computed(() => {
+    const names = new Set(this.groups().map((group) => group.schemeGroup || group.groupKey));
+    for (const row of this.rows()) {
+      names.add(groupOf(row));
+    }
+    names.delete('');
+    return [...names];
+  });
+
+  /** Schemes per group, among the rows the search returned. */
+  protected readonly groupCounts = computed(() => {
+    const counts = new Map<string, number>();
+    for (const row of this.rows()) {
+      counts.set(groupOf(row), (counts.get(groupOf(row)) ?? 0) + 1);
+    }
+    return counts;
+  });
+
+  protected readonly selectedGroupCount = computed(
+    () => this.groupNames().filter((name) => !this.excludedGroups().has(name)).length,
+  );
+
+  /** The rows on screen: the search's rows, in a ticked group. */
+  protected readonly visibleRows = computed(() => {
+    const excluded = this.excludedGroups();
+    return this.rows().filter((row) => !excluded.has(groupOf(row)));
+  });
+
+  protected isGroupSelected(name: string): boolean {
+    return !this.excludedGroups().has(name);
+  }
+
+  protected toggleGroup(name: string): void {
+    this.excludedGroups.update((current) => {
+      const next = new Set(current);
+      if (!next.delete(name)) {
+        next.add(name);
+      }
+      return next;
+    });
+    this.keepSelectionVisible();
+  }
+
+  protected selectAllGroups(): void {
+    this.excludedGroups.set(new Set<string>());
+  }
+
+  protected selectNoGroups(): void {
+    this.excludedGroups.set(new Set(this.groupNames()));
+    this.keepSelectionVisible();
+  }
+
+  /**
+   * Unticks schemes a group change has hidden. The prior-month windows apply to the ticked
+   * schemes, and a scheme the admin can no longer see must not be changed by them.
+   */
+  private keepSelectionVisible(): void {
+    const visible = new Set(this.visibleRows().map((row) => row.schemeId));
+    this.selection.update((current) => new Set([...current].filter((id) => visible.has(id))));
+  }
 
   /** Pending in-place edits, keyed by schemeId. Absent = untouched. */
   private readonly edits = signal<ReadonlyMap<string, RowEdit>>(new Map());
@@ -93,7 +170,6 @@ export class FrequencyComponent {
   private query() {
     return {
       search: this.searchControl.value.trim() || undefined,
-      groupKey: this.groupKey() ?? undefined,
     };
   }
 
@@ -119,11 +195,6 @@ export class FrequencyComponent {
   }
 
   protected applyFilters(): void {
-    this.load();
-  }
-
-  protected setGroup(key: string): void {
-    this.groupKey.set(this.groupKey() === key ? null : key);
     this.load();
   }
 
@@ -242,14 +313,14 @@ export class FrequencyComponent {
   }
 
   protected readonly allSelected = computed(() => {
-    const rows = this.rows();
+    const rows = this.visibleRows();
     const selected = this.selection();
     return rows.length > 0 && rows.every((row) => selected.has(row.schemeId));
   });
 
   protected toggleAll(): void {
     const selectAll = !this.allSelected();
-    this.selection.set(selectAll ? new Set(this.rows().map((row) => row.schemeId)) : new Set());
+    this.selection.set(selectAll ? new Set(this.visibleRows().map((row) => row.schemeId)) : new Set());
   }
 
   protected readonly bulkMessage = computed(() => {
@@ -311,4 +382,9 @@ export class FrequencyComponent {
   protected feedsAccruals(row: FrequencyConfigurationResponse): boolean {
     return int(row.forAccruals) === 1;
   }
+}
+
+/** The group a scheme is filed under, as its chip names it. */
+function groupOf(row: FrequencyConfigurationResponse): string {
+  return row.schemeGroup || row.groupKey || '';
 }

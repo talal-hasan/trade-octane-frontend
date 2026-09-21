@@ -33,7 +33,7 @@
             Discard
           </button>
         }
-        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving()" (click)="save()">
+        <button type="button" pButton class="p-button-sm" [disabled]="!dirty() || saving() || locked()" (click)="save()">
           {{ saving() ? 'Saving…' : 'Save access' }}
         </button>
       </div>
@@ -83,7 +83,7 @@
       [selected]="directSelection()"
       [inherited]="roleMenuIds()"
       [filter]="filter()"
-      [disabled]="saving()"
+      [disabled]="saving() || locked()"
       (toggled)="onToggled($event)"
     />
   </section>

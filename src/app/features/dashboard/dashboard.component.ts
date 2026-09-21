@@ -108,14 +108,36 @@ export class DashboardComponent {
   private readonly budgets = signal<BudgetRecord[]>([]);
 
   protected readonly userName = computed(() => this.permissionService.context().name);
+  /**
+   * True when this account is mapped to no region **and** no brand.
+   *
+   * It is not a loading state and must not be treated as one: 177 of 547 accounts are
+   * mapped to nothing, and `/identity/menu` reports that as an empty list, exactly as it
+   * reports a real scope.
+   */
+  protected readonly unscoped = computed(() => {
+    const context = this.permissionService.context();
+    return context.regions.length === 0 && context.brands.length === 0;
+  });
+
+  /**
+   * What this dashboard is actually showing.
+   *
+   * **An empty dimension reads "All", not "0".** Every consumer of `context.regions`
+   * treats an empty list as *no filter* — `MockDashboardService` literally tests
+   * `regions.length === 0 || regions.includes(region)` — so an unmapped user is shown the
+   * whole country. Printing "0 regions" over a chart of five regions described the state
+   * of a variable rather than the state of the screen, which is how this went unnoticed.
+   */
   protected readonly scopeSummary = computed(() => {
     const context = this.permissionService.context();
-    const regions = context.regions.length;
-    const brands = context.brands.length;
-    const regionText = regions === 1 ? context.regions[0] : `${regions} regions`;
-    const brandText = brands === 1 ? context.brands[0] : `${brands} brands`;
-    return `${regionText} · ${brandText}`;
+    return `${dimensionLabel(context.regions, 'region')} · ${dimensionLabel(context.brands, 'brand')}`;
   });
+
+  /** The chip only claims scoping where scoping is happening. */
+  protected readonly scopeChip = computed(() =>
+    this.unscoped() ? 'Live · all data' : 'Live · your scope only',
+  );
 
   // ─── Live counts, derived from the same stores the workspaces read ────────────
   private readonly pendingClaims = computed(() =>
@@ -350,4 +372,18 @@ export class DashboardComponent {
         .subscribe({ next: (records) => this.budgets.set(records) });
     }
   }
+}
+
+/**
+ * "All regions" / "Central Punjab" / "9 regions".
+ *
+ * Empty means unfiltered everywhere this value is consumed, so it is reported as "All"
+ * rather than as a count of nothing. A single entry is named: an RSM mapped to one region
+ * gets the region, which is more use than the number 1.
+ */
+function dimensionLabel(values: readonly string[], noun: string): string {
+  if (values.length === 0) {
+    return `All ${noun}s`;
+  }
+  return values.length === 1 ? values[0] : `${values.length} ${noun}s`;
 }

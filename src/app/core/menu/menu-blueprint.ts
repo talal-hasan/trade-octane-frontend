@@ -50,6 +50,19 @@ export interface MenuBlueprintEntry {
   /** Tab within `route`, when the row is a facet of a larger screen rather than a screen. */
   tab?: string;
   /**
+   * Query string the row's sidebar sub-menu opens `route` with, when the screen selects the
+   * facet from the URL (`/admin/ownership?tab=activity`). Rows without it open the screen
+   * as it lands.
+   */
+  queryParams?: Readonly<Record<string, string>>;
+  /**
+   * The row whose screen this row is a tab of. The sidebar lists this row only when that row
+   * is not granted: otherwise the tab is reached through it ("Assign Role to User" is a tab
+   * of the screen "Create User" opens). Unlike `hidden`, this never costs anyone their way in
+   * — whoever holds the tab but not the screen's own row still gets an entry.
+   */
+  foldsInto?: number;
+  /**
    * Label for the folded nav item. Only the row that *names* the destination needs it;
    * sibling rows folding into the same route omit it and inherit.
    */
@@ -85,11 +98,10 @@ export const NAV_GROUP_MORE = '';
 // sub-resources of `/admin/users/{userId}` in the contract, and the legacy menu was the
 // only thing still treating them as seven separate errands.
 //
-// Note two Administration capabilities exist in the OpenAPI document but have **no menu
-// row**: "Add Menu" (8 endpoints, tag `Administration 1.0 / Add Menu`) and "Frequency
-// Configuration" (8 endpoints). They are unreachable from the legacy menu for this user.
-// They are given routes here so the screens can be built and reached directly, but they
-// cannot be gated on a menu grant that does not exist — see UNGATED_ROUTES below.
+// Note two Administration capabilities, "Add Menu" (235) and "Freq Config" (236), have grid
+// rows that are Unset (Active NULL / ''), so `/identity/menu` never returns them. They are
+// mapped below for the day they are marked Visible, and until then reach administrators
+// through ADMIN_ONLY_ROUTES.
 const ADMINISTRATION: MenuBlueprintEntry[] = [
   // → Users. One screen, tabbed, replacing seven menu rows.
   {
@@ -101,17 +113,63 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     group: NAV_GROUP_ADMIN,
     ported: true,
   },
-  { menuId: 20, legacyName: 'Change User Details', route: '/admin/users', tab: 'profile', ported: true },
-  { menuId: 136, legacyName: 'Assign Role to User', route: '/admin/users', tab: 'roles', ported: true },
-  { menuId: 42, legacyName: 'User Region Mapping', route: '/admin/users', tab: 'regions', ported: true },
-  { menuId: 41, legacyName: 'User Brand Mapping', route: '/admin/users', tab: 'brands', ported: true },
-  { menuId: 19, legacyName: 'Access Control', route: '/admin/users', tab: 'access', ported: true },
+  // The query string is the tab: the list carries it to the user it opens (UserListComponent.tab).
+  // Roles, regions, brands and access are tabs of the screen "Create User" opens, so the
+  // sidebar lists them only for someone without "Create User" (a client decision, 2026-09-18).
+  {
+    menuId: 20,
+    legacyName: 'Change User Details',
+    route: '/admin/users',
+    tab: 'profile',
+    queryParams: { tab: 'profile' },
+    ported: true,
+  },
+  {
+    menuId: 136,
+    legacyName: 'Assign Role to User',
+    route: '/admin/users',
+    tab: 'roles',
+    queryParams: { tab: 'roles' },
+    foldsInto: 17,
+    ported: true,
+  },
+  {
+    menuId: 42,
+    legacyName: 'User Region Mapping',
+    route: '/admin/users',
+    tab: 'regions',
+    queryParams: { tab: 'regions' },
+    foldsInto: 17,
+    ported: true,
+  },
+  {
+    menuId: 41,
+    legacyName: 'User Brand Mapping',
+    route: '/admin/users',
+    tab: 'brands',
+    queryParams: { tab: 'brands' },
+    foldsInto: 17,
+    ported: true,
+  },
+  {
+    menuId: 19,
+    legacyName: 'Access Control',
+    route: '/admin/users',
+    tab: 'access',
+    queryParams: { tab: 'access' },
+    foldsInto: 17,
+    ported: true,
+  },
+  // Not shown in the sidebar — a client decision (2026-09-18). It is reached as a tab of
+  // the user, which is where the date belongs: legacy made you find the person twice, once
+  // in a dropdown and once in a grid underneath it.
   {
     menuId: 133,
     legacyName: 'Employee Resignation',
     route: '/admin/users',
     tab: 'resignation',
-    ported: false,
+    ported: true,
+    hidden: true,
   },
 
   // → Roles. The role catalogue and the role access tree.
@@ -125,24 +183,29 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     ported: true,
   },
 
-  // → Approval routing. "Hierarchy" designs the chain; "Re-Route Scheme" repairs one that
-  //   is stuck. Same subject — who approves what — so they are two tabs, not two screens.
+  // → Approval routing is "Re-Route Scheme": it moves a stuck approval queue to someone who
+  //   can act on it. "Hierarchy" (Hierarchy.aspx) designs the chains themselves — its own
+  //   screen, Approval Hierarchy, built like Administration 2.0's Claim Hierarchy.
   {
-    menuId: 135,
-    legacyName: 'Hierarchy',
+    menuId: 22,
+    legacyName: 'Re-Route Scheme',
     route: '/admin/approval-routing',
-    tab: 'hierarchy',
+    tab: 're-route',
     navLabel: 'Approval Routing',
     icon: 'route',
     group: NAV_GROUP_ADMIN,
     ported: true,
   },
   {
-    menuId: 22,
-    legacyName: 'Re-Route Scheme',
-    route: '/admin/approval-routing',
-    tab: 're-route',
+    menuId: 135,
+    legacyName: 'Hierarchy',
+    route: '/admin/approval-hierarchy',
+    navLabel: 'Approval Hierarchy',
+    icon: 'hierarchy-2',
+    group: NAV_GROUP_ADMIN,
     ported: true,
+    // Kept out of the sidebar at the client's request (2026-09-18); the route still opens it.
+    hidden: true,
   },
 
   // → Ownership transfers. Both are the identical shape — filter a period, pick the
@@ -153,6 +216,7 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     legacyName: 'Change Budget Ownership',
     route: '/admin/ownership',
     tab: 'budget',
+    queryParams: { tab: 'budget' },
     navLabel: 'Ownership Transfers',
     icon: 'transfer',
     group: NAV_GROUP_ADMIN,
@@ -163,6 +227,7 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     legacyName: 'Change Activity Ownership',
     route: '/admin/ownership',
     tab: 'activity',
+    queryParams: { tab: 'activity' },
     ported: true,
   },
 
@@ -181,6 +246,28 @@ const ADMINISTRATION: MenuBlueprintEntry[] = [
     route: '/admin/integration',
     navLabel: 'Integration',
     icon: 'plug-connected',
+    group: NAV_GROUP_ADMIN,
+    ported: true,
+  },
+
+  // → The two screens ADMIN_ONLY_ROUTES also reaches. Their grid rows are Unset (Active
+  //   NULL / ''), so the menu never returns them today; these entries take over the moment
+  //   an administrator marks them Visible in the Menus grid.
+  {
+    menuId: 235,
+    legacyName: 'Add Menu',
+    route: '/admin/menus',
+    navLabel: 'Menus',
+    icon: 'menu-2',
+    group: NAV_GROUP_ADMIN,
+    ported: true,
+  },
+  {
+    menuId: 236,
+    legacyName: 'Freq Config',
+    route: '/admin/frequency',
+    navLabel: 'Scheme Frequency',
+    icon: 'calendar-repeat',
     group: NAV_GROUP_ADMIN,
     ported: true,
   },
@@ -305,6 +392,7 @@ const ADMINISTRATION_2: MenuBlueprintEntry[] = [
     legacyName: 'Access Control',
     route: '/admin2/user-mapping',
     tab: 'access',
+    queryParams: { view: 'access' },
     navLabel: 'User Mapping',
     icon: 'users-group',
     group: NAV_GROUP_ADMIN_2,
@@ -317,14 +405,32 @@ const ADMINISTRATION_2: MenuBlueprintEntry[] = [
     legacyName: 'Access Control | By Role',
     route: '/admin2/roles',
     tab: 'access',
+    queryParams: { view: 'access' },
     navLabel: 'Roles',
     icon: 'shield-lock',
     group: NAV_GROUP_ADMIN_2,
     ported: true,
   },
   // legacyAdmin2(100, 'Claim KPI'),
-  // legacyAdmin2(232, 'User Roles'),
-  // legacyAdmin2(233, 'User Regions'),
+  // "User Roles" and "User Regions" are not shown in the sidebar — a client decision
+  // (2026-09-18). Entries rather than nothing, because an unmapped row would still render
+  // under its module; `hidden` is what keeps a granted row out of the sidebar.
+  {
+    menuId: 232,
+    legacyName: 'User Roles',
+    route: '/legacy/232',
+    group: NAV_GROUP_ADMIN_2,
+    ported: false,
+    hidden: true,
+  },
+  {
+    menuId: 233,
+    legacyName: 'User Regions',
+    route: '/legacy/233',
+    group: NAV_GROUP_ADMIN_2,
+    ported: false,
+    hidden: true,
+  },
   {
     menuId: 230,
     legacyName: 'Activity Logs',
@@ -446,26 +552,44 @@ export const BLUEPRINT_BY_NAME: ReadonlyMap<string, MenuBlueprintEntry> = MENU_B
 );
 
 /**
- * Routes that exist in the application but have **no** legacy menu row to gate them.
+ * Routes whose legacy menu row the menu payload never carries.
  *
- * "Add Menu" and "Frequency Configuration" are fully specified in the OpenAPI document
- * (8 endpoints each) yet appear nowhere in the menu payload. Gating them on a menu grant
- * would make them permanently unreachable; leaving them ungated would make them reachable
- * by everyone. They are therefore gated on the one signal we do have — `UserResponse.isAdmin`
- * — and listed here so the choice is explicit and reviewable rather than an omission.
- *
- * [QUESTION for Zeeshan] Should these get menu rows? If they are meant to be admin-only
- * with no menu presence, this list is correct and should stay.
+ * "Add Menu" (235) and "Freq Config" (236) have grid rows, but both are Unset, and the
+ * ported menu shows Visible rows only — so no grant can put them in the payload. Gating
+ * them on a menu grant would make them permanently unreachable; leaving them ungated would
+ * make them reachable by everyone. They are therefore gated on `isAdmin` — see
+ * ADMINISTRATION_MENU_IDS — and listed here so the choice is explicit and reviewable
+ * rather than an omission. In the sidebar they sit under Administration 1.0 with their
+ * grid names, where the grid places them.
  */
-export const ADMIN_ONLY_ROUTES: readonly { route: string; navLabel: string; icon: string; group: string }[] = [
-  { route: '/admin/menus', navLabel: 'Menus', icon: 'menu-2', group: NAV_GROUP_ADMIN },
+export const ADMIN_ONLY_ROUTES: readonly {
+  menuId: number;
+  legacyName: string;
+  route: string;
+  navLabel: string;
+  icon: string;
+  group: string;
+}[] = [
   {
+    menuId: 235,
+    legacyName: 'Add Menu',
+    route: '/admin/menus',
+    navLabel: 'Menus',
+    icon: 'menu-2',
+    group: NAV_GROUP_ADMIN,
+  },
+  {
+    menuId: 236,
+    legacyName: 'Freq Config',
     route: '/admin/frequency',
     navLabel: 'Scheme Frequency',
     icon: 'calendar-repeat',
     group: NAV_GROUP_ADMIN,
   },
 ];
+
+/** The grid's "Administration 1.0" root — where the sidebar lists ADMIN_ONLY_ROUTES. */
+export const ADMINISTRATION_ROOT_MENU_ID = 4;
 
 /**
  * The Access Explorer has no legacy menu row either — it is the consolidation of five

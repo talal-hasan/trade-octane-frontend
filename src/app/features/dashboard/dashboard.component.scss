@@ -18,6 +18,14 @@
   text-transform: uppercase;
   letter-spacing: var(--to-tracking-label);
   color: var(--to-text-secondary);
+
+  // Unscoped is not an error — the figures are correct, they are just everyone's. Warning
+  // hue rather than danger, so it reads as "know this" instead of "something broke".
+  &--unscoped {
+    border-color: var(--to-warning);
+    color: var(--to-warning);
+    cursor: help;
+  }
 }
 
 // Slow pulse on the live indicator. It is the only looping animation in the product —
