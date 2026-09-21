@@ -26,50 +26,81 @@
     </span>
   </a>
 
-  <div class="to-sidebar__sections">
-    @for (section of sections(); track section.label; let first = $first) {
-      <div class="to-sidebar__section" [class.to-sidebar__section--divided]="!first">
-        @if (section.label && !collapsed()) {
-          <div class="to-sidebar__section-label">{{ section.label }}</div>
-        }
-        @for (item of section.items; track item.route) {
-          <a
+  <!-- The Menus grid's tree: each root module in grid order, opening onto its sub-menus the
+       way the legacy accordion did. A root with no sub-menus is itself a screen. -->
+  <ul class="to-sidebar__menu">
+    @for (root of menu(); track root.menuId) {
+      <li class="to-sidebar__module">
+        @if (root.children.length > 0) {
+          <button
+            type="button"
             class="to-sidebar__item"
-            [routerLink]="item.route"
-            routerLinkActive="to-sidebar__item--active"
-            [pTooltip]="tooltipFor(item)"
+            [class.to-sidebar__item--holds-active]="activeModuleId() === root.menuId"
+            [class.to-sidebar__item--open]="openModuleId() === root.menuId && !collapsed()"
+            [attr.aria-expanded]="openModuleId() === root.menuId && !collapsed()"
+            [attr.aria-controls]="'to-sidebar-sub-' + root.menuId"
+            [pTooltip]="collapsed() ? root.label : undefined"
             tooltipPosition="right"
-            [class.to-sidebar__item--pending]="item.pending"
+            (click)="toggleModule(root)"
           >
             <span class="to-sidebar__item-indicator"></span>
-            <tabler-icon [icon]="icons[iconFor(item)]" [size]="18" class="to-sidebar__item-icon" />
+            <tabler-icon [icon]="icons[iconFor(root)]" [size]="18" class="to-sidebar__item-icon" />
             @if (!collapsed()) {
-              <span class="to-sidebar__item-label">{{ item.label }}</span>
+              <span class="to-sidebar__item-label">{{ root.label }}</span>
+              <tabler-icon [icon]="icons['chevron-down']" [size]="14" class="to-sidebar__chevron" />
             }
-            @if (item.pending) {
-              <!-- A dot, not the word "legacy".
-                   Almost every module is still legacy today, so the word appeared on 24 of
-                   28 items — it stopped marking the exception and became the background.
-                   A 5px dot carries the same signal at a fraction of the ink, and the
-                   tooltip (see tooltipFor) still spells it out on hover. -->
-              <span
-                class="to-sidebar__pending-dot"
-                aria-hidden="true"
-              ></span>
+          </button>
+
+          @if (openModuleId() === root.menuId && !collapsed()) {
+            <ul class="to-sidebar__sub" [id]="'to-sidebar-sub-' + root.menuId">
+              @for (child of root.children; track child.menuId) {
+                <li>
+                  <a
+                    class="to-sidebar__sub-item"
+                    [class.to-sidebar__sub-item--active]="activeMenuId() === child.menuId"
+                    [class.to-sidebar__sub-item--pending]="child.pending"
+                    [routerLink]="child.route"
+                    [queryParams]="child.queryParams"
+                    [attr.aria-current]="activeMenuId() === child.menuId ? 'page' : null"
+                    [pTooltip]="child.pending ? 'Still in the legacy portal' : undefined"
+                    tooltipPosition="right"
+                  >
+                    <span class="to-sidebar__sub-bullet" aria-hidden="true"></span>
+                    <span class="to-sidebar__sub-label">{{ child.label }}</span>
+                    @if (child.pending) {
+                      <!-- A dot, not the word "legacy": most of the menu is still legacy, so
+                           the word would stop marking the exception. The tooltip spells it out. -->
+                      <span class="to-sidebar__pending-dot" aria-hidden="true"></span>
+                    }
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <a
+            class="to-sidebar__item"
+            [class.to-sidebar__item--active]="activeMenuId() === root.menuId"
+            [class.to-sidebar__item--pending]="root.pending"
+            [routerLink]="root.route"
+            [queryParams]="root.queryParams"
+            [attr.aria-current]="activeMenuId() === root.menuId ? 'page' : null"
+            [pTooltip]="collapsed() ? root.label : root.pending ? 'Still in the legacy portal' : undefined"
+            tooltipPosition="right"
+          >
+            <span class="to-sidebar__item-indicator"></span>
+            <tabler-icon [icon]="icons[iconFor(root)]" [size]="18" class="to-sidebar__item-icon" />
+            @if (!collapsed()) {
+              <span class="to-sidebar__item-label">{{ root.label }}</span>
             }
-            @if (badgeFor(item); as count) {
-              <span
-                class="to-sidebar__badge"
-                [class.to-sidebar__badge--rail]="collapsed()"
-                [attr.aria-label]="count + ' pending'"
-                >{{ count }}</span
-              >
+            @if (root.pending) {
+              <span class="to-sidebar__pending-dot" aria-hidden="true"></span>
             }
           </a>
         }
-      </div>
+      </li>
     }
-  </div>
+  </ul>
 
   <button type="button" class="to-sidebar__collapse" (click)="toggle()" [pTooltip]="collapsed() ? 'Expand' : undefined" tooltipPosition="right">
     <tabler-icon [icon]="collapsed() ? icons['chevrons-right'] : icons['chevrons-left']" [size]="16" />

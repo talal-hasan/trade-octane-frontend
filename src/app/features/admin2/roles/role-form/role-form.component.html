@@ -1,0 +1,234 @@
+<to-page-header
+  [title]="isEdit() ? role()?.roleName || 'Edit role' : 'New role'"
+  [subtitle]="
+    isEdit()
+      ? 'Rename this role, or change what its holders may do with the WBS / spend proposal.'
+      : 'Add an Administration 2.0 role. Screens and people are given to it afterwards.'
+  "
+  [breadcrumbs]="[
+    { label: 'Administration 2.0' },
+    { label: 'Roles', route: route },
+    { label: isEdit() ? 'Edit' : 'New' },
+  ]"
+/>
+
+@if (notFound()) {
+  <to-empty-state
+    icon="shield-lock"
+    heading="No role with this ID"
+    [description]="'There is no Administration 2.0 role ' + roleId() + '.'"
+  >
+    <a actions pButton [routerLink]="route" class="p-button-sm p-button-outlined">
+      <tabler-icon [icon]="icons['arrow-left']" [size]="15" />
+      Back to roles
+    </a>
+  </to-empty-state>
+} @else if (roleLoading()) {
+  <div class="to-adm__form-layout" aria-busy="true" aria-label="Loading role">
+    <div class="to-adm__form-main">
+      <to-skeleton width="100%" height="150px" />
+      <to-skeleton width="100%" height="260px" />
+    </div>
+    <to-skeleton width="100%" height="300px" />
+  </div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="to-adm__form-layout">
+      <div class="to-adm__form-main">
+        <!-- ─── Name ────────────────────────────────────────────────────────── -->
+        <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="rf-details">
+          <h2 class="to-adm__subtitle">Role details</h2>
+
+          <div class="to-adm__form-grid">
+            <div class="to-adm__form-field">
+              <label class="to-adm__form-label" for="roleName">
+                Role abbreviation
+                <span class="to-adm__form-hint">What every role picker shows · must be unique</span>
+              </label>
+              <input
+                pInputText
+                id="roleName"
+                type="text"
+                formControlName="roleName"
+                autocomplete="off"
+                placeholder="e.g. RSM"
+                [attr.maxlength]="textMax"
+                [invalid]="showError(form.controls.roleName)"
+              />
+              @if (showError(form.controls.roleName)) {
+                <span class="to-adm__form-error">{{ textError(form.controls.roleName, 'An abbreviation') }}</span>
+              }
+            </div>
+
+            <div class="to-adm__form-field">
+              <label class="to-adm__form-label" for="roleDescription">Description</label>
+              <input
+                pInputText
+                id="roleDescription"
+                type="text"
+                formControlName="roleDescription"
+                autocomplete="off"
+                placeholder="e.g. Regional Sales Manager"
+                [attr.maxlength]="textMax"
+                [invalid]="showError(form.controls.roleDescription)"
+              />
+              @if (showError(form.controls.roleDescription)) {
+                <span class="to-adm__form-error">{{ textError(form.controls.roleDescription, 'A description') }}</span>
+              }
+            </div>
+          </div>
+          <p class="to-adm__hint">Letters, digits, spaces and underscores, up to {{ textMax }} characters.</p>
+        </section>
+
+        <!-- ─── Flags ───────────────────────────────────────────────────────── -->
+        <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="rf-flags">
+          <h2 class="to-adm__subtitle">Claim permissions</h2>
+
+          <div class="to-rf__flags">
+            @for (flag of flags; track flag.key) {
+              <label class="to-rf__flag" [class.to-rf__flag--on]="form.controls[flag.key].value">
+                <input type="checkbox" class="to-rf__checkbox" [formControlName]="flag.key" />
+                <span class="to-rf__flag-text">
+                  <span class="to-rf__flag-title">
+                    {{ flag.legacyLabel }}
+                    @if (flag.inert) {
+                      <span class="to-adm__flag">Not read today</span>
+                    }
+                  </span>
+                  <span class="to-rf__flag-effect">{{ flag.effect }}</span>
+                </span>
+              </label>
+            }
+          </div>
+        </section>
+      </div>
+
+      <!-- ─── Summary and actions ───────────────────────────────────────────── -->
+      <aside class="to-adm__form-aside">
+        <div class="to-adm__summary" data-tour="rf-summary">
+          <h2 class="to-adm__summary-title">{{ isEdit() ? 'This role' : 'The new role' }}</h2>
+
+          <dl class="to-adm__summary-list">
+            @if (role(); as current) {
+              <div class="to-adm__summary-row">
+                <dt>ID</dt>
+                <dd class="to-numeric">{{ current.roleId }}</dd>
+              </div>
+            }
+            <div class="to-adm__summary-row">
+              <dt>Abbreviation</dt>
+              <dd>{{ form.controls.roleName.value.trim() || '—' }}</dd>
+            </div>
+            <div class="to-adm__summary-row">
+              <dt>Description</dt>
+              <dd [title]="form.controls.roleDescription.value">{{ form.controls.roleDescription.value.trim() || '—' }}</dd>
+            </div>
+            <div class="to-adm__summary-row">
+              <dt>Permissions</dt>
+              <dd>
+                @if (enabledFlags().length === 0) {
+                  None
+                } @else {
+                  {{ enabledFlags().length }} of {{ flags.length }}
+                }
+              </dd>
+            </div>
+          </dl>
+
+          @if (enabledFlags().length > 0) {
+            <ul class="to-rf__chips">
+              @for (flag of enabledFlags(); track flag.key) {
+                <li class="to-rf__chip">{{ flag.shortLabel }}</li>
+              }
+            </ul>
+          }
+
+          @if (role(); as current) {
+            <div class="to-adm__summary-block">
+              <h3 class="to-adm__summary-heading">
+                {{ changes().length === 0 ? 'No changes yet' : changes().length === 1 ? '1 change to save' : changes().length + ' changes to save' }}
+              </h3>
+              @if (changes().length > 0) {
+                <ul class="to-adm__changes">
+                  @for (change of changes(); track change.label) {
+                    <li class="to-adm__change">
+                      <span class="to-adm__change-label">{{ change.label }}</span>
+                      <span class="to-adm__change-values">
+                        <s>{{ change.from }}</s>
+                        <tabler-icon [icon]="icons['arrow-right']" [size]="12" />
+                        {{ change.to }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            @if (reach(); as used) {
+              <div class="to-adm__summary-block">
+                <h3 class="to-adm__summary-heading">Where it is used</h3>
+                <ul class="to-adm__facts to-numeric">
+                  <li>
+                    <strong>{{ plural(used.users, 'account') }}</strong>
+                    @if (used.users > 0) {
+                      ({{ used.activeUsers }} active)
+                    }
+                  </li>
+                  <li>
+                    {{ plural(used.menus, 'menu item') }}
+                    @if (canEditAccess()) {
+                      · <a class="to-rf__link" [routerLink]="[route, current.roleId, 'access']">Menu access</a>
+                    }
+                  </li>
+                  <li>{{ plural(used.steps, 'claim approval step') }}</li>
+                  <li>{{ plural(used.levels, 'authority level') }}</li>
+                </ul>
+                @if (renaming()) {
+                  <p class="to-rf__note">
+                    Renaming changes what every role picker shows. It does not change who holds the role.
+                  </p>
+                }
+                @if (!current.isActive) {
+                  <p class="to-rf__note">
+                    <to-status-pill status="draft" label="Inactive" />
+                    Saving does not reactivate it — use Activate on the list.
+                  </p>
+                }
+              </div>
+            }
+          } @else {
+            <div class="to-adm__summary-block">
+              <h3 class="to-adm__summary-heading">On create</h3>
+              <ul class="to-adm__facts">
+                <li><strong>Active,</strong> and offered in role pickers straight away.</li>
+                <li>
+                  <strong>No screens.</strong>
+                  {{ canEditAccess() ? 'You choose them next.' : 'It needs menu access before it opens anything.' }}
+                </li>
+                <li><strong>No people.</strong> Give it to accounts in User Mapping.</li>
+              </ul>
+            </div>
+          }
+        </div>
+
+        @if (attempted() && invalidCount() > 0) {
+          <p class="to-adm__attention" role="status">
+            <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+            {{ invalidCount() === 1 ? '1 field needs' : invalidCount() + ' fields need' }} attention.
+          </p>
+        }
+
+        <div class="to-adm__form-actions">
+          <a pButton [routerLink]="route" class="p-button-text p-button-sm">Cancel</a>
+          <button type="submit" pButton class="p-button-sm" [disabled]="!canSave()">
+            @if (saving()) {
+              {{ isEdit() ? 'Saving…' : 'Creating…' }}
+            } @else {
+              {{ isEdit() ? 'Save changes' : 'Create role' }}
+            }
+          </button>
+        </div>
+      </aside>
+    </div>
+  </form>
+}

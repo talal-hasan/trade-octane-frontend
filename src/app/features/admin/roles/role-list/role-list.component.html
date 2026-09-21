@@ -67,8 +67,13 @@
   } @else {
     <ul class="to-roles__grid" data-tour="roles-grid">
       @for (role of filtered(); track role.roleId) {
-        <li>
-          <a class="to-roles__card" [routerLink]="['/admin/roles', roleId(role)]">
+        <li class="to-roles__card" [class.to-roles__card--busy]="isBusy(role)">
+          <!--
+            The card is the list item, not the anchor: the status button has to be a
+            sibling of the link rather than a control nested inside it, or every click on
+            it would also navigate to the access tree.
+          -->
+          <a class="to-roles__card-link" [routerLink]="['/admin/roles', roleId(role)]">
             <span class="to-roles__card-head">
               <span class="to-roles__name">{{ role.roleName }}</span>
               @if (!role.isActive) {
@@ -79,16 +84,59 @@
             @if (role.roleDescription) {
               <span class="to-roles__desc">{{ role.roleDescription }}</span>
             }
+          </a>
 
+          <div class="to-roles__foot">
             <!-- The blast radius, in front of the decision rather than after it. -->
             <span class="to-roles__meta">
               <tabler-icon [icon]="icons['users-group']" [size]="14" />
               <span class="to-numeric">{{ role.assignedUserCount }}</span>
               {{ +role.assignedUserCount === 1 ? 'user holds this' : 'users hold this' }}
             </span>
-          </a>
+
+            @if (canToggleStatus()) {
+              @if (role.isActive) {
+                <button
+                  type="button"
+                  class="to-roles__action to-roles__action--danger"
+                  [disabled]="isBusy(role)"
+                  [attr.aria-label]="'Deactivate ' + role.roleName"
+                  (click)="requestDeactivate(role)"
+                >
+                  <tabler-icon [icon]="icons['circle-x']" [size]="15" />
+                  Deactivate
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="to-roles__action"
+                  [disabled]="isBusy(role)"
+                  [attr.aria-label]="'Activate ' + role.roleName"
+                  (click)="activate(role)"
+                >
+                  <tabler-icon [icon]="icons['circle-check']" [size]="15" />
+                  Activate
+                </button>
+              }
+            }
+          </div>
         </li>
       }
     </ul>
   }
 </div>
+
+<!--
+  Retiring is confirmed; restoring is not. Deactivating strips this role's menus from
+  every holder the moment it lands, and the message names how many that is.
+-->
+<to-confirm-dialog
+  [visible]="pendingDeactivation() !== null"
+  (visibleChange)="pendingDeactivation.set(null)"
+  variant="danger"
+  title="Retire this role?"
+  [message]="deactivateMessage()"
+  confirmLabel="Deactivate"
+  (confirmed)="confirmDeactivate()"
+  (cancelled)="pendingDeactivation.set(null)"
+/>

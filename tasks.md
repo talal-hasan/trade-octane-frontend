@@ -611,3 +611,706 @@ attributes. Three bugs already fixed here, all found by opening a browser:
 - Visual review covered Users, User detail, Approval Routing, Frequency, Integration.
   Access Explorer, Menus, Activity Logs, Menu form and Account were **not** re-checked after
   the layout pass.
+
+---
+
+## Administration 2.0 — Create Distributor (2026-09-17)
+
+First Administration 2.0 screen on the frontend. Legacy `CPS_CreateDistributor.aspx`, menuId 87
+under "Administration 2.0" (92, catalog `"2"`), over `/api/v1/admin2/distributors`.
+
+### Built
+
+- `core/api/admin2.models.ts` — 2.0 contracts, kept apart from `admin.models.ts` (Promo_2 is a
+  different population; a 2.0 "role" is not a 1.0 role).
+- `features/admin2/services/admin2-distributors.api.ts` — the eight endpoints. The catalogue
+  (business types + region → area → territory) is cached for the session; candidates are not.
+- `features/admin2/services/distributor-accounts.store.ts` — the directory held as signals.
+  ~520 accounts, no cursor, so it loads once with `status=All`; tabs, business type, search,
+  sort and 50-row paging are all in memory. Returning from the form shows rows instantly and
+  revalidates behind them; writes patch the returned row.
+- `/admin2/distributors` — grid: status segments with counts (Active default, as legacy),
+  business type filter, search, sortable ID / name / type / location / city, Edit, Lock or
+  Unlock, Deactivate (confirmed). Rows whose stored region or territory no longer resolves are
+  flagged. The row just saved is brought into view and marked (`?saved=<id>`).
+- `/admin2/distributors/new` and `/:distributorId` — one form. Virtual-scrolled picker of
+  master distributors without an account (resigned ones last and flagged), business type
+  chips, cascading region → area → territory (a change clears below; a single choice fills
+  itself), live password rules, and a summary that lists every pending change on edit.
+  `UnsavedChangesGuard` on both routes.
+- `shared/validators/` — `legacyPasswordValidator` + `passwordRuleChecks`,
+  `legacyEmailValidator`, `contactNumberValidator`: the server's exact rules, with specs.
+- Menu blueprint: `NAV_GROUP_ADMIN_2`. Row 87 → Distributors; the eleven unported 2.0 rows
+  fold into one "Legacy screens" destination at `/legacy/92`. `BLUEPRINT_BY_NAME` is now
+  first-entry-wins. Tours for the list and the create form.
+
+### Contract facts worth keeping
+
+- **Lock is SSO-only.** The password sign-in's lock check is commented out in
+  `Proc_Authentication`; the UI says so on the button, the toast and the tour. Deactivate is
+  what stops every sign-in, and there is **no reactivation** endpoint — the confirm says so.
+- **Passwords are never returned.** Edit leaves the field blank; blank keeps the password.
+- **The API re-checks location only when part of it changes**, and some stored codes no longer
+  resolve. The form offers the stored region / area / territory as "Current · …" options so
+  such an account can still be edited without being forced to move.
+- `changedFields: []` means nothing was written — reported as info, never as success.
+- Master `REGION` is a bare number ("18"), not a region name, so picking a distributor cannot
+  pre-fill the region.
+
+### Fixed in passing
+
+- Without 2.0 blueprint entries, a user holding 2.0 "Access Control" (97) but not 1.0's (19)
+  had it name-matched onto the Users screen's Access tab. Covered by a spec now.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The other 2.0 screens (backend exists for Roles, Level Of Authorities, Approval
+  Hierarchy, User Mapping, Distributor Access, Access Control, Access Control | By Role).
+- The mock identity fixture (`public/assets/response_menu.json`) has no 2.0 rows, so the
+  screen is reachable only with `npm run start:live`.
+
+---
+
+## Administration 2.0 — Create Role (2026-09-17)
+
+Legacy `CPS_Role.aspx`, menuId 88, over `/api/v1/admin2/roles` (Promo_Management_2 `Roles` —
+not the 1.0 role catalogue: four claim flags, no menu seeding, no delete).
+
+### Built
+
+- `/admin2/roles` — a table, not the 1.0 screen's cards: one column per claim flag so a
+  permission can be compared across roles, plus "In use" (accounts, menu grants, approval
+  steps, authority levels — the reach of an edit, which legacy never showed). Active /
+  Inactive / All with counts, search, sort by ID, name or usage. Edit; Activate straight
+  through; Deactivate confirmed with that role's own numbers.
+- `/admin2/roles/new` and `/:roleId` — abbreviation and description (the legacy
+  letters/digits/spaces/underscores rule, 100 chars), a taken name flagged as it is typed
+  against every role, inactive included, and the four flags as cards that each say what they
+  do. Summary aside lists pending changes and where the role is used.
+- `features/admin2/services/keyed-collection.store.ts` — the session-cached collection store
+  both 2.0 screens now extend (Distributors was refactored onto it).
+- `_admin.scss` "Builder forms" block (`.to-adm__form-*`, `.to-adm__summary*`,
+  `.to-adm__changes`, `.to-adm__alert`, `.to-adm__facts`) — the form chrome both 2.0 forms
+  share. New 2.0 forms should use it rather than restating it.
+- `shared/validators/unique-name.validator.ts`, with spec.
+- Nav: built screens sort before placeholders within a group, so "Legacy screens" sits last.
+
+### Contract facts worth keeping
+
+- **Deactivating revokes nothing.** No legacy procedure reads `Roles.Status`; it only hides
+  the role from pickers and refuses it for *new* user mappings, approval steps and authority
+  levels. The confirm, toast and tour all say so.
+- **`canUpdateAmount` and `isReadDetail` are read by nothing today** — labelled "Not read
+  today" on the form. The legacy edit silently reset both; PUT requires all four flags.
+- **Needs `db/migrations/004_octane2_role_status.sql`** on the target database — every 2.0
+  role read selects `Status`.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Level Of Authorities (2026-09-17)
+
+Legacy `CPS_Level_Of_Authorities.aspx`, menuId 89, over `/api/v1/admin2/level-of-authorities`
+(Promo_Management_2 `Authority_Level`; 63 rows = 9 business type × claim nature pairs × 7 roles).
+
+### Built
+
+- `/admin2/level-of-authorities` — **one screen, not list + form routes.** A band only makes
+  sense beside its neighbours (GM's From is a decision about where Director's starts), so the
+  pair's roles stay in view while one is edited in the side panel.
+- Business type chips and claim nature segments, each with counts; the pair is remembered in
+  the store for the session. The pair's bands are listed lowest threshold first, with
+  "In the approval of: Every claim / PKR X and above".
+- Panel, default mode — **Try a claim amount**: type PKR N and see which roles it brings in,
+  using `joinsApprovalCycle`, which is `Proc_Claim_Create`'s own test.
+- Panel, New/Edit: business type, claim nature, role (roles already set for the pair and
+  deactivated roles greyed out), From/To as PKR `p-inputnumber`; live range and
+  duplicate checks (with "Edit it" jump), a one-sentence preview of the band's effect, pending
+  changes, and a warning when an edit moves a role out of its current pair. Switching rows
+  with unsaved edits asks first; the route has `UnsavedChangesGuard`.
+- `shared/validators/number-range.validator.ts`, `unique-combination.validator.ts`, and
+  `level-of-authority.util.spec.ts`.
+
+### Contract facts worth keeping
+
+- **Amount To never keeps a role out.** `Proc_Claim_Create` brings a role in when the amount
+  is between From and To, *or above To*, or both are 0 — i.e. from From upwards. The panel,
+  table and tour all say so; most people read a band as a range that stops.
+- Deactivated roles are refused for a *new* level (400); an existing row may keep its role.
+- No delete (legacy hid it): removing a row changes who approves money.
+- Edits affect claims raised from now on, not approval cycles already built.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — User Mapping (2026-09-17)
+
+Legacy `CPS_User_Mapping.aspx`, menuId 91, over `/api/v1/admin2/user-mapping`. One Promo_2
+account holds **one role** and N business types, N regions and N areas (540 accounts; up to
+15 regions and 68 areas per account).
+
+### Built
+
+- `/admin2/user-mapping` — one route, two tabs in the query string (`?tab=regions`,
+  `?user=<login>`), so a mapping can be linked to.
+- **Map a user** (queue mode): accounts on the left (search; All / Needs mapping / Active /
+  Inactive with counts, all in memory), the editor in the middle, the pending changes on the
+  right. The editor opens on what the account holds — legacy opened an empty form. Role is a
+  single searchable select; business types are toggle chips; regions expand to their areas
+  with All / None, and unticking a region takes its areas. Held codes the catalogue no longer
+  has stay visible, flagged. Areas held without their region are called out with remove
+  buttons, since the API refuses them.
+- Save goes through `planSave` (spec'd): a complete mapping is one `PUT`; a mapping that only
+  takes a whole category away (e.g. no role left) is applied as the per-item DELETEs; an
+  incomplete mapping that adds something is blocked with the reason. A role change is
+  confirmed (it moves the account in claim approval routing).
+- **Roles by region** (analysis mode, the client's request): census (accounts, regions and
+  roles in use, and the two gaps — without a region / without a role — as buttons), accounts
+  per role across all regions as chips, and a row per region with its account count, a bar
+  relative to the busiest region, and its top roles. **Every count opens a drawer** with the
+  accounts behind it (the same filters on `/region-roles/users`, so they agree), narrowable by
+  role, paged, each one link to its mapping.
+- Tour registry matchers now receive the query string, so a query-param tab resolves its own
+  tour (the shell re-resolves tours on every navigation).
+
+### Contract facts worth keeping
+
+- **`/region-roles/users` returns one row per account per region**, while `roleTotals` counts
+  each account once. A drawer spanning regions (a role, or "Without a role") therefore loads
+  every row (200 per request, following `nextPage`), folds them by account with
+  `groupRowsByAccount`, and pages by account. First shipped paging rows: RSM read "31 accounts"
+  over a list "of 40" (MIS: 57 vs 416). A region drawer is already one row per account and
+  stays server-paged.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- Legacy 2.0 rows "User Roles" (232) and "User Regions" (233) are still in the Legacy
+  screens fold; Roles by region may cover what they were for — confirm with the business.
+
+---
+
+## Administration 2.0 — Claim Hierarchy (2026-09-17)
+
+Legacy `CPS_Claim_Hierarchy.aspx` ("Approval Hierarchy"), menuId 90, over
+`/api/v1/admin2/claim-hierarchies` (Promo_Management_2 `Claim_Hierarchy`: 7 business types,
+4–17 steps each, 34 roles).
+
+### Built
+
+- `/admin2/claim-hierarchy?businessType=<id>` — one screen, builder mode: business type chips
+  with step counts; **Roles** (Role ID and name, as legacy) | **Approval order** | summary.
+- The order holds only the roles that approve. Drag a role in from the list (or Add → last
+  step); drag steps by the handle or use the arrows; remove with × or by dragging back.
+  Deactivated roles cannot be added (a stored one can stay, move or go — the API's rule).
+  Built on `@angular/cdk/drag-drop`, which PrimeNG's own OrderList uses; no new dependency.
+- Stored ties and gaps are called out (FSD, Dairy and MT store two roles as step 7); Save is
+  allowed with no other change so it can renumber 1, 2, 3.
+- Summary: steps (was N), added, removed, before → after chain when reordered, and warnings
+  when RMC (role 3, claim step-back) or role 7 (claim final approval) is removed, and that
+  documents waiting on a removed role are no longer handed to it. Clearing the whole order is
+  confirmed. One `PUT` per save; the Roles store is refreshed so approval-step counts move.
+- All hierarchies are fetched once (selected first, the rest 3 at a time), so switching
+  business type is instant. `claim-hierarchy.util.ts` (ties/gaps, diff, move/insert) is spec'd.
+
+### Contract facts worth keeping
+
+- The order is read at **every** approval step by the claim, payment recovery, vehicle
+  maintenance, promotion calculator and CCC procedures: a save reaches documents already in
+  approval.
+- The delete endpoint is not used: removals are part of the draft and saved by the one `PUT`.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Activity Logs (2026-09-17)
+
+Legacy `Activity_Logs_Report_Promo2.aspx`, menuId 230, over `/api/v1/admin2/activity-logs`.
+
+### Built
+
+- `/admin2/activity-logs` is **the Administration 1.0 Activity Logs component**, not a copy.
+  The backend serves both with the same report handlers (validation, 31-day range, 100-user
+  cap, offset paging, 25,000-row CSV) and differs only in the table and the group rules, so
+  the route passes `data: { activityLogSource: 'admin2' }` and `AdminOperationsApi`'s three
+  activity-log calls take an `ActivityLogSource` (`'admin'` default). Breadcrumb, subtitle and
+  CSV filename follow the source; the tour is shared.
+- Both screens now show a log entry's full description on hover (it is truncated to a line).
+
+### Contract facts worth keeping
+
+- 2.0 groups: **Admins** are Promo_2 accounts with `Role_ID` 13; **Users** every other account,
+  including accounts with no role (legacy left those out of every group); **Systems** names
+  matching no account or distributor; **Distributors**.
+- **4,090 of 1,352,921 rows in `Promo_Management_2.dbo.Activity_Logs` carry password text in
+  `Description`** (distributor create/update and forgotten-password rows written by legacy,
+  2019-03-14 → 2026-08-08). The API returns it unredacted in the list and the CSV. Needs a
+  server-side redaction decision; not masked in the UI, which would leave the export exposed.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+
+---
+
+## Administration 2.0 — Access Control By Role (2026-09-17)
+
+Legacy `CPS_Access_Rights_RoleWise.aspx`, menuId 154, over `/api/v1/admin2/roles/{roleId}/access`
+(Octane 2 menu items, `Promo_Management_2.dbo.MenuItems_Mapping_ByRole_O2`; 49 items, 46 active;
+Admin holds 25).
+
+### Built
+
+- `/admin2/roles/:roleId/access` is **the Administration 1.0 role access screen** (reach banner,
+  filterable menu tree, confirm-before-save naming how many active users it affects). The
+  backend serves the same handlers with an Octane 2 menu scope. `AdminApiRoot` + `adminApiRootOf`
+  (`core/api/api.types.ts`) now select `/admin` or `/admin2` for shared screens — Activity Logs
+  moved onto the same `data: { adminApiRoot: 'admin2' }` key.
+- 2.0 difference, handled: the access path does not read a 2.0 role's status, so a deactivated
+  role still opens its screens. The response always says active; the screen takes the status
+  from `Octane2RolesStore` and says exactly that.
+- Roles list: a sortable **Menu access** column ("25 menu items ›") and an **Access** row action.
+  Role form: "N menu items · Menu access" under Where it is used. Creating a role now lands on
+  its menu access — a new role opens nothing until given screens.
+- Nav: row 154 folds into the Roles destination as tab `access`, Create Role (88) as `details`.
+  `MenuTabGuard` keeps a holder of one out of the other's routes, and the list hides New/Edit/
+  Activate/Deactivate or Access accordingly (locally, 3 users hold 88 directly, 2 hold 154).
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The cross-role grant grid and its CSV (`/api/v1/admin2/role-menus`) are not surfaced; 1.0
+  shows its equivalent in Access Explorer, which is not on the 2.0 branch's nav.
+
+---
+
+## Administration 2.0 — Access Control per user (2026-09-17)
+
+Legacy `CPS_Access_Rights.aspx`, menuId 97, over `/api/v1/admin2/users/{userId}/access`. Added
+to User Mapping as a view of the selected account, since both screens start by finding a person.
+
+### Built
+
+- `features/admin/shared/user-access-panel/` — the Administration 1.0 user Access tab, lifted
+  out of `user-detail` into a component with `userId` and `apiRoot` inputs. 1.0 renders it with
+  the default `admin`; User Mapping renders it with `admin2`. No copy of the tree, counters or
+  save logic. Also handles the 404 the 2.0 accounts can produce (see below) and now has a
+  Discard button.
+- User Mapping: **Mapping | Menu access** switch on the selected account, with the view in the
+  query string (`?view=access`). Menu access hides the mapping summary column and widens the
+  panel. Switching views keeps the mapping draft and asks before dropping unsaved access ticks;
+  the route guard covers both.
+- Nav: row 97 folds into User Mapping as tab `access`, row 91 as `mapping`. A holder of only 97
+  sees the account list and Menu access, without Roles by region or the mapping editor.
+
+### Contract facts worth keeping
+
+- The 2.0 access endpoints read users from **`Promo_Management.dbo.USERS`**, while User Mapping
+  lists `Promo_Management_2` accounts: **8 of the 540 have no 1.0 user record**, so the access
+  call 404s for them. The panel says why rather than showing an error.
+- Direct Octane 2 grants live in `Promo_Management.dbo.MenuItems_Mapping` (121 users, 672 rows);
+  role-derived access comes from `MenuItems_Mapping_ByRole_O2` and the Promo_2 `Role_ID`, which
+  is what the sidebar is built from. A save here only ever touches the direct Octane 2 grants.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The cross-user grant grid and CSV (`/api/v1/admin2/user-menus`) are not surfaced.
+
+### Performance pass (2026-09-17)
+
+Measured first: every query behind User Mapping runs in 2–31 ms locally (accounts picker 31 ms,
+catalogue 3 ms, one account's mapping 2 ms), and the production chunk is 88.8 kB / 19.7 kB
+transferred — so the cost was in the client, not the database or the payload.
+
+- **The account list is virtual-scrolled** (`cdk-virtual-scroll-viewport`, fixed 54 px rows):
+  about a dozen rows in the DOM instead of 540, on first paint and on every keystroke.
+- **`KeyedCollectionStore.ensureFresh()`** — a collection loaded less than a minute ago is not
+  re-fetched when a screen is re-opened; writes already patch their own row. Distributors,
+  Roles, Levels of Authority and User Mapping open from memory. Try again still forces a load.
+- **The Menu access panel is kept alive** once opened, so switching Mapping ↔ Menu access
+  neither re-fetches nor loses unsaved ticks.
+
+Note for testing: `npm run start:live` serves unminified lazy chunks and compiles them on
+demand, so the first visit to a screen is always slower there than in a production build.
+
+---
+
+## Administration 2.0 — Distributor Access (2026-09-18)
+
+Legacy `CPS_Access_Control.aspx`, menuId 93, over `/api/v1/admin2/distributor-access`. One
+screen at `/admin2/distributor-access`: the distributor grid is the picker, and the portal
+menu tree beside it is what every ticked distributor will hold.
+
+The "Legacy screens" item (`/legacy/92`) is gone from the Administration 2.0 sidebar: its
+helper and the three rows still on it — Claim KPI (100), User Roles (232), User Regions
+(233) — are commented out of the blueprint. Those rows are active and granted locally (100
+to 3 users directly and 1 role; 232 and 233 to 1 role each), and an unmapped granted row is
+never dropped, so for those holders each one now renders on its own under **More**.
+
+### Built
+
+- `features/admin2/distributor-access/` — the screen, plus `menu-grant-tree/` and a pure
+  `distributor-access.util.ts` (menu index, cascade, orphan/unknown detection, union,
+  intersection, save impact) with 22 specs.
+- `services/admin2-distributor-access.api.ts` and `services/distributor-access-catalogue.store.ts`.
+  The store extends `KeyedCollectionStore` for the distributors and stashes the menu tree
+  off the same response, since the server builds both from one command.
+- **The tree is ticked with what is stored.** Legacy's load of current grants was commented
+  out, so every save there started from an empty tree and revoked whatever was not
+  re-ticked. Selecting one distributor shows exactly its set.
+- **The effect is stated before the write.** The panel lists which distributors change and
+  what each gains and loses, computed from their loaded grants — not a restatement of the
+  request. The confirm dialog repeats it, and turns danger when the ticked set is empty.
+- **Orphans cannot be created and are not hidden.** Ticking cascades both ways (a child
+  grants its parents, unticking a parent revokes its children). Grants already stored that
+  way are flagged `hidden` on their row, with one-click *Grant the parents* / *Untick them*;
+  a save that keeps one passes `allowOrphanedGrants=true`, so an untouched distributor is
+  never refused.
+- **Multi-select is honest about disagreement.** Up to 25 distributors, each one's grants are
+  fetched (6 at a time, cached for the visit) and a row only some of them hold shows the
+  spread — `3 of 7` — with *Any of them* / *All of them* to resolve it. Over 25, the grants
+  are not fetched: the tree starts empty and an alert says the save replaces whatever each
+  of them holds. The tree opens on the intersection, never the union.
+- Grid: select-all / none over the whole filtered set (capped at the server's 1,000 per
+  write), status and access segmented filters, business type, search, six sortable columns,
+  50 rows a page — all in memory. Row actions are **Access**, **Edit** (the account form) and
+  **Delete**, which is the legacy Delete: deactivate, with the dialog saying the record,
+  its claims and its menu grants are kept.
+
+### Contract facts worth keeping
+
+- Verified locally: **520** distributors (388 active), **23** menu items of which 8 are
+  children of just two parents (One Window 19, ROI Reports 25), **8,807** grants, and every
+  distributor holds at least one — so the census's "Hold nothing" reads 0 today.
+- **200 distributors hold exactly one orphaned grant**, so the hidden-grant banner is a
+  common sight rather than an edge case. No grant points at a menu id the catalogue lost,
+  so the "no longer has" notice is defensive only.
+- The grid's business type, territory and city come from `DistributorAccountsStore`, shared
+  with the Distributors screen. The join is skipped rather than fatal when it fails: someone
+  holding 93 without 87 must still be able to read and fix access.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- The panel sits to the right of the grid and stacks under it below 1100px, rather than
+  always below it as in legacy. Sticky keeps the tree and the save in view while rows are
+  ticked; say so if it should always sit underneath.
+
+---
+
+## Administration 1.0 — Employee Resignation (2026-09-20)
+
+Legacy `UpdateResignation.aspx`, menuId 133, over `/api/v1/admin/resignations`. Built as
+the **Resignation tab of a user**, replacing the placeholder that pointed at the legacy
+portal. The blueprint row is now `ported: true`; it stays `hidden` in the sidebar (the
+client's 2026-09-18 decision) and is reached through Create User, which is where it
+belongs: legacy made you find the same person twice, once in a dropdown and once in a grid
+underneath it.
+
+### Built
+
+- `features/admin/users/user-resignation/` — the panel (`to-user-resignation`), with a
+  `userId` input and a `changed` output that keeps the identity strip above it in step.
+- `services/admin-resignations.api.ts` — `get` / `set` / `clear`, the per-account verbs.
+- `shared/validators/resignation-date.validator.ts` (+ 11 specs) — mirrors the server's
+  bounds (year ≥ 2000, ≤ 730 days ahead) so a typo costs no round trip, and carries
+  `toIsoDate`, which uses the **local** calendar: `toISOString()` shifts the day in PKT.
+- **The date is never text.** `type="date"`, so the browser renders it in the
+  administrator's own locale while its value is always `yyyy-MM-dd`. That is the bug this
+  screen exists to close: legacy pasted `dd-MM-yyyy` into the SQL and let the server read
+  it under the connection's `DATEFORMAT` (`mdy`), so a day above 12 failed loudly and a day
+  of 12 or below was stored transposed, silently — 5 March became 3 May.
+- **Dates already stored are flagged, not trusted.** When `dateFormatSuspect` is set the
+  panel shows both readings side by side with a one-click correction. It stops showing once
+  a different date is in the field — by then it is warning about a value being replaced.
+- **A stamped date is distinguished from a typed one.** Deactivating an account stamps
+  `getdate()` into the same column, which is when the account was switched off, not the day
+  the person left. The card says which it is, and shows the time for a stamped one.
+- **Clearing exists**, behind a confirm dialog, and the toast names the value that went.
+  Legacy had no way to remove a date: an empty box wrote `''`, which SQL Server stores as
+  1900-01-01, so the only way to clear a wrong date was to store a different wrong one.
+- Two facts stated under the form rather than left to be discovered: the account **stays
+  active**, and **reactivating it erases this date**.
+- Own tour (`user-resignation`), matched on `?tab=resignation` ahead of the user-detail one.
+- The identity strip's "Resigned" fact now formats the value instead of printing the raw
+  `2026-09-11T09:42:14.86` the column returns.
+
+### Fast by construction
+
+One GET when the tab is opened, and none after a write: `PUT` and `DELETE` both return the
+resulting row, so the panel and the header update from the response. The tab is only
+instantiated when it is active, and the parent's tab-switch guard now covers a half-typed
+date as well as unsaved access ticks.
+
+### Not done
+
+- Visual pass against live data — needs a signed-in session in the browser.
+- **No directory-wide view.** `GET /admin/resignations` and `/export` are built on the
+  server and answer the two questions legacy's grid could not — "who has left and has not
+  been recorded" (`recorded=NotRecorded`) and "which stored dates may be transposed"
+  (`suspectOnly=true`, with the alternative reading in its own CSV column) — plus
+  `totalCount` / `recordedCount` / `suspectCount`. Nothing calls them: the Users list
+  already carries a Resignation column, and the tab is per-user by design. Worth a screen
+  if the suspect-date cleanup is going to be done as a batch.
+
+---
+
+## Dashboard scope — "0 regions · 0 brands" (2026-09-20)
+
+Reported against a live sign-in: the dashboard greeted `t_SufyaM01` with "0 regions · 0
+brands" for an account mapped to **9 regions and 23 brands**.
+
+### Cause
+
+`AuthService.syncPermissionContext` hardcoded `regions: []` / `brands: []`. It had to: the
+context is composed from `/identity/me`, `/identity/menu` and `/admin/account`, and **none
+of the three carried scope**. The only reader of those mappings was
+`GET /admin/users/{id}/regions`, behind the user-admin policy — so a client asking for its
+*own* scope had to be an administrator to get an answer.
+
+The zero was the visible half. The damaging half was that every consumer treats an empty
+list as *no filter* (`MockDashboardService`: `regions.length === 0 || regions.includes(…)`),
+so the charts rendered the whole country under a chip reading **"Live · your scope only"**.
+
+### Fixed
+
+- **Backend** (`E:\trade-octane-backend`, Identity module): `/identity/menu` now returns
+  `regions[]` and `brands[]` — names, not the tilde-path codes. `AccessSql.UserRegions` /
+  `UserBrands` left-join `GEO_LEVEL6` / `PROD_LEVEL6` in `Centegy_SnDPro_DR` and fall back
+  to the raw code, so an orphaned mapping is surfaced rather than dropped (t_SufyaM01 has
+  one). Predicate is user id alone — what the legacy scoping procs use; the mapping's own
+  `Active` column is `'1'` on all 6,861 rows and legacy never filters it.
+- Batched with the existing roles query as three result sets on **one** round trip.
+- `UserAccessProvider` no longer skips that query when the menu is empty: holding no menu
+  is not holding no scope, and `/dashboard` needs no grant, so the 40 grant-less accounts
+  were exactly the ones being told "0 regions".
+- **Frontend**: `syncPermissionContext` reads them (`?? []` for an older API). The subtitle
+  reports an empty dimension as **"All regions"**, not "0 regions" — empty means unfiltered
+  everywhere it is consumed. The chip reads "Live · all data" and turns amber when the
+  account is mapped to nothing, so it stops claiming a scope it is not applying.
+- **POC chart data realigned to real names.** `MockDashboardService` filters by name, and
+  its fictional geography ("Punjab-North", "Sindh") matches nothing a real account holds —
+  so feeding it real scope would have silently emptied every live user's charts. Regions are
+  now the five most widely held (South, Lahore, Central Punjab, Islamabad, KPK) and brands
+  are Olper's / Tarang / Dairy Omung. `MOCK_USERS` follows, so the role switcher still
+  demonstrates scoping. Figures are still invented; only the names are real.
+
+### Not done
+
+- **The API must be restarted** for this to take effect — it was running from Visual Studio
+  during the change, so only the copy-to-`bin` step failed (0 compile errors).
+- Verified the batched SQL directly against the local database: 1 role, 9 regions, 23
+  brands for `t_SufyaM01`, with the orphaned brand falling back to its code. Not yet
+  verified through the running API.
+
+---
+
+## Re-Route Scheme — same role for Current User and New User (2026-09-21)
+
+Client requirement: the new screen must apply the legacy rule that the current holder and
+the new holder share a role.
+
+### What legacy actually did
+
+`Re_Route_Role_Based.aspx.cs` → `ddl_user_role_SelectedIndexChanged` calls
+`clsInterface.GetUserRoles(roleId)` **once** and binds the **same DataTable** to both
+`ddl_cur_user` and `ddl_new_user`. So the rule was never a check — a mismatched pair was
+simply unreachable. The query behind it:
+
+```sql
+select USERS.FULL_NAME, USERS.USER_ID, User_Role_Mapping.ROLE_ID
+from USERS left join User_Role_Mapping on USERS.USER_ID = User_Role_Mapping.USER_ID
+where ACTIVE = 1 and ROLE_ID = '<roleid>'
+```
+
+### Why it could not be applied as-is
+
+The new screen starts from a queue, not a role picker, and it deliberately surfaces holders
+legacy could never select — its Current User list was `ACTIVE = 1`, so a deactivated
+account or a placeholder was unreachable. Measured on `Scheme_Approvals`:
+
+| Current holder | Pending rows | Role? |
+|---|---|---|
+| `<-- FORWARD TO -->`, `Please Select`, `SELECT NEW USER` | 13,940 | not a user |
+| 5 real accounts with no role mapping | 142 | no |
+| 4 accounts whose role no other active user holds | 382 | yes, list empty |
+| 67 holders with a usable same-role list | 1,345 | yes |
+
+A strict rule would have made **91% of the backlog un-re-routable** — the rows this screen
+exists to clear. Confirmed with the user (2026-09-21): apply the rule where there is a role
+to match, fall back where there is not.
+
+### Built
+
+- **Backend**: `GET /api/v1/admin/re-route/eligible-holders?currentHolder=…` →
+  `EligibleHoldersResponse { roleConstrained, currentHolderIsUser, currentHolderRoles,
+  candidates }`. `ReRouteSql.SharesRoleWithCurrentHolder` is the legacy set expressed as
+  "shares a role with the holder"; `AllActiveHolders` is the fallback. No menu condition,
+  unlike `BudgetOwnershipSql.SharesBudgetRole` — legacy's re-route had none.
+- `POST /admin/re-route` enforces the same test (`ReRouteErrors.RoleMismatch`), and the
+  test rides in the **same statement** as the existence/active lookup so a role mapping
+  edited between two reads cannot let a write through.
+- **Frontend**: "Move to" was a free-text datalist over *all 200 active users*, cached for
+  the life of the screen — it let a queue go to anyone. It is now a select over the
+  eligible list, re-read per selection, with the role named under it.
+- Three distinct states, because they need different remedies: **constrained** ("Same role
+  as the current holder — RSM. 5 users can take this queue"); **rule inapplicable** (amber,
+  names the placeholder, lists everyone); **constrained but empty** ("No other active user
+  holds the RTM role … grant that role to someone first" — widening would hand work to a
+  role that cannot action it).
+
+### Verified against the local database
+
+- `Abbas.Zia` → RSM → other active RSMs (Ather Hussain Changazi, Faisal Iqbal Ghouri, …).
+- `MaqsoM01` → RTM → **0** eligible; the 322-row queue now says why, instead of offering
+  everyone.
+- `<-- FORWARD TO -->` → not a user, 0 roles → fallback list of 194 active users.
+
+### Not done
+
+- **The API must be restarted** to pick this up.
+- The grid rows do not show each holder's role. It would mean joining `User_Role_Mapping`
+  into a census that already scans three unindexed heaps; the role is shown in the panel,
+  where the choice is actually made. Say so if the client wants it on every row.
+
+---
+
+## Inactive users are read-only, in both Administration apps (2026-09-21)
+
+Client business rule: **an inactive user cannot be edited in Administration 1.0 or 2.0 —
+activate it first, then edit.**
+
+### What it replaced
+
+Nothing enforced it. `AccountCommandHandler` had an explicit comment the other way:
+"Inactive and resigned accounts are not refused… an accident of the picker rather than a
+rule." That judgement is now overridden by the client.
+
+Legacy had in fact enforced it almost everywhere, by construction rather than by design:
+`clsLogin.Get_AllUser` (`select * from Users Where ACTIVE = 1`) fed the pickers on Change
+User Details, Assign Role, User Region Mapping, User Brand Mapping and Update Resignation,
+so an inactive account could not be selected. The one exception was `Access_Rights.aspx`,
+which used `clsInterface.GetAllUsers` — no filter. Treated here as the inconsistency it
+looks like: the rule is applied uniformly, menu access included.
+
+353 of 547 accounts are inactive, so this is not an edge case.
+
+### Administration 1.0 — one filter, not a check per slice
+
+`Infrastructure/ActiveAccountFilter.cs` is an `IEndpointFilter` reading the `{userId}`
+route value against the resident directory. Applied to every per-user **write**: profile
+and password, roles, regions, brands, menu access, resignation. Reads are untouched — an
+admin must be able to see what they are about to reactivate.
+
+- **A filter rather than six copies of a check**, because a rule pasted into six handlers
+  is a rule that will be missing from the seventh.
+- **Activate is deliberately not covered** — it is the only way out of the state. Deactivate
+  and unlock are not either.
+- **The snapshot is safe to read**: activate/deactivate call `IUserDirectory.Invalidate()`
+  synchronously, so an admin who has just clicked Activate is never told it is still off.
+- An unknown login name passes through, so the handler still answers 404 rather than the
+  filter reporting "deactivated" for something that was never an account.
+- 409, not 403: the caller is allowed, the *account* is in a state that forbids it.
+
+### Administration 2.0 — the rule needed an Activate to exist first
+
+Distributors had deactivate, lock and unlock but **no way back** — legacy had no
+reactivation either. Applying the rule without one would have frozen every deactivated
+distributor permanently. So this adds `POST /api/v1/admin2/distributors/{id}/activate`
+(`IsActive = 1, IsDeleted = 0`, the exact inverse of deactivate), and only then refuses the
+edit (`DistributorWriteOutcome.Inactive`), decided **inside the write transaction** on the
+row the UPDATE is about to touch.
+
+### Frontend
+
+- User detail: a `readOnly` computed drives an amber banner above the tabs and disables
+  every save, the role checkboxes, the access tree and the resignation field. Stated once
+  rather than as a tooltip per control. Activate stays live in the header.
+- The resignation date input is `disable()`d, not merely unsaveable — typing into a field
+  that can never submit is a worse way to learn the account is off.
+- Distributor list: Edit is replaced by an inert label with the reason, and the old
+  column-width placeholder becomes the **Activate** button. The deactivate dialog no longer
+  says "there is no screen to reactivate it — that needs a database change", which was true
+  until today.
+
+### Not done
+
+- **The API must be restarted.**
+- ~~Admin 2.0 User Mapping writes are not gated~~ — **closed the same day**, see the entry
+  below: the client confirmed the rule covers 2.0 menu access and User Mapping too.
+
+---
+
+## Region and brand chips drop the code (2026-09-21)
+
+Client: the region card in the Regions tab of Create User should not show the region code —
+then the same for brands.
+
+Both codes are tilde-joined paths from the Centegy geography and product hierarchies —
+`1000~4000~1000~0040~0002~0015` — so the card was spending its second line on a string that
+identifies nothing to the person reading it.
+
+- Removed from both chips. The markers stay: **retired** on a region, **no SKU** on a brand.
+- The code is still the value sent back on save, and `filterByName` still matches it, so
+  pasting a code into the search box works — it just is not printed on the card.
+- `.to-ud__chip-code` and a duplicated `.to-ud__chip--on .to-ud__chip-meta` rule that
+  restated the base rule are now dead and removed.
+- Chips are `justify-content: center`. The grid is `grid-auto-rows: 1fr`, so with most chips
+  now one line, a single retired region would otherwise leave every other name top-aligned
+  above a gap.
+
+---
+
+## The inactive-user rule reaches Admin 2.0 menu access and User Mapping (2026-09-21)
+
+Client, extending the rule the same day: **in Administration 2.0, an inactive user's menus
+(access) and User Mapping cannot be edited either.** This closes the gap flagged above.
+
+### Why it needed a second filter
+
+`ActiveAccountFilter` reads the resident `Promo_Management` directory. Administration 2.0
+users are `Promo_Management_2.dbo.USERS` — a different table holding different people — so
+neither filter can stand in for the other. `Octane2ActiveAccountFilter` is the 2.0 form:
+
+- **A query, not a snapshot.** The 2.0 slices deliberately read straight from SQL rather
+  than holding a directory, so there is nothing cached to consult. One seek on the clustered
+  key, on a path that opens a transaction immediately afterwards.
+- **`Active` is `bit null`, and NULL is not active** — legacy's own `Proc_GetMenuItem`
+  applies a user's Octane 2 role grants only when `Active = 1`, so an account whose flag was
+  never set already reaches nothing. Treating NULL as editable would let an admin maintain
+  access for an account the legacy app does not serve.
+- Its own error code, `administration2.users.account_inactive`, rather than sharing the 1.0
+  one: the two name accounts in different databases, and a shared code would send a caller
+  to activate a user that may not exist in the table they are looking at.
+- An unknown login name passes through, so the handler still answers 404.
+
+Applied to `PUT|POST|DELETE /api/v1/admin2/users/{userId}/access` (3 verbs) and every
+`/api/v1/admin2/user-mapping/users/{userId}` verb (5). Reads untouched.
+
+### Frontend
+
+`mapping-editor` gained a `readOnly` computed off `UserMappingResponse.userIsActive`. It
+disables Save and Discard, passes `[editable]="!readOnly()"` into the shared access panel —
+which already had that input from the 1.0 work — and shows one amber banner **above** the
+Mapping / Menu access switch, since the rule governs both views rather than one.
+
+**255 of 540 Promo_2 accounts are inactive**, so this is the common case, not an edge.
+
+### Not done
+
+- **The API must be restarted.**
+- Distributor Access (MenuID 93) is not gated. Its subject is a distributor, not a 2.0 user,
+  and distributors are in neither `USERS` table — so neither filter applies and it would
+  need a third check against `Promo_Management_2.dbo.Distributor.IsActive`. Say so if the
+  client means that screen too.

@@ -1,0 +1,131 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Layout, fields, alerts and the summary aside are shared builder-form chrome from
+// _admin.scss (`.to-adm__form-*`, `.to-adm__summary*`). Only what is particular to this
+// form is declared here.
+
+// The select's host element is in this template, so this reaches it without piercing
+// encapsulation. PrimeNG internals (the label, the panel) are left to the theme.
+.to-df__select {
+  width: 100%;
+}
+
+.to-df__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+.to-df__chipset {
+  align-self: flex-start;
+}
+
+// ─── Picker options ───────────────────────────────────────────────────────────
+// Declared in this template, so these classes carry this component's encapsulation even
+// though PrimeNG stamps them inside its overlay. One line each: the candidate list is
+// virtual-scrolled at a fixed item height, and a wrapping option would break it.
+
+.to-df__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 0;
+  width: 100%;
+  line-height: 1.4;
+}
+
+.to-df__option-id {
+  flex-shrink: 0;
+  min-width: 56px;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-df__option-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-df__option-flag {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0 t.$to-space-1;
+  border: 1px solid var(--to-warning);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-warning-subtle);
+  color: var(--to-warning);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+// ─── Identity (edit) ──────────────────────────────────────────────────────────
+
+.to-df__identity {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+}
+
+.to-df__identity-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+}
+
+.to-df__identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.to-df__identity-name {
+  @include u.truncate;
+  font-size: t.$to-font-size-md;
+  color: var(--to-text-primary);
+}
+
+.to-df__identity-meta {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+// ─── Password rules ───────────────────────────────────────────────────────────
+
+.to-df__password {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: t.$to-space-3;
+  align-items: start;
+}
+
+.to-df__rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: t.$to-space-1 t.$to-space-3;
+  margin: 0;
+  // Lines the first rule up with the input rather than its label.
+  padding: t.$to-space-6 0 0;
+  list-style: none;
+}
+
+.to-df__rule {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+  @include u.motion(color);
+
+  &--met {
+    color: var(--to-success);
+  }
+}

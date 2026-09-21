@@ -4,10 +4,12 @@ import { UserMenuResponse } from '../api/identity.models';
 import { ADMINISTRATION_MENU_IDS } from '../menu/menu-blueprint';
 import {
   MenuTransformResult,
+  SidebarMenuNode,
   TransformedNavItem,
   TransformedNavSection,
   transformMenu,
   withAdminOnlyRoutes,
+  withAdminOnlySidebarEntries,
 } from '../menu/menu-transform';
 import { environment } from '../../../environments/environment';
 
@@ -30,6 +32,7 @@ import { environment } from '../../../environments/environment';
 
 const EMPTY_RESULT: MenuTransformResult = {
   sections: [],
+  sidebar: [],
   grantedMenuIds: new Set<number>(),
   unmapped: [],
   nearMisses: [],
@@ -55,9 +58,17 @@ export class MenuAccessService {
     return response ? transformMenu(response.menu) : EMPTY_RESULT;
   });
 
-  /** The sidebar's sections — the legacy menu, folded. */
+  /**
+   * The folded destinations — the legacy menu, one item per screen. Route and tab gating
+   * and the command palette read these; the sidebar renders `sidebar` instead.
+   */
   readonly sections = computed<TransformedNavSection[]>(() =>
     withAdminOnlyRoutes(this.transformed().sections, this.isAdmin()),
+  );
+
+  /** The sidebar: the granted menu and sub-menus, as the Menus grid lays them out. */
+  readonly sidebar = computed<SidebarMenuNode[]>(() =>
+    withAdminOnlySidebarEntries(this.transformed().sidebar, this.isAdmin()),
   );
 
   /** Every granted menuId. The gating set. */
@@ -158,6 +169,20 @@ export class MenuAccessService {
   /** The tabs of a screen the user actually holds, in fold order. */
   tabsFor(route: string): string[] {
     return this.navItemFor(route)?.tabs ?? [];
+  }
+
+  /** A sidebar entry and the module it sits under, or undefined when it is not granted. */
+  sidebarEntry(menuId: number): { node: SidebarMenuNode; parent: SidebarMenuNode | null } | undefined {
+    for (const root of this.sidebar()) {
+      if (root.menuId === menuId) {
+        return { node: root, parent: null };
+      }
+      const child = root.children.find((candidate) => candidate.menuId === menuId);
+      if (child) {
+        return { node: child, parent: root };
+      }
+    }
+    return undefined;
   }
 
   /**

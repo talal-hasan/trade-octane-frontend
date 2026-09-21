@@ -1,0 +1,79 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-uap {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-uap__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-uap__title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-uap__note {
+  margin: t.$to-space-1 0 0;
+  max-width: 62ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+.to-uap__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: t.$to-space-2;
+}
+
+.to-uap__counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+  margin-bottom: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-2);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-uap__counter {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+
+  // "Effective" is the one that actually authorises requests, so it is the one that reads
+  // as the answer; direct and via-roles are its inputs.
+  &--strong {
+    color: var(--to-text-primary);
+  }
+
+  &--warn {
+    color: var(--to-warning);
+  }
+}
+
+.to-uap__filter {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+  color: var(--to-text-muted);
+
+  input {
+    flex: 1;
+  }
+}

@@ -48,8 +48,37 @@
   border-radius: t.$to-radius-control;
   background: var(--to-bg-1);
 
+  // Each brand sets one hue; the rail and the wash both read it, so they cannot disagree.
+  // A deliberate exception to "pastel never goes on data": the wash names the brand the
+  // figure belongs to, not a status, so it cannot be misread as one.
   &--brand {
-    border-left-color: var(--to-viz-2);
+    --to-tile-brand: var(--to-viz-2);
+    border-left-color: var(--to-tile-brand);
+    background: color-mix(in srgb, var(--to-tile-brand) var(--to-product-tint), var(--to-bg-1));
+
+    // Grey text is too faint on a medium wash (3.5:1). The brand hue mixed into the primary
+    // text colour stays readable — deep on light, pale on dark — at 6.5:1 or better in both
+    // themes, from one declaration. See --to-product-tint.
+    .to-at__tile-label {
+      color: color-mix(in srgb, var(--to-tile-brand) 45%, var(--to-text-primary));
+    }
+  }
+
+  &--olpers {
+    --to-tile-brand: var(--to-product-olpers);
+  }
+
+  &--tarang {
+    --to-tile-brand: var(--to-product-tarang);
+  }
+
+  &--dairy-omung {
+    --to-tile-brand: var(--to-product-dairy-omung);
+  }
+
+  // No brand of its own, so it wears the umbrella's.
+  &--others {
+    --to-tile-brand: var(--to-product-frieslandcampina);
   }
 }
 

@@ -1,0 +1,263 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-urg {
+  padding: t.$to-space-4;
+  background: var(--to-bg-1);
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  max-width: 720px;
+}
+
+.to-urg__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$to-space-4;
+  margin-bottom: t.$to-space-4;
+}
+
+.to-urg__title {
+  margin: 0;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-urg__note {
+  margin: t.$to-space-1 0 0;
+  max-width: 58ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// ─── What is on file ─────────────────────────────────────────────────────────
+// The answer to "has this person left, and when" reads before anything editable: an
+// administrator arriving here is checking far more often than changing.
+
+.to-urg__current {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-accent-muted);
+  border-radius: t.$to-radius-control;
+  background: var(--to-accent-subtle);
+
+  // No date is not a warning, so it carries no hue — it is the ordinary case.
+  &--empty {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+  }
+
+  // A stamped value is a fact about the account, not about the person leaving.
+  &--stamped {
+    border-color: var(--to-warning);
+    background: var(--to-warning-subtle);
+  }
+}
+
+.to-urg__current-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-accent);
+
+  .to-urg__current--empty & {
+    color: var(--to-text-muted);
+  }
+
+  .to-urg__current--stamped & {
+    color: var(--to-warning);
+  }
+}
+
+.to-urg__current-body {
+  min-width: 0;
+}
+
+.to-urg__current-value {
+  margin: 0;
+  font-size: t.$to-font-size-lg;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-urg__current-meta {
+  margin: t.$to-space-1 0 0;
+  max-width: 56ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}
+
+// ─── The legacy format bug ───────────────────────────────────────────────────
+
+.to-urg__suspect {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin-top: t.$to-space-3;
+  padding: t.$to-space-3;
+  border: 1px solid var(--to-danger);
+  border-radius: t.$to-radius-control;
+  background: var(--to-danger-subtle);
+  color: var(--to-danger);
+}
+
+.to-urg__suspect-body {
+  min-width: 0;
+}
+
+.to-urg__suspect-title {
+  margin: 0;
+  font-size: t.$to-font-size-sm;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.to-urg__suspect-text {
+  margin: t.$to-space-1 0 0;
+  max-width: 60ch;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  code {
+    padding: 0 3px;
+    border-radius: 3px;
+    background: var(--to-bg-2);
+    font-family: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', monospace;
+    font-size: t.$to-font-size-2xs;
+  }
+}
+
+.to-urg__suspect-action {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin-top: t.$to-space-2;
+  padding: 3px t.$to-space-2;
+  border: 1px solid var(--to-danger);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-danger);
+  font: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  transition: background-color t.$to-motion-duration t.$to-motion-easing;
+
+  &:hover:not(:disabled) {
+    background: var(--to-danger-subtle);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+// ─── The field ───────────────────────────────────────────────────────────────
+
+.to-urg__form {
+  margin-top: t.$to-space-4;
+}
+
+.to-urg__field {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+}
+
+.to-urg__label {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-urg__field-row {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+.to-urg__date {
+  width: 200px;
+}
+
+.to-urg__preset {
+  padding: 0 t.$to-space-2;
+  height: 32px;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+  transition: border-color t.$to-motion-duration t.$to-motion-easing;
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.to-urg__help {
+  max-width: 56ch;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+}
+
+.to-urg__error {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-danger);
+}
+
+.to-urg__actions {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-top: t.$to-space-3;
+}
+
+// ─── The two things that surprise people ─────────────────────────────────────
+
+.to-urg__facts {
+  margin: t.$to-space-4 0 0;
+  padding: t.$to-space-3 0 0;
+  border-top: 1px solid var(--to-border);
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: t.$to-space-2;
+    max-width: 62ch;
+    font-size: t.$to-font-size-xs;
+    line-height: 1.5;
+    color: var(--to-text-secondary);
+
+    + li {
+      margin-top: t.$to-space-2;
+    }
+
+    tabler-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: var(--to-text-muted);
+    }
+  }
+}

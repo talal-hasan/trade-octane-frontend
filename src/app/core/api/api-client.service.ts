@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -55,12 +55,13 @@ export class ApiClient {
     return `${this.base}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
-  get<T>(path: string, query?: Query): Observable<T> {
-    return this.http.get<T>(this.url(path), { params: toHttpParams(query) });
+  /** `context` carries per-request settings for the interceptors, e.g. `FAILURE_NOTICE`. */
+  get<T>(path: string, query?: Query, context?: HttpContext): Observable<T> {
+    return this.http.get<T>(this.url(path), { params: toHttpParams(query), context });
   }
 
-  post<T>(path: string, body?: unknown, query?: Query): Observable<T> {
-    return this.http.post<T>(this.url(path), body ?? null, { params: toHttpParams(query) });
+  post<T>(path: string, body?: unknown, query?: Query, context?: HttpContext): Observable<T> {
+    return this.http.post<T>(this.url(path), body ?? null, { params: toHttpParams(query), context });
   }
 
   put<T>(path: string, body?: unknown, query?: Query): Observable<T> {

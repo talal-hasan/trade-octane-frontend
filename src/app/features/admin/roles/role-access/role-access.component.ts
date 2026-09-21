@@ -1,18 +1,20 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 
 import { RoleAccessResponse } from '../../../../core/api/admin.models';
-import { intSet } from '../../../../core/api/api.types';
+import { AdminApiRoot, adminApiRootOf, int, intSet } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { SkeletonComponent } from '../../../../shared/components/skeleton/skeleton.component';
 import { ICON_REGISTRY } from '../../../../shared/icon-registry';
+import { Octane2RolesStore } from '../../../admin2/services/octane2-roles.store';
 import { AccessTreeComponent } from '../../shared/access-tree/access-tree.component';
 import { AdminAccessApi } from '../../services/admin-access.api';
 
@@ -29,6 +31,12 @@ import { AdminAccessApi } from '../../services/admin-access.api';
  *
  * There is no inheritance here — a role is the source of inherited access, not a
  * recipient of it — so every row in the tree is editable.
+ *
+ * **Administration 2.0 uses this screen too**, at `/admin2/roles/:roleId/access` with
+ * `data: { adminApiRoot: 'admin2' }`: the backend serves the same handlers over the Octane 2
+ * menu and `MenuItems_Mapping_ByRole_O2`. One difference is real. A 2.0 role's status is not
+ * read by the access path, so a deactivated 2.0 role still opens its screens — the response
+ * always reports it active, and the notice comes from the 2.0 role catalogue instead.
  */
 @Component({
   selector: 'to-role-access',
@@ -56,7 +64,18 @@ export class RoleAccessComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
 
+  private readonly root: AdminApiRoot = adminApiRootOf(inject(ActivatedRoute).snapshot.data);
+  private readonly octane2Roles = this.root === 'admin2' ? inject(Octane2RolesStore) : null;
+  protected readonly isOctane2 = this.root === 'admin2';
+  protected readonly rolesRoute = this.isOctane2 ? '/admin2/roles' : '/admin/roles';
+  protected readonly adminLabel = this.isOctane2 ? 'Administration 2.0' : 'Administration';
+
   protected readonly icons = ICON_REGISTRY;
+
+  /** A deactivated 2.0 role: refused for new holders, but still opens every screen granted here. */
+  protected readonly octane2Deactivated = computed(
+    () => this.octane2Roles?.byKey(int(this.roleId()))?.isActive === false,
+  );
 
   protected readonly loading = signal(true);
   protected readonly failed = signal(false);
@@ -70,6 +89,7 @@ export class RoleAccessComponent {
   protected readonly filter = signal('');
 
   constructor() {
+    this.octane2Roles?.ensureLoaded();
     effect(() => {
       const id = Number(this.roleId());
       if (Number.isFinite(id)) {
@@ -82,7 +102,7 @@ export class RoleAccessComponent {
     this.loading.set(true);
     this.failed.set(false);
     this.accessApi
-      .roleAccess(roleId)
+      .roleAccess(roleId, {}, this.root)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -161,7 +181,7 @@ export class RoleAccessComponent {
     }
     this.saving.set(true);
     this.accessApi
-      .replaceRoleAccess(id, [...this.selection()])
+      .replaceRoleAccess(id, [...this.selection()], {}, this.root)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -170,6 +190,8 @@ export class RoleAccessComponent {
           this.selection.set(granted);
           this.original.set(new Set(granted));
           this.saving.set(false);
+          // The 2.0 Roles list shows each role's menu item count.
+          this.octane2Roles?.refresh();
           const affected = Number(response.affectedUserCount ?? 0);
           this.notifications.success(
             `Role access saved. ${affected} user${affected === 1 ? '' : 's'} affected.`,

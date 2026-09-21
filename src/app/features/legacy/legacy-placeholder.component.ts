@@ -24,9 +24,9 @@ import { ICON_REGISTRY } from '../../shared/icon-registry';
   imports: [TablerIconComponent, ButtonModule, PageHeaderComponent],
   template: `
     <to-page-header
-      [title]="item()?.label ?? 'Not available yet'"
+      [title]="label() ?? 'Not available yet'"
       subtitle="This screen is still served by the legacy Trade Octane portal."
-      [breadcrumbs]="[{ label: 'Home', route: '/' }, { label: item()?.label ?? 'Legacy' }]"
+      [breadcrumbs]="breadcrumbs()"
     />
 
     <div class="to-legacy">
@@ -63,12 +63,31 @@ export class LegacyPlaceholderComponent {
 
   protected readonly item = computed(() => this.menuAccess.navItemFor(`/legacy/${this.menuId()}`));
 
+  /** The sidebar entry that opens this page — every unported sub-menu has its own. */
+  private readonly entry = computed(() => this.menuAccess.sidebarEntry(Number(this.menuId())));
+
+  protected readonly label = computed(() => this.entry()?.node.label ?? this.item()?.label ?? null);
+
+  protected readonly breadcrumbs = computed(() => {
+    const parent = this.entry()?.parent;
+    return [
+      { label: 'Home', route: '/' },
+      ...(parent ? [{ label: parent.label }] : []),
+      { label: this.label() ?? 'Legacy' },
+    ];
+  });
+
   /**
-   * The legacy screens this destination absorbed. For a folded module that is its child
-   * screens; naming them is how someone recognises that "BRD Schemes" lives behind "FSD
-   * Bulk Schemes" rather than having disappeared.
+   * The legacy screens behind this page: a module's granted sub-menus, or for a destination
+   * reached through the command palette, the rows it absorbed. Naming them is how someone
+   * recognises that "BRD Schemes" lives behind "FSD Bulk Schemes" rather than having
+   * disappeared.
    */
   protected readonly coveredScreens = computed(() => {
+    const children = this.entry()?.node.children ?? [];
+    if (children.length > 0) {
+      return children.map((child) => child.label);
+    }
     const item = this.item();
     if (!item) {
       return [];

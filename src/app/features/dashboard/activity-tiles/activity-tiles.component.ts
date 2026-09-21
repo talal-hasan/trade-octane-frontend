@@ -40,6 +40,13 @@ interface Tile {
   icon: string;
 }
 
+/** Which product-brand colour a By brand tile wears — a `--to-product-*` token. */
+type BrandKey = 'olpers' | 'tarang' | 'dairy-omung' | 'others';
+
+interface BrandTile extends Tile {
+  brand: BrandKey;
+}
+
 interface OpenClosedRow {
   label: string;
   open: string;
@@ -165,16 +172,16 @@ export class ActivityTilesComponent {
    * `others`) rather than returned as a list, so they are hardcoded here to match. If the
    * brand set ever changes, this endpoint's shape changes with it.
    */
-  protected readonly brands = computed<Tile[]>(() => {
+  protected readonly brands = computed<BrandTile[]>(() => {
     const d = this.data();
     if (!d) {
       return [];
     }
     return [
-      { label: 'Olpers', value: this.fmt(d.olpers), icon: 'tag' },
-      { label: 'Tarang', value: this.fmt(d.tarang), icon: 'tag' },
-      { label: 'Dairy Omung', value: this.fmt(d.dairyOmung), icon: 'tag' },
-      { label: 'Others', value: this.fmt(d.others), icon: 'tag' },
+      { label: 'Olpers', value: d.olpers, icon: 'tag', brand: 'olpers' },
+      { label: 'Tarang', value: d.tarang, icon: 'tag', brand: 'tarang' },
+      { label: 'Dairy Omung', value: d.dairyOmung, icon: 'tag', brand: 'dairy-omung' },
+      { label: 'Others', value: d.others, icon: 'tag', brand: 'others' },
     ];
   });
 

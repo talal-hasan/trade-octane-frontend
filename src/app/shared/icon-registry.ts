@@ -1,5 +1,8 @@
 import {
   IconAlertTriangle,
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
   IconBell,
   IconChartBar,
   IconCheck,
@@ -75,6 +78,20 @@ import {
   IconUsersGroup,
   IconWallet,
   IconX,
+  IconAdjustmentsHorizontal,
+  IconCalculator,
+  IconCalendarEvent,
+  IconCar,
+  IconUserOff,
+  IconCertificate,
+  IconClipboard,
+  IconDeviceMobile,
+  IconPhone,
+  IconSquareCheck,
+  IconTruck,
+  IconHierarchy2,
+  IconLink,
+  IconUnlink,
   TablerIcon,
 } from '@tabler/icons-angular';
 
@@ -148,6 +165,22 @@ export const ICON_REGISTRY: Record<string, TablerIcon> = {
   cash: IconCash,
   help: IconHelp,
   'building-warehouse': IconBuildingWarehouse,
+  clipboard: IconClipboard,
+  'square-check': IconSquareCheck,
+  calculator: IconCalculator,
+  'calendar-event': IconCalendarEvent,
+  'user-off': IconUserOff,
+  certificate: IconCertificate,
+  truck: IconTruck,
+  'adjustments-horizontal': IconAdjustmentsHorizontal,
+  phone: IconPhone,
+  'device-mobile': IconDeviceMobile,
+  car: IconCar,
+
+  // Approval Hierarchy: its nav icon, and joining or splitting roles that share a step.
+  'hierarchy-2': IconHierarchy2,
+  link: IconLink,
+  unlink: IconUnlink,
 
   // Action + state icons used across the Administration screens.
   plus: IconPlus,
@@ -167,6 +200,9 @@ export const ICON_REGISTRY: Record<string, TablerIcon> = {
   'alert-circle': IconAlertCircle,
   'info-circle': IconInfoCircle,
   'map-pin': IconMapPin,
+  'arrow-up': IconArrowUp,
+  'arrow-down': IconArrowDown,
+  'grip-vertical': IconGripVertical,
   tag: IconTag,
   dots: IconDots,
 };

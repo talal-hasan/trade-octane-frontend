@@ -1,7 +1,19 @@
 <to-page-header [title]="'Welcome back, ' + userName()" [subtitle]="scopeSummary()">
-  <div actions class="to-dash__scope">
+  <!-- The wording follows the scope rather than asserting it. An account mapped to nothing
+       is shown everything, and a chip that said "your scope only" over unfiltered figures
+       was the more misleading half of this bug. -->
+  <div
+    actions
+    class="to-dash__scope"
+    [class.to-dash__scope--unscoped]="unscoped()"
+    [title]="
+      unscoped()
+        ? 'No regions or brands are mapped to your account, so nothing is filtered out.'
+        : 'Figures are limited to the regions and brands mapped to your account.'
+    "
+  >
     <span class="to-dash__scope-dot"></span>
-    Live · your scope only
+    {{ scopeChip() }}
   </div>
 </to-page-header>
 

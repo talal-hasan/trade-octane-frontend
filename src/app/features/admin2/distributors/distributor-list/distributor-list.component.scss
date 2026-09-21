@@ -1,0 +1,214 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// Shared table, filter, pager and flag chrome comes from _admin.scss (`.to-adm__*`). Only
+// what is particular to this grid is declared here.
+
+.to-dst__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-3;
+}
+
+.to-dst__filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-dst__search {
+  min-width: 280px;
+}
+
+// A class on the <p-select> host itself, which is in this template and so is reached by
+// this stylesheet without piercing encapsulation.
+.to-dst__type {
+  width: 190px;
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+// Header sort control: a real button, so it is reachable by keyboard and announced, but
+// styled to read as the header text it replaces.
+.to-dst__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  @include u.motion(color);
+
+  tabler-icon {
+    color: var(--to-accent);
+  }
+
+  &:hover {
+    color: var(--to-accent-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-dst__row {
+  // The sticky actions cell inherits this, so it must be opaque.
+  background: var(--to-bg-1);
+
+  // A row mid-write is dimmed and inert rather than replaced by a spinner: the values stay
+  // readable and nothing jumps.
+  &--busy {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  // The row just saved on the form. A rail that stays, and a wash that settles — the
+  // confirmation is where the admin is looking, not only in a toast that has gone.
+  &--fresh {
+    box-shadow: inset 3px 0 0 var(--to-accent);
+    @include u.enter(to-dst-fresh, 2400ms, ease-out);
+  }
+}
+
+@keyframes to-dst-fresh {
+  from {
+    background: color-mix(in srgb, var(--to-accent) 16%, var(--to-bg-1));
+  }
+
+  to {
+    background: var(--to-bg-1);
+  }
+}
+
+// The longest value in the row. Truncated to one line; the full name is on the title.
+.to-dst__name-cell {
+  max-width: 280px;
+}
+
+.to-dst__name {
+  @include u.truncate;
+  display: block;
+  color: var(--to-text-primary);
+  text-decoration: none;
+  @include u.motion(color);
+
+  &:hover {
+    color: var(--to-accent-text);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-dst__location {
+  min-width: 180px;
+}
+
+.to-dst__primary {
+  display: block;
+  color: var(--to-text-primary);
+}
+
+.to-dst__secondary {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+  white-space: nowrap;
+}
+
+.to-dst__city {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.to-dst__status {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+}
+
+// Pinned right, so the actions stay reachable when a narrow window forces a scroll.
+.to-dst__th-actions,
+.to-dst__actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  text-align: right;
+}
+
+.to-dst__actions {
+  background: inherit;
+}
+
+.to-dst__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// Quiet until hovered, as on the user directory: the row reads as data first.
+.to-dst__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+  padding: t.$to-space-1 t.$to-space-2;
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  text-decoration: none;
+  cursor: pointer;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &--danger:hover:not(:disabled) {
+    border-color: var(--to-danger);
+    background: var(--to-danger-subtle);
+    color: var(--to-danger);
+  }
+
+  &--placeholder {
+    visibility: hidden;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-dst__refreshing {
+  color: var(--to-text-muted);
+}

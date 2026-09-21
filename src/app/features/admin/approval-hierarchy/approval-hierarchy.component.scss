@@ -1,0 +1,580 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Laid out as Claim Hierarchy (Administration 2.0) is, so the two hierarchy editors read the
+// same. Cards, chips, alerts, the summary and the change list come from _admin.scss. The drag
+// preview is a clone of a step or role, cloned with its encapsulation attributes, so the flat
+// classes below style it wherever the CDK puts it.
+
+// ─── Which hierarchy ──────────────────────────────────────────────────────────
+
+.to-ah__scope {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+}
+
+.to-ah__scope-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: start;
+  gap: t.$to-space-3;
+
+  .to-adm__chipset {
+    justify-self: start;
+  }
+}
+
+@include u.respond-to(tablet) {
+  .to-ah__scope-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: t.$to-space-1;
+  }
+}
+
+.to-ah__scope-label {
+  padding-top: 6px;
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-secondary);
+}
+
+// 25 keys: wrapping pills rather than a segmented control, each with its step count so the
+// schemes that have a hierarchy stand out from the ones that do not.
+.to-ah__schemes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-ah__scheme {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-primary);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover:not(.to-ah__scheme--on) {
+    border-color: var(--to-border-strong);
+  }
+
+  &--empty:not(.to-ah__scheme--on) {
+    color: var(--to-text-muted);
+  }
+
+  &--on {
+    border-color: var(--to-accent-strong);
+    background: var(--to-accent-strong);
+    color: #fff;
+
+    .to-ah__scheme-count {
+      color: rgb(255 255 255 / 85%);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+.to-ah__scheme-count {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ah__muted {
+  font-weight: normal;
+  color: var(--to-text-muted);
+}
+
+// Roles | steps | summary, as legacy put roles left and the hierarchy right.
+.to-ah__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(260px, 300px);
+  gap: t.$to-space-4;
+  align-items: start;
+}
+
+@media (max-width: 1360px) {
+  .to-ah__layout {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  }
+
+  .to-ah__aside {
+    grid-column: 2;
+  }
+}
+
+@include u.respond-to(tablet) {
+  .to-ah__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .to-ah__aside {
+    grid-column: auto;
+  }
+}
+
+.to-ah__panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-2;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-ah__icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: t.$to-space-1;
+  border: 1px solid transparent;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+  cursor: pointer;
+  @include u.motion(background-color, color, border-color);
+
+  &:hover:not(:disabled) {
+    border-color: var(--to-border);
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &--danger:hover:not(:disabled) {
+    border-color: var(--to-danger);
+    background: var(--to-danger-subtle);
+    color: var(--to-danger);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+// ─── Roles ────────────────────────────────────────────────────────────────────
+
+.to-ah__roles {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.to-ah__search {
+  max-width: none;
+  margin: 0 t.$to-space-4 t.$to-space-2;
+}
+
+.to-ah__role-head {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+  border-bottom: 1px solid var(--to-border);
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+// Scrolls on its own, so a role can be dragged across to the order without the page moving.
+.to-ah__role-list {
+  max-height: calc(100vh - 340px);
+  min-height: 200px;
+  overflow-y: auto;
+  @include u.quiet-scrollbar(6px);
+}
+
+.to-ah__role {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3 t.$to-space-2 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+  background: var(--to-bg-1);
+  cursor: grab;
+
+  &:hover {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+
+  &--blocked {
+    cursor: default;
+
+    .to-ah__role-name {
+      color: var(--to-text-muted);
+    }
+  }
+}
+
+.to-ah__role-id {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-ah__role-text,
+.to-ah__step-role-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.to-ah__role-name {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ah__role-desc,
+.to-ah__step-desc {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ah__add {
+  color: var(--to-accent-text);
+}
+
+.to-ah__none {
+  margin: 0;
+  padding: t.$to-space-4;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Approval order ───────────────────────────────────────────────────────────
+
+.to-ah__order {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding-bottom: t.$to-space-4;
+
+  .to-adm__alert {
+    margin: 0 t.$to-space-4;
+  }
+}
+
+.to-ah__steps {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  // Tall enough to take a drop even when the order is empty.
+  min-height: 120px;
+  margin: 0;
+  padding: 0 t.$to-space-4;
+  list-style: none;
+}
+
+.to-ah__step {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-2 t.$to-space-2 t.$to-space-1;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-border);
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-1);
+
+  // Sequence 0: the roles budget initiation offers the scheme to.
+  &--initiates {
+    border-left-color: var(--to-brand-lime);
+  }
+
+  > .to-ah__handle,
+  > .to-ah__step-actions {
+    margin-top: 2px;
+  }
+}
+
+// Legacy's "Sequence No", with what the step does under it.
+.to-ah__sequence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 58px;
+}
+
+.to-ah__sequence-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: t.$to-radius-pill;
+  background: color-mix(in srgb, var(--to-accent) 14%, var(--to-bg-1));
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-xs;
+  font-weight: 500;
+
+  .to-ah__step--initiates & {
+    background: color-mix(in srgb, var(--to-brand-lime) 30%, var(--to-bg-1));
+    color: var(--to-text-primary);
+  }
+}
+
+.to-ah__sequence-role {
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--to-text-muted);
+}
+
+// The roles on one step. Usually one; several when any of them can act for the step.
+.to-ah__step-roles {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: t.$to-space-1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-ah__step-role {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  padding: 3px t.$to-space-1 3px t.$to-space-2;
+  border-left: 2px solid transparent;
+  border-radius: 0 t.$to-radius-control t.$to-radius-control 0;
+
+  // A step shared by several roles shows each on its own line, with a divider between.
+  & + & {
+    border-top: 1px dashed var(--to-border);
+  }
+
+  &--new {
+    border-left-color: var(--to-success-solid);
+  }
+}
+
+.to-ah__step-role-text {
+  flex: 1;
+}
+
+// While a step or role is dragged: the clone lifts, the list animates around it.
+.to-ah__step.cdk-drag-preview,
+.to-ah__role.cdk-drag-preview {
+  border: 1px solid var(--to-accent);
+  border-radius: t.$to-radius-control;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.to-ah__steps.cdk-drop-list-dragging .to-ah__step:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .to-ah__steps.cdk-drop-list-dragging .to-ah__step:not(.cdk-drag-placeholder) {
+    transition: none;
+  }
+}
+
+.to-ah__placeholder {
+  min-height: 48px;
+  border: 2px dashed var(--to-accent);
+  border-radius: t.$to-radius-control;
+  background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+}
+
+// A role dragged in from the list shows where it will land in the order.
+.to-ah__steps .to-ah__role.cdk-drag-placeholder {
+  border: 2px dashed var(--to-accent);
+  border-radius: t.$to-radius-control;
+  opacity: 0.7;
+}
+
+.to-ah__handle {
+  display: inline-flex;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: transparent;
+  color: var(--to-text-muted);
+  cursor: grab;
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-ah__step-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-ah__role-id-inline {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ah__tag {
+  padding: 0 t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.7;
+  color: var(--to-text-secondary);
+
+  &--new {
+    border-color: var(--to-success-solid);
+    background: color-mix(in srgb, var(--to-success-solid) 10%, var(--to-bg-1));
+    color: var(--to-success);
+  }
+}
+
+.to-ah__step-actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.to-ah__empty {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-6 t.$to-space-4;
+  border: 2px dashed var(--to-border);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+
+.to-ah__first {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  margin-top: t.$to-space-3;
+  padding: t.$to-space-3 0 0;
+  border-top: 1px solid var(--to-border);
+  cursor: pointer;
+
+  > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.to-ah__checkbox {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+  }
+}
+
+.to-ah__first-title {
+  font-size: t.$to-font-size-xs;
+  font-weight: var(--to-font-weight-medium);
+  color: var(--to-text-primary);
+}
+
+.to-ah__first-hint {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-muted);
+}
+
+.to-ah__was {
+  margin-left: t.$to-space-1;
+  color: var(--to-text-muted);
+}
+
+.to-ah__delta {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+
+  &--add {
+    color: var(--to-success);
+  }
+
+  &--remove {
+    color: var(--to-danger);
+  }
+}
+
+.to-ah__chain {
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-text-primary);
+
+  s {
+    color: var(--to-text-muted);
+  }
+}
+
+.to-ah__warnings {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: t.$to-space-3 0 0;
+  padding: t.$to-space-3 0 0;
+  border-top: 1px solid var(--to-border);
+  list-style: none;
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-warning);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: t.$to-space-1;
+  }
+
+  tabler-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
