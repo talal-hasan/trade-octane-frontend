@@ -195,12 +195,22 @@
 
 .to-rr__list-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: t.$to-space-2;
   padding: t.$to-space-2 t.$to-space-3;
   border-bottom: 1px solid var(--to-border);
   @include u.tinted-surface(var(--to-accent), 4%);
+
+  // The column is ~380px: the sort control gets its own full-width row, segments sharing it.
+  .to-adm__segmented {
+    display: flex;
+  }
+
+  .to-adm__segment {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .to-rr__list-count {
