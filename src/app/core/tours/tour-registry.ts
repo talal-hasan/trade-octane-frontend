@@ -213,29 +213,29 @@ export const MENUS_TOUR: TourDefinition = {
   ],
 };
 
-export const APPROVAL_ROUTING_TOUR: TourDefinition = {
-  id: 'approval-routing',
-  label: 'How to re-route stuck approvals',
+export const RE_ROUTE_TOUR: TourDefinition = {
+  id: 're-route',
+  label: 'How to re-route pending approvals',
   steps: [
     {
-      target: '[data-tour="ar-census"]',
-      title: 'This is why the screen exists',
-      body: 'Approvals sitting with someone who cannot action them never drain on their own. In the legacy data thousands of rows hold a dropdown placeholder rather than a person.',
+      target: '[data-tour="rr-views"]',
+      title: 'Start from the work that cannot move',
+      body: 'Needs re-routing counts approvals held by a deactivated account or by leftover text such as “Please Select”. Nobody can sign in as those, so the work never moves on its own.',
     },
     {
-      target: '[data-tour="ar-filters"]',
-      title: 'Narrow to a table and a stage',
-      body: 'An approval queue is a table plus a stage plus a holder. Filtering to the one you care about is faster than reading the census.',
+      target: '[data-tour="rr-filters"]',
+      title: 'The old dropdowns, as filters',
+      body: 'Table, Level and Role are the old screen’s dropdowns — but they narrow a list you can already see, instead of standing between you and it.',
     },
     {
-      target: '[data-tour="ar-queues"]',
-      title: 'Amber means it cannot drain',
-      body: 'The holder is deactivated or was never a user account. Selecting a queue previews exactly what would move.',
+      target: '[data-tour="rr-list"]',
+      title: 'One row per approver',
+      body: 'Everything a person holds, across every table and level, with how long the oldest item has waited. Arrow keys walk the list.',
     },
     {
-      target: '[data-tour="ar-panel"]',
-      title: 'Preview, then hand it over',
-      body: 'The count you see is the count the server checks as it runs. If the queue changes in between, the whole transfer rolls back rather than half-applying.',
+      target: '[data-tour="rr-detail"]',
+      title: 'Check, choose, re-route',
+      body: 'Only people who share the approver’s role are offered, as before. Each queue moves only if it still holds exactly the rows counted — otherwise it is left untouched and you are asked to look again.',
     },
   ],
 };
@@ -631,7 +631,7 @@ const ROUTE_TOURS: RouteTour[] = [
 
   { match: startsWith('/admin/access-explorer'), tour: ACCESS_EXPLORER_TOUR },
   { match: exact('/admin/menus'), tour: MENUS_TOUR },
-  { match: startsWith('/admin/approval-routing'), tour: APPROVAL_ROUTING_TOUR },
+  { match: startsWith('/admin/re-route'), tour: RE_ROUTE_TOUR },
   { match: exact('/admin/approval-hierarchy'), tour: APPROVAL_HIERARCHY_TOUR },
   { match: startsWith('/admin/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
   { match: startsWith('/admin/frequency'), tour: FREQUENCY_TOUR },

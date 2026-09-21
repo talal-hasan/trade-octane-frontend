@@ -18,6 +18,24 @@
       {{ title() }}
     </h2>
     <p class="to-confirm-dialog__message">{{ message() }}</p>
+    @if (details().length > 0) {
+      <ul class="to-confirm-dialog__details">
+        @for (detail of details(); track $index) {
+          <li class="to-confirm-dialog__detail">
+            <span class="to-confirm-dialog__detail-label">{{ detail.label }}</span>
+            @if (detail.value) {
+              <span class="to-confirm-dialog__detail-value to-numeric">{{ detail.value }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+    @if (note()) {
+      <p class="to-confirm-dialog__note">
+        <tabler-icon [icon]="warningIcon" [size]="14" aria-hidden="true" />
+        <span>{{ note() }}</span>
+      </p>
+    }
   </div>
   <div class="to-confirm-dialog__actions">
     <button type="button" pButton [text]="true" severity="secondary" (click)="onCancel()">

@@ -1,0 +1,66 @@
+<div class="to-adm__card to-adm__card--pad">
+  <header class="to-rro__head">
+    <h2 class="to-adm__subtitle">Where approvals are waiting</h2>
+    <span class="to-adm__hint">Pick a cell to list only that table and level.</span>
+  </header>
+
+  @if (loading()) {
+    <to-skeleton width="100%" height="176px" />
+  } @else {
+    <div class="to-rro__matrix" role="grid" aria-label="Pending approvals by table and level">
+      <span aria-hidden="true"></span>
+      @for (s of stages; track s) {
+        <span class="to-rro__col" role="columnheader">{{ stageLabels[s] }}</span>
+      }
+      @for (row of matrix(); track $index) {
+        <span class="to-rro__row" role="rowheader">{{ tableLabels[row[0].table] }}</span>
+        @for (cell of row; track cell.stage) {
+          <button
+            type="button"
+            role="gridcell"
+            class="to-rro__cell to-rro__cell--h{{ cell.heat }}"
+            [class.to-rro__cell--on]="isOn(cell)"
+            [class.to-rro__cell--none]="!cell.exists"
+            [disabled]="!cell.exists || cell.pending === 0"
+            [attr.aria-pressed]="isOn(cell)"
+            [attr.aria-label]="tableLabels[cell.table] + ', ' + stageLabels[cell.stage] + ': ' + fmt(cell.pending) + ' pending'"
+            (click)="pick.emit(cell)"
+          >
+            @if (cell.exists) {
+              <span class="to-rro__value to-numeric">{{ fmt(cell.pending) }}</span>
+              <span class="to-rro__sub" [class.to-rro__sub--stuck]="cell.stuck > 0">{{ hint(cell) }}</span>
+            } @else {
+              <span class="to-rro__sub">No RMC level</span>
+            }
+          </button>
+        }
+      }
+    </div>
+  }
+</div>
+
+<div class="to-adm__card to-adm__card--pad">
+  <h2 class="to-adm__subtitle">How a re-route works</h2>
+  <ol class="to-rro__steps">
+    <li>
+      <span class="to-rro__step-title">Pick the approver whose work is stuck</span>
+      <span class="to-rro__step-body">
+        Everything they hold shows at once — every table and level, not one at a time.
+      </span>
+    </li>
+    <li>
+      <span class="to-rro__step-title">Choose who takes it</span>
+      <span class="to-rro__step-body">
+        Only active people who share their role are offered, as on the old screen. Each shows how
+        much they already hold.
+      </span>
+    </li>
+    <li>
+      <span class="to-rro__step-title">Check the rows, then re-route</span>
+      <span class="to-rro__step-body">
+        Each queue moves only if it still holds exactly the rows counted — otherwise it is left
+        untouched and you are asked to look again. Every move is audited.
+      </span>
+    </li>
+  </ol>
+</div>

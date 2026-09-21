@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, concat, defer, last, map, of, switchMap } from 'rxjs';
+import { EMPTY, Observable, concat, defer, expand, last, map, of, reduce, switchMap, take } from 'rxjs';
 
 import { ApiClient, Query } from '../../../core/api/api-client.service';
 import { asList, int, unwrapData } from '../../../core/api/api.types';
@@ -185,6 +185,26 @@ export class AdminRolesApi {
 
   listUserRoleGrants(query: UserRoleGridQuery = {}): Observable<UserRolePageResponse> {
     return this.api.get<UserRolePageResponse>('/admin/user-roles', query as Query);
+  }
+
+  /**
+   * Login names of everyone mapped to one role — active or not, every page.
+   *
+   * Re-Route's Role filter: the legacy screen's first dropdown. Deactivated accounts are
+   * kept deliberately; their approvals are the ones most in need of moving.
+   */
+  roleMemberIds(roleId: number): Observable<string[]> {
+    const page = (cursor: string | null) =>
+      this.listUserRoleGrants({ roleId, pageSize: 200, ...(cursor ? { cursor } : {}) });
+
+    return page(null).pipe(
+      expand((response) => (response.nextCursor ? page(response.nextCursor) : EMPTY)),
+      take(20),
+      reduce<UserRolePageResponse, string[]>(
+        (ids, response) => ids.concat((response.data ?? []).map((row) => row.userId)),
+        [],
+      ),
+    );
   }
 
   exportUserRoleGrants(query: Omit<UserRoleGridQuery, 'pageSize' | 'cursor'> = {}): Observable<Blob> {

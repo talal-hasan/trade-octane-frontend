@@ -139,13 +139,15 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'admin/approval-routing',
+        // One screen: filters and the selected approver are `?view=&table=&stage=&role=&holder=`,
+        // so a view — or one person's stuck work — can be linked to.
+        path: 'admin/re-route',
         canActivate: [MenuGuard],
         loadComponent: () =>
-          import('./features/admin/approval-routing/approval-routing.component').then(
-            (m) => m.ApprovalRoutingComponent,
-          ),
+          import('./features/admin/re-route/re-route.component').then((m) => m.ReRouteComponent),
       },
+      // The screen's name while it shared a destination with Hierarchy. Kept so old links land.
+      { path: 'admin/approval-routing', pathMatch: 'full', redirectTo: 'admin/re-route' },
       {
         // One screen: the hierarchy is `?businessType=&group=&scheme=`, so it can be linked to.
         path: 'admin/approval-hierarchy',
