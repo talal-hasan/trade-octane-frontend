@@ -1,0 +1,294 @@
+<section class="to-adm__card to-mb" aria-labelledby="mb-title" data-tour="cb-my-budgets">
+  <header class="to-mb__head">
+    <h2 class="to-adm__title" id="mb-title">Your budgets</h2>
+
+    <div class="to-mb__tabs" role="tablist" aria-label="Which budgets">
+      <button
+        type="button"
+        role="tab"
+        class="to-mb__tab"
+        [class.to-mb__tab--on]="status() === 'pending'"
+        [attr.aria-selected]="status() === 'pending'"
+        (click)="setStatus('pending')"
+      >
+        Pending approval
+        @if (totals().pending !== null) {
+          <span class="to-mb__tab-count to-numeric">{{ totals().pending }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="to-mb__tab"
+        [class.to-mb__tab--on]="status() === 'approved'"
+        [attr.aria-selected]="status() === 'approved'"
+        (click)="setStatus('approved')"
+      >
+        Approved
+        @if (totals().approved !== null) {
+          <span class="to-mb__tab-count to-numeric">{{ totals().approved }}</span>
+        }
+      </button>
+    </div>
+
+    <div class="to-mb__filters">
+      <div class="to-adm__search to-mb__search">
+        <tabler-icon [icon]="icons['search']" [size]="15" />
+        <input
+          pInputText
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Shell code or description"
+          aria-label="Search your budgets by shell code or description"
+          maxlength="100"
+        />
+      </div>
+      <p-select
+        class="to-mb__year"
+        [options]="yearOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [formControl]="yearControl"
+        ariaLabel="Year"
+        appendTo="body"
+      />
+    </div>
+  </header>
+
+  @if (state().kind === 'failed' && !shown()) {
+    <div class="to-mb__body">
+      <to-empty-state
+        icon="alert-triangle"
+        heading="Your budgets did not load"
+        description="This is usually temporary."
+      >
+        <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="retry()">
+          <tabler-icon [icon]="icons['refresh']" [size]="15" />
+          Try again
+        </button>
+      </to-empty-state>
+    </div>
+  } @else if (!shown()) {
+    <div class="to-mb__body" aria-busy="true" aria-label="Loading your budgets">
+      @for (row of skeletonRows; track row) {
+        <div class="to-adm__skeleton-row">
+          <to-skeleton width="120px" height="12px" />
+          <to-skeleton width="60px" height="12px" />
+          <to-skeleton width="30%" height="12px" />
+          <to-skeleton width="90px" height="12px" />
+        </div>
+      }
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="to-mb__body">
+      @if (filtered()) {
+        <to-empty-state
+          icon="search"
+          [heading]="status() === 'pending' ? 'No pending budget matches' : 'No approved budget matches'"
+          description="Search looks at the shell code and the description."
+        >
+          <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+            Clear filters
+          </button>
+        </to-empty-state>
+      } @else {
+        <to-empty-state
+          [icon]="status() === 'pending' ? 'inbox' : 'circle-check'"
+          [heading]="status() === 'pending' ? 'Nothing is waiting for approval' : 'No approved budgets yet'"
+          [description]="
+            status() === 'pending'
+              ? 'Budgets you save above appear here until their third approver signs.'
+              : 'A budget moves here once its third approver signs.'
+          "
+        />
+      }
+    </div>
+  } @else {
+    @if (state().kind === 'failed') {
+      <p class="to-adm__alert to-adm__alert--warn to-mb__failed" role="alert">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>That page did not load. What is shown is the last page that did.</span>
+        <button type="button" pButton class="p-button-sm p-button-text" (click)="retry()">Try again</button>
+      </p>
+    }
+    <div class="to-mb__body" [class.to-mb__body--busy]="state().kind === 'loading'" [attr.aria-busy]="state().kind === 'loading'">
+      <div class="to-mb__scroll">
+        <table class="to-adm__table to-mb__table">
+          <thead>
+            <tr>
+              <th class="to-adm__th" scope="col">Shell code</th>
+              <th class="to-adm__th" scope="col">Period</th>
+              <th class="to-adm__th" scope="col">Region</th>
+              <th class="to-adm__th" scope="col">Product</th>
+              <th class="to-adm__th" scope="col">Scheme type</th>
+              <th class="to-adm__th" scope="col">Description</th>
+              <th class="to-adm__th to-adm__th--right" scope="col">Amount</th>
+              <th class="to-adm__th" scope="col">{{ status() === 'pending' ? 'Stage' : 'Approved' }}</th>
+              <th class="to-adm__th" scope="col"><span class="to-mb__sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (shell of rows(); track shell.shellCode) {
+              <tr
+                class="to-adm__row to-mb__row"
+                [class.to-mb__row--new]="isNew(shell)"
+                [class.to-mb__row--open]="expanded() === shell.shellCode"
+                [class.to-adm__row--attention]="shell.stage === 'ReturnedToInitiator' || shell.stage === 'NotRouted'"
+                tabindex="0"
+                [attr.aria-expanded]="expanded() === shell.shellCode"
+                (click)="toggle(shell.shellCode)"
+                (keydown.enter)="toggle(shell.shellCode)"
+                (keydown.space)="$event.preventDefault(); toggle(shell.shellCode)"
+              >
+                <td class="to-adm__td to-adm__td--mono">
+                  <span class="to-mb__code">
+                    <tabler-icon
+                      class="to-mb__caret"
+                      [icon]="expanded() === shell.shellCode ? icons['chevron-down'] : icons['chevron-right']"
+                      [size]="13"
+                    />
+                    {{ shell.shellCode }}
+                    @if (isNew(shell)) {
+                      <span class="to-adm__flag to-adm__flag--ok">New</span>
+                    }
+                  </span>
+                </td>
+                <td class="to-adm__td to-numeric">{{ periodOf(shell) }}</td>
+                <td class="to-adm__td">{{ shell.regionName || shell.regionCode }}</td>
+                <td class="to-adm__td to-adm__td--stacked to-mb__product">
+                  <span class="to-mb__clip" [title]="shell.valueName || shell.value">{{ shell.valueName || shell.value }}</span>
+                  <span class="to-mb__sub">{{ shell.dimension }}</span>
+                </td>
+                <td class="to-adm__td to-adm__td--truncate to-mb__type" [title]="shell.schemeType">{{ shell.schemeType }}</td>
+                <td class="to-adm__td to-adm__td--truncate to-mb__desc" [title]="shell.description">{{ shell.description }}</td>
+                <td class="to-adm__td to-adm__td--right to-numeric">{{ int(shell.amount) | pkrCurrency }}</td>
+                @if (status() === 'pending') {
+                  <td class="to-adm__td to-adm__td--stacked">
+                    <to-status-pill [status]="stagePill(shell.stage)" [label]="stageLabel(shell.stage)" />
+                    @if (shell.pendingWith; as holder) {
+                      <span class="to-mb__sub">
+                        with {{ holder.fullName || holder.userId }}
+                        @if (waitingDays(shell); as days) {
+                          · <span class="to-numeric">{{ days }}</span> {{ days === 1 ? 'day' : 'days' }}
+                        }
+                      </span>
+                    }
+                  </td>
+                } @else {
+                  <td class="to-adm__td to-numeric">{{ formatDate(shell.approvedOn) }}</td>
+                }
+                <td class="to-adm__td to-mb__actions">
+                  <button
+                    type="button"
+                    pButton
+                    class="p-button-text p-button-sm to-mb__reuse"
+                    [title]="'Copy ' + shell.shellCode + ' into the form'"
+                    (click)="onReuse($event, shell)"
+                    (keydown.enter)="$event.stopPropagation()"
+                    (keydown.space)="$event.stopPropagation()"
+                  >
+                    <tabler-icon [icon]="icons['copy']" [size]="14" />
+                    Reuse
+                  </button>
+                </td>
+              </tr>
+
+              @if (expanded() === shell.shellCode) {
+                <tr class="to-mb__detail-row">
+                  <td colspan="9" class="to-mb__detail">
+                    <div class="to-mb__detail-grid">
+                      <div class="to-mb__detail-chain">
+                        @if (shell.stage === 'ReturnedToInitiator') {
+                          <p class="to-adm__alert to-adm__alert--warn">
+                            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                            <span>
+                              <strong>An approver rejected this budget back to you.</strong>
+                              Change it and resubmit it on Edit Budget.
+                              @if (canEditBudgets()) {
+                                <a class="to-mb__link" [routerLink]="editBudgetRoute" (click)="$event.stopPropagation()">Open Edit Budget</a>
+                              }
+                            </span>
+                          </p>
+                        } @else if (shell.stage === 'NotRouted') {
+                          <p class="to-adm__alert to-adm__alert--warn">
+                            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                            <span>
+                              <strong>Nobody was ever asked to approve this budget.</strong>
+                              The legacy screen saved it without its approval row. Raise it with an administrator.
+                            </span>
+                          </p>
+                        } @else {
+                          <to-approval-chain [steps]="chainOf(shell)" [currentStepIndex]="chainIndexOf(shell)" />
+                        }
+                      </div>
+
+                      <dl class="to-mb__facts">
+                        <div>
+                          <dt>Scheme group</dt>
+                          <dd>{{ shell.schemeGroup || '—' }}</dd>
+                        </div>
+                        <div>
+                          <dt>Amount</dt>
+                          <dd class="to-numeric">
+                            {{ int(shell.amount) | pkrCurrency }}
+                            @if (amountChanged(shell)) {
+                              <span class="to-mb__sub">raised as {{ int(shell.originalAmount) | pkrCurrency }}</span>
+                            }
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Submitted</dt>
+                          <dd class="to-numeric">{{ formatDate(shell.initiatedOn) }}</dd>
+                        </div>
+                        @if (shell.approvedOn) {
+                          <div>
+                            <dt>Approved</dt>
+                            <dd class="to-numeric">{{ formatDate(shell.approvedOn) }}</dd>
+                          </div>
+                        }
+                        <div>
+                          <dt>Description</dt>
+                          <dd class="to-mb__wrap">{{ shell.description }}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (range(); as r) {
+        <div class="to-adm__pager to-mb__pager">
+          <span class="to-adm__pager-range to-numeric" aria-live="polite">
+            {{ r.first }}–{{ r.last }} of {{ r.total }}
+          </span>
+          <span class="to-adm__pager-buttons">
+            <button
+              type="button"
+              pButton
+              class="p-button-text p-button-sm"
+              [disabled]="page() <= 1 || state().kind === 'loading'"
+              (click)="goTo(page() - 1)"
+            >
+              <tabler-icon [icon]="icons['arrow-left']" [size]="14" />
+              Previous
+            </button>
+            <button
+              type="button"
+              pButton
+              class="p-button-text p-button-sm"
+              [disabled]="!hasNext() || state().kind === 'loading'"
+              (click)="goTo(page() + 1)"
+            >
+              Next
+              <tabler-icon [icon]="icons['arrow-right']" [size]="14" />
+            </button>
+          </span>
+        </div>
+      }
+    </div>
+  }
+</section>

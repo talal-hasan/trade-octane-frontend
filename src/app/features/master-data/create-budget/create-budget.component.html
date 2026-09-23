@@ -1,0 +1,669 @@
+<div class="to-cb" data-cb-top>
+  <to-page-header
+    title="Create Budget"
+    subtitle="Raise a budget and forward it for approval. Tick several regions to raise one budget per region in a single save."
+    [breadcrumbs]="[{ label: 'Master Data' }, { label: 'Create Budget' }]"
+  />
+
+  @if (catalogueFailed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="The form did not load"
+      description="Scheme groups, regions and periods come from one request, and it failed. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="loadCatalogue()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (!catalogue()) {
+    <div class="to-adm__form-layout" aria-busy="true" aria-label="Loading the form">
+      <div class="to-adm__form-main">
+        <to-skeleton width="100%" height="112px" />
+        <to-skeleton width="100%" height="132px" />
+        <to-skeleton width="100%" height="120px" />
+        <to-skeleton width="100%" height="200px" />
+      </div>
+      <to-skeleton width="100%" height="320px" />
+    </div>
+  } @else if (cannotInitiate()) {
+    <to-empty-state
+      icon="shield-lock"
+      heading="Your role does not raise budgets"
+      description="Budgets are raised by the roles that start the budget approval cycle, and yours is not one of them. An administrator can check Approval Hierarchy. Your earlier budgets, if any, are listed below."
+    />
+  } @else {
+    <form class="to-cb__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="to-adm__form-layout">
+        <div class="to-adm__form-main">
+          <!-- ─── 1 · Scheme ───────────────────────────────────────────────── -->
+          <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="cb-scheme">
+            <h2 class="to-adm__subtitle"><span class="to-cb__step">1</span> Scheme</h2>
+
+            <div class="to-adm__form-grid">
+              <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.schemeGroupKey) || null">
+                <label class="to-adm__form-label" for="schemeGroupKey">Scheme group</label>
+                <p-select
+                  class="to-cb__select"
+                  inputId="schemeGroupKey"
+                  formControlName="schemeGroupKey"
+                  [options]="schemeGroups()"
+                  optionLabel="name"
+                  optionValue="schemeGroupKey"
+                  [filter]="schemeGroups().length > 8"
+                  filterPlaceholder="Search scheme groups"
+                  placeholder="Select scheme group"
+                  [invalid]="showError(form.controls.schemeGroupKey)"
+                  appendTo="body"
+                  (onChange)="onSchemeGroupChange()"
+                >
+                  <ng-template #item let-group>
+                    <span class="to-cb__option" (pointerenter)="prefetchApprovers(group.schemeGroupKey)">
+                      <span class="to-cb__option-name">{{ group.name }}</span>
+                      <span class="to-cb__option-meta to-numeric">
+                        {{ group.schemeTypes.length }} {{ group.schemeTypes.length === 1 ? 'type' : 'types' }}
+                      </span>
+                    </span>
+                  </ng-template>
+                </p-select>
+                @if (showError(form.controls.schemeGroupKey)) {
+                  <span class="to-adm__form-error">Pick a scheme group.</span>
+                }
+              </div>
+
+              <div
+                class="to-adm__form-field"
+                [attr.data-invalid]="showError(form.controls.schemeTypeId) || !!serverErrors().schemeType || null"
+              >
+                <label class="to-adm__form-label" for="schemeTypeId">Scheme type</label>
+                <p-select
+                  class="to-cb__select"
+                  inputId="schemeTypeId"
+                  formControlName="schemeTypeId"
+                  [options]="schemeTypeOptions()"
+                  optionLabel="name"
+                  optionValue="id"
+                  [filter]="schemeTypeOptions().length > 8"
+                  filterPlaceholder="Search scheme types"
+                  [placeholder]="form.controls.schemeGroupKey.value ? 'Select scheme type' : 'Pick a scheme group first'"
+                  [invalid]="showError(form.controls.schemeTypeId) || !!serverErrors().schemeType"
+                  appendTo="body"
+                />
+                @if (serverErrors().schemeType; as message) {
+                  <span class="to-adm__form-error">{{ message }}</span>
+                } @else if (showError(form.controls.schemeTypeId)) {
+                  <span class="to-adm__form-error">Pick a scheme type.</span>
+                }
+              </div>
+            </div>
+          </section>
+
+          <!-- ─── 2 · Period ───────────────────────────────────────────────── -->
+          <section
+            class="to-adm__card to-adm__card--pad to-adm__form-section"
+            data-tour="cb-period"
+            [attr.data-invalid]="!!periodError() || null"
+          >
+            <h2 class="to-adm__subtitle"><span class="to-cb__step">2</span> Period</h2>
+
+            <div class="to-cb__period">
+              <div class="to-adm__form-field">
+                <label class="to-adm__form-label" for="cbPeriod">
+                  Month
+                  @if (window(); as w) {
+                    <span class="to-adm__form-hint">Open {{ periodLabel(w.earliest) }} – {{ periodLabel(w.latest) }}</span>
+                  }
+                </label>
+                <!-- Month view: a budget is for a month, so there is no day to pick. Months before
+                     this one are disabled. Read-only input, so nothing typed can get round that. -->
+                <p-datepicker
+                  inputId="cbPeriod"
+                  [formControl]="periodPicker"
+                  view="month"
+                  dateFormat="MM yy"
+                  placeholder="Pick a month"
+                  [readonlyInput]="true"
+                  [showIcon]="true"
+                  iconDisplay="input"
+                  [minDate]="pickerBounds().min"
+                  [maxDate]="pickerBounds().max"
+                  [invalid]="!!periodError()"
+                  [fluid]="true"
+                  appendTo="body"
+                  (onSelect)="onPeriodPicked($event)"
+                />
+              </div>
+
+              @if (periodRelation(); as relation) {
+                <div class="to-cb__period-note">
+                  <span class="to-cb__relation" [class.to-cb__relation--now]="relation.offset === 0">
+                    {{ relation.label }}
+                  </span>
+                  @if (relation.offset !== 0 && currentPeriod(); as current) {
+                    <button type="button" class="to-cb__link" (click)="useCurrentPeriod()">
+                      Use {{ periodLabel(current) }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (periodError(); as message) {
+              <span class="to-adm__form-error" role="alert">{{ message }}</span>
+            }
+          </section>
+
+          <!-- ─── 3 · Product ──────────────────────────────────────────────── -->
+          <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="cb-product">
+            <h2 class="to-adm__subtitle"><span class="to-cb__step">3</span> Product</h2>
+
+            <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.criterion) || null">
+              <span class="to-adm__form-label" id="cbCriteriaLabel">Criteria</span>
+              <div class="to-adm__chipset to-cb__criteria" role="radiogroup" aria-labelledby="cbCriteriaLabel">
+                @for (criterion of criteria(); track criterion.criterion) {
+                  <button
+                    type="button"
+                    role="radio"
+                    class="to-adm__chip"
+                    [class.to-adm__chip--on]="form.controls.criterion.value === criterion.criterion"
+                    [attr.aria-checked]="form.controls.criterion.value === criterion.criterion"
+                    (pointerenter)="prefetchValues(criterion.criterion)"
+                    (focus)="prefetchValues(criterion.criterion)"
+                    (click)="setCriterion(criterion.criterion)"
+                  >
+                    {{ criterion.dimension }}
+                  </button>
+                }
+              </div>
+              @if (showError(form.controls.criterion)) {
+                <span class="to-adm__form-error">Pick what the budget is for: a business, category, brand or master SKU.</span>
+              }
+            </div>
+
+            <div
+              class="to-adm__form-field"
+              [attr.data-invalid]="showError(form.controls.value) || !!serverErrors().value || null"
+            >
+              <label class="to-adm__form-label" for="cbValue">
+                {{ criterionLabel() || 'Select' }}
+                @if (valueOptions().length > 0) {
+                  <span class="to-adm__form-hint to-numeric">
+                    {{ valueOptions().length }} from your brand mapping
+                  </span>
+                }
+              </label>
+              <p-select
+                class="to-cb__select"
+                inputId="cbValue"
+                formControlName="value"
+                [options]="valueOptions()"
+                optionLabel="name"
+                optionValue="code"
+                [filter]="true"
+                filterBy="name,code"
+                [filterPlaceholder]="'Search ' + (criterionLabel() || 'options').toLowerCase()"
+                [placeholder]="
+                  !form.controls.criterion.value
+                    ? 'Pick the criteria first'
+                    : valuesLoading()
+                      ? 'Loading…'
+                      : 'Select ' + criterionLabel().toLowerCase()
+                "
+                [emptyMessage]="valuesLoading() ? 'Loading…' : 'Your brand mapping has none'"
+                emptyFilterMessage="Nothing matches"
+                [loading]="valuesLoading()"
+                [virtualScroll]="valueOptions().length > 60"
+                [virtualScrollItemSize]="36"
+                scrollHeight="320px"
+                [invalid]="showError(form.controls.value) || !!serverErrors().value"
+                appendTo="body"
+              >
+                <ng-template #item let-option>
+                  <span class="to-cb__option" [title]="option.code">
+                    <span class="to-cb__option-name">{{ option.name || option.code }}</span>
+                  </span>
+                </ng-template>
+              </p-select>
+              @if (valuesFailed()) {
+                <div class="to-adm__alert to-adm__alert--warn" role="alert">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>The {{ criterionLabel().toLowerCase() || 'options' }} list did not load.</span>
+                  <button type="button" pButton class="p-button-sm p-button-text" (click)="retryValues()">Try again</button>
+                </div>
+              } @else if (serverErrors().value; as message) {
+                <span class="to-adm__form-error">{{ message }}</span>
+              } @else if (form.controls.value.hasError('notAnOption')) {
+                <span class="to-adm__form-error">
+                  That {{ criterionLabel().toLowerCase() }} is not in your brand mapping any more. Pick another.
+                </span>
+              } @else if (showError(form.controls.value)) {
+                <span class="to-adm__form-error">Pick a {{ criterionLabel().toLowerCase() || 'value' }}.</span>
+              } @else if (!valuesLoading() && form.controls.criterion.value && valueOptions().length === 0) {
+                <span class="to-adm__hint">
+                  Nothing is offered because your brand mapping has no {{ criterionLabel().toLowerCase() }}. An administrator can map
+                  your brands.
+                </span>
+              }
+            </div>
+          </section>
+
+          <!-- ─── 4 · Regions and amounts ──────────────────────────────────── -->
+          <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="cb-regions">
+            <h2 class="to-adm__subtitle"><span class="to-cb__step">4</span> Regions and amounts</h2>
+
+            <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.description) || null">
+              <label class="to-adm__form-label" for="cbDescription">
+                Description
+                <span class="to-adm__form-hint">What approvers and reports will see</span>
+              </label>
+              <input
+                pInputText
+                id="cbDescription"
+                type="text"
+                formControlName="description"
+                autocomplete="off"
+                placeholder="e.g. Olpers Ittehad Plan_Aug26"
+                [attr.maxlength]="limits.description"
+                [invalid]="showError(form.controls.description)"
+              />
+              @if (showError(form.controls.description)) {
+                <span class="to-adm__form-error">
+                  {{ form.controls.description.hasError('maxlength') ? 'Use at most ' + limits.description + ' characters.' : 'Describe the budget.' }}
+                </span>
+              }
+            </div>
+
+            <div class="to-adm__form-field" [attr.data-invalid]="showError(lines) || null">
+              <div class="to-cb__regions-head">
+                <span class="to-adm__form-label" id="cbRegionsLabel">Regions</span>
+                <span class="to-cb__regions-count to-numeric">{{ value().lines.length }} of {{ regions().length }}</span>
+                <span class="to-cb__regions-actions">
+                  <button
+                    type="button"
+                    class="to-cb__link"
+                    [disabled]="value().lines.length === regions().length || saving()"
+                    (click)="selectAllRegions()"
+                  >
+                    Select all
+                  </button>
+                  <span class="to-cb__divider" aria-hidden="true">|</span>
+                  <button
+                    type="button"
+                    class="to-cb__link"
+                    [disabled]="value().lines.length === 0 || saving()"
+                    (click)="clearRegions()"
+                  >
+                    None
+                  </button>
+                </span>
+              </div>
+              <div class="to-cb__pills" role="group" aria-labelledby="cbRegionsLabel">
+                @for (region of regions(); track region.code) {
+                  <label class="to-cb__pill" [class.to-cb__pill--on]="selectedRegions().has(region.code)">
+                    <input
+                      type="checkbox"
+                      class="to-cb__checkbox"
+                      [checked]="selectedRegions().has(region.code)"
+                      [disabled]="saving()"
+                      (change)="toggleRegion(region.code)"
+                    />
+                    <span>{{ region.name || region.code }}</span>
+                  </label>
+                }
+              </div>
+              @if (showError(lines) && lines.hasError('minSelection')) {
+                <span class="to-adm__form-error">Tick at least one region.</span>
+              }
+            </div>
+
+            @if (value().lines.length > 0) {
+              @if (multiRegion()) {
+                <label class="to-cb__toggle">
+                  <input type="checkbox" class="to-cb__checkbox" formControlName="suffixRegion" />
+                  Add the region to each description
+                  <span class="to-adm__form-hint">You can still edit any line</span>
+                </label>
+              }
+
+              <div class="to-cb__lines" [class.to-cb__lines--multi]="multiRegion()" role="table" aria-label="Amount per region">
+                <div class="to-cb__line to-cb__line--head" role="row">
+                  <span role="columnheader">Region</span>
+                  @if (multiRegion()) {
+                    <span role="columnheader">Description</span>
+                  }
+                  <span role="columnheader" class="to-cb__right">Amount</span>
+                </div>
+
+                @for (view of lineViews(); track view.code) {
+                  <div
+                    class="to-cb__line"
+                    role="row"
+                    [formGroup]="lines.at(view.index)"
+                    [class.to-cb__line--saving]="view.outcome?.kind === 'saving'"
+                    [class.to-cb__line--refused]="view.outcome?.kind === 'refused' || view.outcome?.kind === 'skipped'"
+                    [attr.data-invalid]="lines.at(view.index).invalid && (lines.at(view.index).touched || attempted()) || null"
+                  >
+                    <span class="to-cb__line-region" role="cell">
+                      <button
+                        type="button"
+                        class="to-cb__remove"
+                        [attr.aria-label]="'Remove ' + view.name"
+                        [disabled]="saving()"
+                        (click)="toggleRegion(view.code)"
+                      >
+                        <tabler-icon [icon]="icons['x']" [size]="13" />
+                      </button>
+                      <span class="to-cb__line-name">{{ view.name }}</span>
+                      @if (view.outcome?.kind === 'saving') {
+                        <span class="to-adm__flag">Saving…</span>
+                      } @else if (view.outcome?.kind === 'queued' && saving()) {
+                        <span class="to-adm__flag">Waiting</span>
+                      }
+                    </span>
+
+                    @if (multiRegion()) {
+                      <span class="to-cb__line-desc" role="cell">
+                        <input
+                          pInputText
+                          type="text"
+                          formControlName="description"
+                          autocomplete="off"
+                          [attr.aria-label]="'Description for ' + view.name"
+                          [attr.maxlength]="limits.description"
+                          [invalid]="showError(lines.at(view.index).controls.description)"
+                          (input)="markCustom(view.code)"
+                        />
+                        @if (view.custom) {
+                          <button
+                            type="button"
+                            class="to-cb__reset"
+                            title="Go back to the shared description"
+                            [attr.aria-label]="'Reset the description for ' + view.name"
+                            (click)="resetDescription(view.code)"
+                          >
+                            <tabler-icon [icon]="icons['refresh']" [size]="13" />
+                          </button>
+                        }
+                      </span>
+                    }
+
+                    <span class="to-cb__line-amount" role="cell">
+                      <p-inputnumber
+                        formControlName="amount"
+                        mode="decimal"
+                        locale="en-PK"
+                        prefix="PKR "
+                        [maxFractionDigits]="0"
+                        [min]="1"
+                        [max]="limits.amount"
+                        [fluid]="true"
+                        placeholder="PKR 0"
+                        [ariaLabel]="'Amount for ' + view.name"
+                        [invalid]="showError(lines.at(view.index).controls.amount)"
+                      />
+                      <span class="to-cb__compact to-numeric" aria-hidden="true">{{ view.compact }}</span>
+                    </span>
+
+                    @if (view.outcome?.kind === 'refused' || view.outcome?.kind === 'skipped') {
+                      <span class="to-cb__line-note" role="cell">
+                        <tabler-icon [icon]="icons['alert-circle']" [size]="13" />
+                        {{ view.note }}
+                      </span>
+                    } @else if (showError(lines.at(view.index).controls.amount)) {
+                      <span class="to-adm__form-error to-cb__line-note" role="cell">
+                        {{ amountError(lines.at(view.index).controls.amount) }}
+                      </span>
+                    } @else if (multiRegion() && showError(lines.at(view.index).controls.description)) {
+                      <span class="to-adm__form-error to-cb__line-note" role="cell">
+                        {{
+                          lines.at(view.index).controls.description.hasError('maxlength')
+                            ? 'This description is over ' + limits.description + ' characters.'
+                            : 'Describe this region’s budget.'
+                        }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                @if (multiRegion()) {
+                  <div class="to-cb__line to-cb__line--total" role="row">
+                    <span role="cell">Total · {{ value().lines.length }} regions</span>
+                    <span role="cell"></span>
+                    <span role="cell" class="to-cb__right to-numeric">{{ totalAmount() | pkrCurrency }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <!-- ─── 5 · Forward to ───────────────────────────────────────────── -->
+          <section class="to-adm__card to-adm__card--pad to-adm__form-section" data-tour="cb-forward">
+            <h2 class="to-adm__subtitle"><span class="to-cb__step">5</span> Forward to</h2>
+
+            <div
+              class="to-adm__form-field"
+              [attr.data-invalid]="showError(form.controls.forwardToUserId) || !!serverErrors().forwardTo || null"
+            >
+              <label class="to-adm__form-label" for="cbForwardTo">
+                First approver
+                <span class="to-adm__form-hint">Levels 2 and 3 are named as each level approves</span>
+              </label>
+              <p-select
+                class="to-cb__select"
+                inputId="cbForwardTo"
+                formControlName="forwardToUserId"
+                [options]="approverOptions()"
+                optionLabel="fullName"
+                optionValue="userId"
+                [filter]="approverOptions().length > 8"
+                filterBy="fullName,userId"
+                filterPlaceholder="Search approvers"
+                [placeholder]="
+                  !form.controls.schemeGroupKey.value
+                    ? 'Pick a scheme group first'
+                    : approversLoading()
+                      ? 'Loading…'
+                      : 'Select approver'
+                "
+                [emptyMessage]="approversLoading() ? 'Loading…' : 'Nobody can approve these budgets for you'"
+                [loading]="approversLoading()"
+                [invalid]="showError(form.controls.forwardToUserId) || !!serverErrors().forwardTo"
+                appendTo="body"
+                (onChange)="onForwardToPicked()"
+              >
+                <ng-template #item let-approver>
+                  <span class="to-cb__option">
+                    <span class="to-cb__option-name">{{ approver.fullName || approver.userId }}</span>
+                    <span class="to-cb__option-meta to-cb__mono">{{ approver.userId }}</span>
+                  </span>
+                </ng-template>
+              </p-select>
+
+              @if (approversFailed()) {
+                <div class="to-adm__alert to-adm__alert--warn" role="alert">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>The approver list did not load.</span>
+                  <button type="button" pButton class="p-button-sm p-button-text" (click)="retryApprovers()">Try again</button>
+                </div>
+              } @else if (serverErrors().forwardTo; as message) {
+                <span class="to-adm__form-error">{{ message }} The list has been read again.</span>
+              } @else if (
+                form.controls.schemeGroupKey.value && !approversLoading() && approverOptions().length === 0
+              ) {
+                <div class="to-adm__alert to-adm__alert--warn" role="status">
+                  <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+                  <span>
+                    <strong>Nobody can approve {{ selectedGroup()?.name }} budgets you raise.</strong>
+                    No active holder of its first approving role shares a region with you. An administrator can check the
+                    approval hierarchy and region mapping.
+                  </span>
+                </div>
+              } @else if (showError(form.controls.forwardToUserId)) {
+                <span class="to-adm__form-error">Pick who approves first.</span>
+              } @else if (forwardToReason() === 'remembered') {
+                <span class="to-adm__hint">Who you forwarded {{ selectedGroup()?.name }} budgets to last time.</span>
+              } @else if (forwardToReason() === 'only') {
+                <span class="to-adm__hint">The only approver for {{ selectedGroup()?.name }} budgets you raise.</span>
+              } @else if (forwardToReason() === 'reused') {
+                <span class="to-adm__hint">The first approver of the budget you reused.</span>
+              }
+            </div>
+          </section>
+        </div>
+
+        <!-- ─── Summary and actions ────────────────────────────────────────── -->
+        <aside class="to-adm__form-aside">
+          <div class="to-adm__summary" data-tour="cb-summary">
+            <h2 class="to-adm__summary-title">
+              {{ value().lines.length > 1 ? value().lines.length + ' budgets' : 'The budget' }}
+            </h2>
+
+            <dl class="to-adm__summary-list">
+              <div class="to-adm__summary-row">
+                <dt>Scheme</dt>
+                <dd class="to-adm__summary-stack">
+                  @if (selectedType(); as type) {
+                    <span [title]="type.name">{{ type.name }}</span>
+                    <span class="to-adm__summary-sub">{{ selectedGroup()?.name }}</span>
+                  } @else {
+                    {{ selectedGroup()?.name || '—' }}
+                  }
+                </dd>
+              </div>
+              <div class="to-adm__summary-row">
+                <dt>Period</dt>
+                <dd class="to-numeric">
+                  {{ periodLabel({ year: value().year, month: value().month }) || '—' }}
+                </dd>
+              </div>
+              <div class="to-adm__summary-row">
+                <dt>Product</dt>
+                <dd class="to-adm__summary-stack">
+                  @if (valueName()) {
+                    <span [title]="valueName()">{{ valueName() }}</span>
+                    <span class="to-adm__summary-sub">{{ criterionLabel() }}</span>
+                  } @else {
+                    —
+                  }
+                </dd>
+              </div>
+              <div class="to-adm__summary-row">
+                <dt>{{ value().lines.length > 1 ? 'Regions' : 'Region' }}</dt>
+                <dd class="to-adm__summary-stack">
+                  @if (lineViews().length === 0) {
+                    —
+                  } @else if (lineViews().length === 1) {
+                    {{ lineViews()[0].name }}
+                  } @else {
+                    <span class="to-numeric">{{ lineViews().length }} regions</span>
+                    <span class="to-adm__summary-sub">
+                      @for (view of lineViews(); track view.code; let last = $last) {
+                        {{ view.name }}{{ last ? '' : ', ' }}
+                      }
+                    </span>
+                  }
+                </dd>
+              </div>
+              <div class="to-adm__summary-row">
+                <dt>{{ value().lines.length > 1 ? 'Total' : 'Amount' }}</dt>
+                <dd class="to-numeric to-cb__total">{{ totalAmount() > 0 ? (totalAmount() | pkrCurrency) : '—' }}</dd>
+              </div>
+              <div class="to-adm__summary-row">
+                <dt>Forward to</dt>
+                <dd>{{ approverName() || '—' }}</dd>
+              </div>
+            </dl>
+
+            @if (receipt(); as r) {
+              @if (r.lines.length > 0) {
+                <div class="to-adm__summary-block to-cb__receipt" role="status" aria-live="polite">
+                  <h3 class="to-adm__summary-heading to-cb__receipt-title" [class.to-cb__receipt-title--partial]="!r.complete">
+                    <tabler-icon [icon]="r.complete ? icons['circle-check'] : icons['alert-triangle']" [size]="14" />
+                    @if (r.complete) {
+                      {{ r.lines.length === 1 ? 'Saved' : 'All ' + r.lines.length + ' saved' }}
+                    } @else {
+                      {{ r.lines.length }} of {{ r.attempted }} saved
+                    }
+                  </h3>
+                  <ul class="to-cb__receipt-lines">
+                    @for (line of r.lines; track line.shellCode) {
+                      <li>
+                        <span class="to-cb__mono">{{ line.shellCode }}</span>
+                        <span class="to-cb__receipt-region">{{ line.regionName }}</span>
+                        <span class="to-numeric">{{ line.amount | pkrCurrency }}</span>
+                        @if (line.duplicate) {
+                          <span class="to-adm__flag" title="Saved moments earlier with exactly these details; not saved twice">
+                            Already saved
+                          </span>
+                        }
+                      </li>
+                    }
+                  </ul>
+                  <p class="to-adm__hint">Forwarded to {{ r.approver }}. {{ notificationNote(r) }}</p>
+                  @if (r.complete) {
+                    <p class="to-adm__hint">The scheme, period, regions and approver are kept for your next budget.</p>
+                  }
+                </div>
+              }
+            } @else {
+              <div class="to-adm__summary-block">
+                <h3 class="to-adm__summary-heading">On save</h3>
+                <ul class="to-adm__facts">
+                  @if (multiRegion()) {
+                    <li><strong>Each region becomes its own budget shell,</strong> saved one after another.</li>
+                  } @else {
+                    <li><strong>One budget shell</strong> is created and waits for approval.</li>
+                  }
+                  <li>
+                    <strong>{{ approverName() || 'The first approver' }}</strong> is asked to approve at level 1, and
+                    is emailed where the server sends mail.
+                  </li>
+                  <li>Saving the same budget twice within a minute is refused, so a double click cannot create two.</li>
+                </ul>
+              </div>
+            }
+          </div>
+
+          @if (serverErrors().general; as message) {
+            <p class="to-adm__alert to-adm__alert--warn" role="alert">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span>{{ message }}</span>
+            </p>
+          }
+
+          @if (attempted() && invalidCount() > 0 && !saving()) {
+            <p class="to-adm__attention" role="status">
+              <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+              {{ invalidCount() === 1 ? '1 field needs' : invalidCount() + ' fields need' }} attention.
+            </p>
+          }
+
+          <div class="to-adm__form-actions">
+            <button type="button" pButton class="p-button-text p-button-sm" [disabled]="saving()" (click)="startOver()">
+              Start over
+            </button>
+            <button type="submit" pButton class="p-button-sm" [disabled]="saving()" data-tour="cb-save">
+              {{ saveLabel() }}
+            </button>
+          </div>
+          <p class="to-cb__shortcut"><kbd>Ctrl</kbd> + <kbd>S</kbd> saves from anywhere on the form</p>
+        </aside>
+      </div>
+    </form>
+  }
+
+  @defer (on viewport; prefetch on idle) {
+    <to-my-budgets
+      [currentYear]="gridYears().current"
+      [latestYear]="gridYears().latest"
+      [createdCodes]="createdCodes()"
+      (reuse)="reuse($event)"
+    />
+  } @placeholder {
+    <!-- Carries the grid's tour target, so the tour scrolling to it is what loads the grid. -->
+    <div class="to-adm__card to-cb__grid-placeholder" aria-hidden="true" data-tour="cb-my-budgets">
+      <to-skeleton width="160px" height="16px" />
+      <to-skeleton width="100%" height="180px" />
+    </div>
+  }
+</div>

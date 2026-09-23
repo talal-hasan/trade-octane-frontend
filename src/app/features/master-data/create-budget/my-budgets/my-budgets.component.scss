@@ -1,0 +1,251 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// The table, flags, pager and skeleton rows are shared Administration chrome from
+// _admin.scss (`.to-adm__table`, `.to-adm__pager`, …). Only what is particular to this grid
+// is declared here.
+
+.to-mb {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// ─── Header: title, tabs, filters ─────────────────────────────────────────────
+
+.to-mb__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-3 t.$to-space-4;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+}
+
+.to-mb__tabs {
+  display: flex;
+  gap: t.$to-space-1;
+}
+
+.to-mb__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 t.$to-space-3;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--to-text-secondary);
+  font-family: inherit;
+  font-size: t.$to-font-size-sm;
+  cursor: pointer;
+  @include u.motion(color, border-color);
+
+  &:hover {
+    color: var(--to-text-primary);
+  }
+
+  &--on {
+    border-bottom-color: var(--to-accent);
+    color: var(--to-accent-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-mb__tab-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.to-mb__filters {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-left: auto;
+}
+
+.to-mb__search {
+  min-width: 220px;
+}
+
+.to-mb__year {
+  width: 128px;
+}
+
+// ─── Body ─────────────────────────────────────────────────────────────────────
+
+.to-mb__body {
+  min-width: 0;
+  @include u.motion(opacity);
+
+  // The last page stays on screen while the next one loads, rather than blinking to a skeleton.
+  &--busy {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+.to-mb__failed {
+  margin: t.$to-space-3 t.$to-space-4 0;
+}
+
+.to-mb__scroll {
+  overflow-x: auto;
+}
+
+.to-mb__table {
+  // The card is the frame; the table's own first row border would double the header's.
+  thead .to-adm__th {
+    border-top: none;
+  }
+}
+
+.to-mb__row {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+
+  &--open {
+    background: color-mix(in srgb, var(--to-accent) 6%, var(--to-bg-1));
+  }
+
+  // Saved on this visit: a rail rather than a fill, so it still reads as ordinary data.
+  &--new td:first-child {
+    box-shadow: inset 3px 0 0 var(--to-success-solid);
+  }
+}
+
+.to-mb__code {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+}
+
+.to-mb__caret {
+  color: var(--to-text-muted);
+}
+
+.to-mb__product {
+  max-width: 200px;
+}
+
+.to-mb__clip {
+  display: block;
+  @include u.truncate;
+}
+
+.to-mb__sub {
+  display: block;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-mb__type {
+  max-width: 180px;
+}
+
+.to-mb__desc {
+  max-width: 260px;
+}
+
+.to-mb__actions {
+  width: 1%;
+  text-align: right;
+}
+
+.to-mb__reuse {
+  gap: t.$to-space-1;
+}
+
+.to-mb__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+// ─── Expanded row ─────────────────────────────────────────────────────────────
+
+.to-mb__detail {
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-4;
+  border-top: 1px dashed var(--to-border);
+  background: color-mix(in srgb, var(--to-accent) 3%, var(--to-bg-1));
+  cursor: default;
+}
+
+.to-mb__detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr);
+  gap: t.$to-space-4;
+  align-items: start;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-mb__detail-chain {
+  min-width: 0;
+
+  .to-adm__alert {
+    margin: 0;
+  }
+}
+
+.to-mb__facts {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+
+  div {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: t.$to-space-2;
+  }
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-mb__wrap {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.to-mb__link {
+  margin-left: t.$to-space-1;
+  color: var(--to-accent-text);
+  text-decoration: underline;
+}
+
+.to-mb__pager {
+  padding: t.$to-space-2 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+}

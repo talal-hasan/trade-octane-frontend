@@ -443,6 +443,25 @@ const ADMINISTRATION_2: MenuBlueprintEntry[] = [
   },
 ];
 
+// ─── Master Data ──────────────────────────────────────────────────────────────
+//
+// The screens under Master Data (menuId 35, catalog "1"), served from
+// `/api/v1/master-data/...` and authorised on each screen's own menu grant. They are business
+// screens used by scheme initiators, not administration ones, so they sit under Trade
+// Marketing with the module. The module row itself stays `pending` below: its unported
+// screens (Edit Budget, Gross Profit, …) fold into it and open their own legacy placeholder.
+const MASTER_DATA: MenuBlueprintEntry[] = [
+  {
+    menuId: 36,
+    legacyName: 'Budget',
+    route: '/master-data/create-budget',
+    navLabel: 'Create Budget',
+    icon: 'wallet',
+    group: NAV_GROUP_TRADE,
+    ported: true,
+  },
+];
+
 // ─── Everything else ──────────────────────────────────────────────────────────
 //
 // The other 19 root modules are outside the Administration 1.0 scope being built now.
@@ -496,6 +515,7 @@ const OTHER_MODULES: MenuBlueprintEntry[] = [
 export const MENU_BLUEPRINT: readonly MenuBlueprintEntry[] = [
   ...ADMINISTRATION,
   ...ADMINISTRATION_2,
+  ...MASTER_DATA,
   ...OTHER_MODULES,
 ];
 

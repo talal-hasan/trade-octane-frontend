@@ -309,6 +309,20 @@ export const routes: Routes = [
           ),
       },
 
+      // ─── Master Data ───────────────────────────────────────────────────────
+      // Business screens under menu 35, over /api/v1/master-data. Unported rows open their
+      // own legacy placeholder — see MASTER_DATA in menu-blueprint.ts.
+      {
+        // Budget.aspx: the form, and the caller's own pending and approved budgets beneath it.
+        path: 'master-data/create-budget',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/master-data/create-budget/create-budget.component').then(
+            (m) => m.CreateBudgetComponent,
+          ),
+      },
+
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {
         path: 'account',
