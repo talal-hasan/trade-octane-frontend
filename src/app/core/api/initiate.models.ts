@@ -44,6 +44,16 @@ export interface TradeOfferCriterion {
   scope: TradeOfferCriterionScope;
 }
 
+/**
+ * A system an approved scheme can be posted to — `SCHEME_MECHANISM.DB`. Salesflo today; IBY is
+ * listed ahead of the move, and becomes pickable when the server says it is available.
+ */
+export interface TradeOfferDatabaseOption {
+  code: string;
+  name: string;
+  isAvailable: boolean;
+}
+
 /** Everything the Trade Offer form needs on load, in one response. */
 export interface TradeOfferCatalogueResponse {
   /** `002` — every scheme this screen makes. */
@@ -57,8 +67,13 @@ export interface TradeOfferCatalogueResponse {
   claimTypes: TradeOfferClaimType[];
   /** The active criteria this API lists options for, in `SCHEME_CRITERIA` order. */
   criteria: TradeOfferCriterion[];
-  /** Where an approved scheme is posted — legacy's disabled Database dropdown. */
+  /** Where an approved scheme is posted by default — legacy's Database dropdown. */
   database: TradeOfferOption;
+  /**
+   * Every system the Posted To dropdown lists. Absent from servers older than the IBY change;
+   * the screen then offers `database` alone, with IBY shown as not in use yet.
+   */
+  databases?: TradeOfferDatabaseOption[];
 }
 
 /** Where a scheme stands. Only Draft and ReturnedByApprover can be changed. */
@@ -229,6 +244,12 @@ export interface SaveTradeOfferSlabRequest {
   discountValue: number;
   forecastLimit: number;
   forEvery: number;
+}
+
+/** Save Mechanics: the shell, and where the scheme is posted (the default when omitted). */
+export interface SaveTradeOfferMechanicsRequest {
+  budgetShellCode: string;
+  database?: string;
 }
 
 /** Replaces one criterion's values; an empty list clears it. */

@@ -2,7 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { dec, int } from '../../../core/api/api.types';
 import {
+  TradeOfferCatalogueResponse,
   TradeOfferCriterionSelection,
+  TradeOfferOption,
   TradeOfferNotificationState,
   TradeOfferScheme,
   TradeOfferSchemeStatus,
@@ -264,6 +266,50 @@ export function mechanicsOutdated(scheme: TradeOfferScheme): boolean {
     round2(dec(mechanics.figures.totalDiscount)) !== total ||
     round2(dec(mechanics.figures.activatedVolume)) !== round2(slab.forecastLimit)
   );
+}
+
+// ─── Posted to ────────────────────────────────────────────────────────────────
+
+/** The system schemes will be posted to once Salesflo is replaced. */
+export const IBY = 'IBY';
+
+export interface DatabaseChoice {
+  code: string;
+  name: string;
+  disabled: boolean;
+  /** Why it cannot be picked. */
+  note: string;
+}
+
+/**
+ * The Posted To dropdown. `listed` is false while the server names only its default: the choice
+ * is then that default, with IBY shown but not pickable, and nothing is sent on save.
+ *
+ * A code the scheme was saved with that is no longer offered (legacy's ORANGE, `0`, on 41,603
+ * older schemes) is kept in the list, disabled, so the dropdown never shows blank for it.
+ */
+export function databaseChoices(
+  catalogue: TradeOfferCatalogueResponse | null,
+  saved: TradeOfferOption | null | undefined,
+): { choices: DatabaseChoice[]; listed: boolean; defaultCode: string } {
+  const fallback = catalogue?.database ?? { code: '1', name: 'Salesflo' };
+  const offered = catalogue?.databases ?? [];
+  const listed = offered.length > 0;
+  const choices: DatabaseChoice[] = listed
+    ? offered.map((database) => ({
+        code: database.code,
+        name: database.name || database.code,
+        disabled: !database.isAvailable,
+        note: database.isAvailable ? '' : 'Not in use yet',
+      }))
+    : [
+        { code: fallback.code, name: fallback.name || fallback.code, disabled: false, note: '' },
+        { code: IBY, name: IBY, disabled: true, note: 'Not in use yet' },
+      ];
+  if (saved?.code && !choices.some((choice) => choice.code === saved.code)) {
+    choices.push({ code: saved.code, name: saved.name || saved.code, disabled: true, note: 'No longer offered' });
+  }
+  return { choices, listed, defaultCode: fallback.code };
 }
 
 // ─── Status ───────────────────────────────────────────────────────────────────

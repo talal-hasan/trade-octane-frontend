@@ -1,9 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { TradeOfferCriterionSelection, TradeOfferScheme } from '../../../core/api/initiate.models';
+import {
+  TradeOfferCatalogueResponse,
+  TradeOfferCriterionSelection,
+  TradeOfferScheme,
+} from '../../../core/api/initiate.models';
 import {
   approvalChainOf,
   criteriaRequirements,
+  databaseChoices,
   daysIn,
   followingToDate,
   formatMoney,
@@ -169,5 +174,46 @@ describe('approval', () => {
       }),
     );
     expect(refusal).toEqual({ code: 'slab_exists', message: 'Only one slab can be defined', status: 409, toasted: false });
+  });
+});
+
+describe('posted to', () => {
+  const catalogue = (databases?: TradeOfferCatalogueResponse['databases']): TradeOfferCatalogueResponse => ({
+    processCode: '002',
+    today: '2026-09-24',
+    schemeIdMaxLength: 10,
+    descriptionMaxLength: 60,
+    discountTypes: [],
+    schemeTypes: [],
+    claimTypes: [],
+    criteria: [],
+    database: { code: '1', name: 'Salesflo' },
+    databases,
+  });
+
+  it('offers the server default and shows IBY as not in use until the server lists the systems', () => {
+    const { choices, listed, defaultCode } = databaseChoices(catalogue([]), null);
+    expect(listed).toBe(false);
+    expect(defaultCode).toBe('1');
+    expect(choices.map((choice) => [choice.name, choice.disabled])).toEqual([
+      ['Salesflo', false],
+      ['IBY', true],
+    ]);
+  });
+
+  it('follows the server once it lists them, and keeps a retired saved code visible', () => {
+    const { choices, listed } = databaseChoices(
+      catalogue([
+        { code: '1', name: 'Salesflo', isAvailable: true },
+        { code: '3', name: 'IBY', isAvailable: true },
+      ]),
+      { code: '0', name: 'ORANGE' },
+    );
+    expect(listed).toBe(true);
+    expect(choices.map((choice) => [choice.code, choice.disabled])).toEqual([
+      ['1', false],
+      ['3', false],
+      ['0', true],
+    ]);
   });
 });

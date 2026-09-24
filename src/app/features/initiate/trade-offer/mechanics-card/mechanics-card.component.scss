@@ -7,7 +7,7 @@
 
 .to-tro-mech__shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
+  grid-template-columns: minmax(0, 1fr) 200px;
   gap: t.$to-space-3;
   align-items: end;
 }
