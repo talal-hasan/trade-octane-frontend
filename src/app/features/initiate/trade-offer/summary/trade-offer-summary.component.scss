@@ -1,0 +1,130 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-tro-sum__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+  margin-bottom: t.$to-space-3;
+
+  .to-adm__summary-title {
+    margin: 0;
+  }
+}
+
+.to-tro-sum__strong {
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-tro-sum__good {
+  color: var(--to-success);
+}
+
+.to-tro-sum__bad {
+  color: var(--to-danger);
+}
+
+.to-tro-sum__shell {
+  @include u.truncate;
+  margin: 0 0 t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+}
+
+// ─── Progress: every part, and what it still needs ───────────────────────────
+
+.to-tro-sum__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-tro-sum__step {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  width: 100%;
+  padding: t.$to-space-1 t.$to-space-2;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: none;
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  text-align: left;
+  color: var(--to-text-primary);
+  cursor: pointer;
+  @include u.motion(background-color);
+
+  &:hover:not(:disabled) {
+    background: var(--to-bg-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+
+  &--locked {
+    color: var(--to-text-muted);
+    cursor: default;
+  }
+}
+
+.to-tro-sum__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--to-border-strong);
+  border-radius: 50%;
+  font-size: 10px;
+  color: var(--to-text-muted);
+
+  .to-tro-sum__step--done & {
+    border-color: var(--to-success-solid);
+    background: var(--to-success-solid);
+    color: var(--to-bg-1);
+  }
+
+  .to-tro-sum__step--warn & {
+    border-color: var(--to-warning-solid);
+    color: var(--to-warning);
+  }
+}
+
+.to-tro-sum__step-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.to-tro-sum__note {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+
+  .to-tro-sum__step--warn & {
+    color: var(--to-warning);
+  }
+}
+
+.to-tro-sum__shortcut {
+  margin: t.$to-space-3 0 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+
+  kbd {
+    padding: 0 4px;
+    border: 1px solid var(--to-border);
+    border-radius: 4px;
+    background: var(--to-bg-2);
+    font-family: inherit;
+  }
+}

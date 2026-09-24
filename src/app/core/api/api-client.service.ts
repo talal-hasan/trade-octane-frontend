@@ -64,12 +64,12 @@ export class ApiClient {
     return this.http.post<T>(this.url(path), body ?? null, { params: toHttpParams(query), context });
   }
 
-  put<T>(path: string, body?: unknown, query?: Query): Observable<T> {
-    return this.http.put<T>(this.url(path), body ?? null, { params: toHttpParams(query) });
+  put<T>(path: string, body?: unknown, query?: Query, context?: HttpContext): Observable<T> {
+    return this.http.put<T>(this.url(path), body ?? null, { params: toHttpParams(query), context });
   }
 
-  delete<T>(path: string, query?: Query): Observable<T> {
-    return this.http.delete<T>(this.url(path), { params: toHttpParams(query) });
+  delete<T>(path: string, query?: Query, context?: HttpContext): Observable<T> {
+    return this.http.delete<T>(this.url(path), { params: toHttpParams(query), context });
   }
 
   /**

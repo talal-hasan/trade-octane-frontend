@@ -598,6 +598,48 @@ export const CLAIM_HIERARCHY_TOUR: TourDefinition = {
   ],
 };
 
+export const TRADE_OFFER_TOUR: TourDefinition = {
+  id: 'initiate-trade-offer',
+  label: 'How a trade offer is defined and sent',
+  steps: [
+    {
+      target: '[data-tour="tro-scheme"]',
+      title: 'New, existing, or a copy',
+      body: 'A new scheme gets its sequence ID when it is created. Existing searches your drafts and the schemes approvers sent back to you. Most schemes follow one just like them: Copy into a new scheme starts from the setup, slab and criteria of the open one.',
+    },
+    {
+      target: '[data-tour="tro-setup"]',
+      title: 'The setup comes first',
+      body: 'A scheme runs within one month and may not start before today. The slab, criteria and mechanics are saved against the sequence ID, so they open once the scheme is created.',
+    },
+    {
+      target: '[data-tour="tro-slab"]',
+      title: 'One slab, read back in words',
+      body: 'The discount is given for every "For every" litres. The forecast is the volume the scheme is expected to move, and the total discount — discount ÷ for every × forecast — is what it takes from the budget.',
+    },
+    {
+      target: '[data-tour="tro-criteria"]',
+      title: 'Where it applies, and to what',
+      body: 'Click a value to add it; the selected list stays beside the options. To be sent, a scheme needs exactly one region and at least one master SKU, and no brand. Unsaved selections are kept while you edit another criterion.',
+    },
+    {
+      target: '[data-tour="tro-mechanics"]',
+      title: 'The mechanics compute themselves',
+      body: 'Gross profit, total discount, ROI and uplift follow the saved slab, master SKUs and the shell you pick. The discount may not exceed what the shell has left; saving takes it from the shell.',
+    },
+    {
+      target: '[data-tour="tro-approval"]',
+      title: 'Every reason, and a way to each',
+      body: 'Once everything looks in place the check runs by itself and lists who can approve. Sending emails the approver, and the scheme becomes read-only until an approver returns it.',
+    },
+    {
+      target: '[data-tour="tro-summary"]',
+      title: 'What still stands in the way',
+      body: 'The summary follows you down the page: the offer, the discount against the shell, and each part still to do. Ctrl+S saves the part you are in.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -649,6 +691,8 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: startsWith('/admin2/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
   { match: (p, q) => p === '/admin2/user-mapping' && q.get('tab') === 'regions', tour: REGION_ROLES_TOUR },
   { match: exact('/admin2/user-mapping'), tour: USER_MAPPING_TOUR },
+
+  { match: exact('/initiate/trade-offer'), tour: TRADE_OFFER_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

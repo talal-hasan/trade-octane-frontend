@@ -1,0 +1,202 @@
+<section
+  id="to-trade-offer-mechanics"
+  class="to-adm__card to-adm__card--pad to-adm__form-section to-tro-mech"
+  [class.to-adm__card--flash]="store.highlighted() === 'mechanics'"
+  data-step="mechanics"
+  data-tour="tro-mechanics"
+>
+  <div class="to-adm__section-head">
+    <h2 class="to-adm__subtitle">
+      <span class="to-adm__step-no" [class.to-adm__step-no--done]="store.mechanicsSaved() && upToDate()">4</span>
+      Discount mechanics
+    </h2>
+    <span
+      class="to-adm__flag"
+      [class.to-adm__flag--ok]="headFlag().tone === 'ok'"
+      [class.to-adm__flag--warn]="headFlag().tone === 'warn'"
+    >
+      {{ headFlag().text }}
+    </span>
+  </div>
+
+  @if (locked()) {
+    <p class="to-adm__locked">
+      <tabler-icon [icon]="icons['lock']" [size]="14" />
+      Create the scheme first. Its mechanics are computed from the slab and the master SKUs' gross profit.
+    </p>
+  } @else {
+    <!-- ─── Budget shell ───────────────────────────────────────────────────────── -->
+    <div class="to-tro-mech__shell">
+      <div class="to-adm__form-field">
+        <label class="to-adm__form-label" for="troShell">
+          Budget shell
+          @if (editable()) {
+            <span class="to-adm__form-hint">Approved for {{ month() }}, in your regions, for this claim type</span>
+          }
+        </label>
+        @if (editable()) {
+          <p-select
+            inputId="troShell"
+            [formControl]="shellControl"
+            [options]="shellOptions()"
+            optionLabel="name"
+            optionValue="shellCode"
+            [filter]="shellOptions().length > 8"
+            filterBy="name,shellCode"
+            filterPlaceholder="Search shells"
+            [placeholder]="store.shellsLoading() ? 'Loading…' : 'Select budget shell'"
+            [loading]="store.shellsLoading()"
+            [emptyMessage]="store.shellsLoading() ? 'Loading…' : 'No budget shell fits this scheme'"
+            [fluid]="true"
+            appendTo="body"
+          >
+            <ng-template #item let-shell>
+              <span class="to-tro-mech__option">
+                <span class="to-tro-mech__option-name" [title]="shell.name">{{ shell.name }}</span>
+                <span class="to-tro-mech__option-meta to-numeric">
+                  {{ formatMoney(shell.available) }} left
+                  @if (!shell.ofRegion) {
+                    · <span class="to-tro-mech__other">other region</span>
+                  }
+                </span>
+              </span>
+            </ng-template>
+          </p-select>
+        } @else {
+          <span class="to-tro-mech__fixed" [title]="saved()?.budgetShell?.name ?? ''">
+            {{ saved()?.budgetShell?.name || saved()?.budgetShellCode || '—' }}
+          </span>
+        }
+      </div>
+      <div class="to-adm__form-field to-tro-mech__db">
+        <span class="to-adm__form-label">Posted to</span>
+        <span class="to-tro-mech__fixed">{{ database() }}</span>
+      </div>
+    </div>
+
+    @if (store.shellsFailed()) {
+      <div class="to-adm__alert to-adm__alert--warn" role="alert">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>The budget shells did not load.</span>
+        <button type="button" pButton class="p-button-sm p-button-text" (click)="store.retryShells()">Try again</button>
+      </div>
+    } @else if (editable() && store.shells()?.length === 0) {
+      <div class="to-adm__alert to-adm__alert--warn" role="status">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>
+          <strong>No budget shell fits this scheme.</strong> A shell must be approved, for {{ month() }}, in one of your
+          regions, and of a scheme type mapped to the claim type. Master Data → Create Budget raises one.
+        </span>
+      </div>
+    } @else if (regionMismatch()) {
+      <div class="to-adm__alert to-adm__alert--warn" role="status">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>Please select Budget shell of selected Region: this shell is for another region than the scheme's.</span>
+      </div>
+    }
+
+    @if (selected(); as shell) {
+      <div class="to-tro-mech__headroom">
+        <to-headroom-bar [total]="shell.total" [consumed]="shell.allocated" [pending]="totalDiscount()" />
+        <p class="to-adm__hint">
+          Other schemes' saved mechanics already take {{ formatMoney(shell.allocated) }} of
+          {{ formatMoney(shell.total) }}; this one takes {{ formatMoney(totalDiscount()) }}.
+        </p>
+      </div>
+    }
+
+    <!-- ─── Figures ────────────────────────────────────────────────────────────── -->
+    @if (editable() && !store.slab()) {
+      <p class="to-adm__locked">
+        <tabler-icon [icon]="icons['info-circle']" [size]="14" />
+        Add the slab first — every figure follows from it.
+        <button type="button" class="to-adm__link" (click)="store.goTo('slab')">Go to Slab</button>
+      </p>
+    } @else if (editable() && !store.requirements().masterSkuOk) {
+      <p class="to-adm__locked">
+        <tabler-icon [icon]="icons['info-circle']" [size]="14" />
+        Add a Master SKU criterion — gross profit per litre is the average of its master SKUs'.
+        <button type="button" class="to-adm__link" (click)="store.goTo('criteria')">Go to Criteria</button>
+      </p>
+    } @else if (store.calcError(); as error) {
+      @if (!error.toasted) {
+        <div class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>{{ error.message }}</span>
+          @if (error.code === 'gross_profit_not_defined') {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="store.goTo('criteria')">
+              Go to Criteria
+            </button>
+          } @else {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="store.recalculate()">Try again</button>
+          }
+        </div>
+      }
+    } @else if (figures().length > 0) {
+      <dl class="to-tro-mech__figures" [class.to-tro-mech__figures--busy]="store.calcLoading()" aria-live="polite">
+        @for (figure of figures(); track figure.label) {
+          <div class="to-tro-mech__figure">
+            <dt>{{ figure.label }}</dt>
+            <dd
+              class="to-numeric"
+              [class.to-tro-mech__good]="figure.tone === 'good'"
+              [class.to-tro-mech__bad]="figure.tone === 'bad'"
+            >
+              {{ figure.value }}
+            </dd>
+          </div>
+        }
+      </dl>
+    } @else if (store.calcLoading()) {
+      <p class="to-adm__locked">Calculating…</p>
+    }
+
+    @if (exceeds()) {
+      <div class="to-adm__alert to-adm__alert--warn to-tro-mech__exceeds" role="alert">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>
+          <strong>Discount exceeds Available Budget. Contact Admin.</strong>
+          {{ formatMoney(totalDiscount()) }} is more than the {{ formatMoney(selected()?.available ?? 0) }} left in the shell.
+          Lower the slab's forecast or discount, or pick another shell.
+        </span>
+      </div>
+    }
+
+    @if (refusal(); as refused) {
+      @if (!refused.toasted) {
+        <div class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>{{ refused.message }}</span>
+        </div>
+      }
+    }
+
+    @if (editable()) {
+      <div class="to-adm__form-actions">
+        <span class="to-tro-mech__state">
+          @if (store.outdated()) {
+            The slab changed after the mechanics were saved: save them again.
+          } @else if (upToDate()) {
+            Saved against this shell.
+          } @else if (saved() && store.shellCode()) {
+            Saved against another shell.
+          }
+        </span>
+        <button
+          type="button"
+          pButton
+          class="p-button-text p-button-sm"
+          [disabled]="!store.calculable() || store.calcLoading()"
+          title="Read the gross profit and the shell's budget again"
+          (click)="store.recalculate()"
+        >
+          <tabler-icon [icon]="icons['refresh']" [size]="14" />
+          Recalculate
+        </button>
+        <button type="button" pButton class="p-button-sm" [disabled]="!canSave()" (click)="save()">
+          {{ saving() ? 'Saving…' : upToDate() ? 'Saved' : 'Save mechanics' }}
+        </button>
+      </div>
+    }
+  }
+</section>

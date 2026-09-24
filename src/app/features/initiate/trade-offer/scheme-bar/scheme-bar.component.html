@@ -1,0 +1,111 @@
+<div class="to-adm__card to-tro-bar" data-tour="tro-scheme">
+  <div class="to-tro-bar__row">
+    <span class="to-adm__form-label to-tro-bar__label" id="troSchemeStatus">Scheme</span>
+    <div class="to-adm__segmented" role="radiogroup" aria-labelledby="troSchemeStatus">
+      <button
+        type="button"
+        role="radio"
+        class="to-adm__segment"
+        [class.to-adm__segment--on]="mode() === 'new'"
+        [attr.aria-checked]="mode() === 'new'"
+        (click)="chooseNew()"
+      >
+        <tabler-icon [icon]="icons['plus']" [size]="14" />
+        New
+      </button>
+      <button
+        type="button"
+        role="radio"
+        class="to-adm__segment"
+        [class.to-adm__segment--on]="mode() === 'existing'"
+        [attr.aria-checked]="mode() === 'existing'"
+        (click)="chooseExisting()"
+      >
+        <tabler-icon [icon]="icons['list-search']" [size]="14" />
+        Existing
+      </button>
+    </div>
+
+    @if (mode() === 'existing') {
+      <div class="to-tro-bar__picker">
+        <p-autocomplete
+          #picker
+          inputId="troSequenceId"
+          [formControl]="pick"
+          [suggestions]="suggestions()"
+          optionLabel="label"
+          [dropdown]="true"
+          [completeOnFocus]="true"
+          [minLength]="0"
+          [delay]="250"
+          [forceSelection]="true"
+          [showEmptyMessage]="true"
+          [emptyMessage]="searchFailed() ? 'The list did not load. Type to try again.' : 'None of your editable schemes match'"
+          placeholder="Search your schemes by sequence ID, scheme ID or description"
+          ariaLabel="Sequence ID"
+          scrollHeight="360px"
+          appendTo="body"
+          (completeMethod)="search($event.query)"
+          (onSelect)="picked($event.value)"
+          (onBlur)="onBlur()"
+        >
+          <ng-template #item let-option>
+            <span class="to-tro-bar__option">
+              <span class="to-tro-bar__option-top">
+                <span class="to-tro-bar__seq to-numeric">{{ option.sequenceId }}</span>
+                <span class="to-tro-bar__code">{{ option.schemeId }}</span>
+                @if (option.status !== 'Draft') {
+                  <to-status-pill [status]="statusPill(option.status)" [label]="statusLabel(option.status)" />
+                }
+                <span class="to-tro-bar__period to-numeric">{{ formatPeriod(option.fromDate, option.toDate) }}</span>
+              </span>
+              <span class="to-tro-bar__desc">{{ option.description }}</span>
+            </span>
+          </ng-template>
+          <ng-template #footer>
+            @if (suggestions().length > 0) {
+              <div class="to-tro-bar__footer">
+                <span class="to-numeric">{{ suggestions().length }} of {{ total() }}</span>
+                @if (nextPage()) {
+                  <button type="button" class="to-adm__link" [disabled]="searching()" (click)="more()">
+                    {{ searching() ? 'Loading…' : 'Show more' }}
+                  </button>
+                } @else if (total() > suggestions().length) {
+                  <span>Type to narrow</span>
+                }
+              </div>
+            }
+          </ng-template>
+        </p-autocomplete>
+      </div>
+    } @else {
+      <p class="to-tro-bar__hint">
+        @if (store.copySource(); as source) {
+          <tabler-icon [icon]="icons['copy']" [size]="14" />
+          <span>
+            A new scheme copied from <strong class="to-numeric">{{ source.sequenceId }}</strong> ·
+            {{ source.schemeId }}. Its slab and criteria are added once the scheme is created.
+          </span>
+          <button type="button" class="to-adm__link" (click)="cancelCopy()">Start blank instead</button>
+        } @else {
+          A sequence ID is given when the scheme is created. Then its slab, criteria and mechanics can be saved.
+        }
+      </p>
+    }
+
+    @if (store.scheme()) {
+      <div class="to-tro-bar__actions">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm p-button-outlined"
+          title="A new scheme with this one's setup, slab and criteria"
+          (click)="copy()"
+        >
+          <tabler-icon [icon]="icons['copy']" [size]="15" />
+          Copy into a new scheme
+        </button>
+      </div>
+    }
+  </div>
+</div>
