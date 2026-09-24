@@ -71,6 +71,8 @@
 .to-mb__filters {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: t.$to-space-2;
   margin-left: auto;
 }
@@ -81,6 +83,48 @@
 
 .to-mb__year {
   width: 128px;
+}
+
+.to-mb__scheme {
+  width: 200px;
+}
+
+.to-mb__region {
+  width: 170px;
+}
+
+// Beside the tabs until it runs out of room, then a row of its own, full width on small screens.
+@include u.respond-to(tablet) {
+  .to-mb__filters {
+    width: 100%;
+    margin-left: 0;
+
+    > * {
+      flex: 1 1 140px;
+      min-width: 0;
+      width: auto;
+    }
+  }
+}
+
+.to-mb__option {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  width: 100%;
+  min-width: 0;
+}
+
+.to-mb__option-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-mb__option-meta {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────

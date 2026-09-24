@@ -52,6 +52,51 @@
         ariaLabel="Year"
         appendTo="body"
       />
+      <!-- Only the scheme types and regions the caller's own budgets carry, closed regions included. -->
+      <p-select
+        class="to-mb__scheme"
+        [options]="schemeTypeOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [formControl]="schemeTypeControl"
+        [filter]="true"
+        filterBy="label,meta"
+        filterPlaceholder="Search scheme types"
+        emptyFilterMessage="No scheme type matches"
+        ariaLabel="Scheme type"
+        appendTo="body"
+      >
+        <ng-template #item let-option>
+          <span class="to-mb__option">
+            <span class="to-mb__option-name">{{ option.label }}</span>
+            @if (option.meta) {
+              <span class="to-mb__option-meta">{{ option.meta }}</span>
+            }
+          </span>
+        </ng-template>
+      </p-select>
+      <p-select
+        class="to-mb__region"
+        [options]="regionOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [formControl]="regionControl"
+        [filter]="true"
+        filterBy="label"
+        filterPlaceholder="Search regions"
+        emptyFilterMessage="No region matches"
+        ariaLabel="Region"
+        appendTo="body"
+      >
+        <ng-template #item let-option>
+          <span class="to-mb__option">
+            <span class="to-mb__option-name">{{ option.label }}</span>
+            @if (option.meta) {
+              <span class="to-mb__option-meta">{{ option.meta }}</span>
+            }
+          </span>
+        </ng-template>
+      </p-select>
     </div>
   </header>
 
@@ -85,7 +130,7 @@
         <to-empty-state
           icon="search"
           [heading]="status() === 'pending' ? 'No pending budget matches' : 'No approved budget matches'"
-          description="Search looks at the shell code and the description."
+          description="Try another search or clear the filters. Search looks at the shell code and the description."
         >
           <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
             Clear filters

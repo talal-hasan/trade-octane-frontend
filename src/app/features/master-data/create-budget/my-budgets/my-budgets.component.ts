@@ -10,6 +10,7 @@ import { Observable, catchError, debounceTime, distinctUntilChanged, map, of, sw
 
 import { int } from '../../../../core/api/api.types';
 import {
+  BudgetGridFiltersResponse,
   BudgetListStatus,
   BudgetPageResponse,
   BudgetShellResponse,
@@ -41,6 +42,8 @@ const YEARS_BACK = 8;
 interface ListQuery {
   status: BudgetListStatus;
   year: number | null;
+  schemeTypeId: number | null;
+  regionCode: string | null;
   search: string;
   page: number;
   /** Bumped to re-read after a save, past the page cache. */
@@ -52,8 +55,16 @@ type LoadState =
   | { kind: 'ready'; page: BudgetPageResponse }
   | { kind: 'failed' };
 
+/** One option of the Scheme type or Region filter. `meta` is shown muted beside the name. */
+interface FilterOption<T> {
+  label: string;
+  value: T | null;
+  meta: string;
+}
+
 function cacheKey(query: Omit<ListQuery, 'version'>): string {
-  return `${query.status}|${query.year ?? ''}|${query.search.toLowerCase()}|${query.page}`;
+  const filters = [query.year ?? '', query.schemeTypeId ?? '', query.regionCode ?? '', query.search.toLowerCase()];
+  return `${query.status}|${filters.join('|')}|${query.page}`;
 }
 
 /**
@@ -61,8 +72,9 @@ function cacheKey(query: Omit<ListQuery, 'version'>): string {
  * grids, as two tabs of one table.
  *
  * Legacy listed every budget unpaged and oldest year first (4,339 rows for one initiator).
- * Here both grids are newest first, 20 to a page, searchable by shell code or description, and
- * every page is kept for the visit, so paging back or switching tabs is instant. The tab not
+ * Here both grids are newest first, 20 to a page, searchable by shell code or description,
+ * filterable by year, scheme type and region, and every page is kept for the visit, so paging
+ * back or switching tabs is instant. The tab not
  * showing is read once the visible one has arrived, so its count is on the tab without holding
  * up the first paint.
  *
@@ -115,9 +127,13 @@ export class MyBudgetsComponent {
 
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly yearControl = new FormControl<number | null>(null);
+  protected readonly schemeTypeControl = new FormControl<number | null>(null);
+  protected readonly regionControl = new FormControl<string | null>(null);
 
   protected readonly status = signal<BudgetListStatus>('pending');
   protected readonly year = signal<number | null>(null);
+  protected readonly schemeTypeId = signal<number | null>(null);
+  protected readonly regionCode = signal<string | null>(null);
   protected readonly page = signal(1);
   protected readonly expanded = signal<string | null>(null);
   private readonly version = signal(0);
@@ -132,6 +148,9 @@ export class MyBudgetsComponent {
 
   private readonly pages = new Map<string, BudgetPageResponse>();
 
+  /** The scheme types and regions the caller's budgets carry — what the two filters offer. */
+  private readonly filterOptions = signal<BudgetGridFiltersResponse | null>(null);
+
   protected readonly canEditBudgets = computed(() => this.menuAccess.hasMenu(EDIT_BUDGET_MENU_ID));
 
   protected readonly yearOptions = computed(() => {
@@ -142,7 +161,33 @@ export class MyBudgetsComponent {
     return options;
   });
 
-  protected readonly filtered = computed(() => this.year() !== null || this.search().length > 0);
+  protected readonly schemeTypeOptions = computed<FilterOption<number>[]>(() => [
+    { label: 'All scheme types', value: null, meta: '' },
+    ...(this.filterOptions()?.schemeTypes ?? []).map((type) => {
+      const id = int(type.schemeTypeId);
+      const label = type.name || `Scheme type ${id}`;
+      // The group only where it adds something: most types are named after their group.
+      const meta = type.schemeGroup.toLowerCase() === label.toLowerCase() ? '' : type.schemeGroup;
+      return { label, value: id, meta };
+    }),
+  ]);
+
+  protected readonly regionOptions = computed<FilterOption<string>[]>(() => [
+    { label: 'All regions', value: null, meta: '' },
+    ...(this.filterOptions()?.regions ?? []).map((region) => ({
+      label: region.name || region.code,
+      value: region.code,
+      meta: region.active ? '' : 'Closed',
+    })),
+  ]);
+
+  protected readonly filtered = computed(
+    () =>
+      this.year() !== null ||
+      this.schemeTypeId() !== null ||
+      this.regionCode() !== null ||
+      this.search().length > 0,
+  );
 
   protected readonly rows = computed(() => this.shown()?.items ?? []);
 
@@ -163,6 +208,8 @@ export class MyBudgetsComponent {
   private readonly query = computed<ListQuery>(() => ({
     status: this.status(),
     year: this.year(),
+    schemeTypeId: this.schemeTypeId(),
+    regionCode: this.regionCode(),
     search: this.search(),
     page: this.page(),
     version: this.version(),
@@ -186,6 +233,18 @@ export class MyBudgetsComponent {
       this.page.set(1);
     });
 
+    this.schemeTypeControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((schemeTypeId) => {
+      this.schemeTypeId.set(schemeTypeId);
+      this.page.set(1);
+    });
+
+    this.regionControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((regionCode) => {
+      this.regionCode.set(regionCode);
+      this.page.set(1);
+    });
+
+    this.loadFilterOptions();
+
     toObservable(this.query)
       .pipe(
         switchMap((query) => this.load(query)),
@@ -202,6 +261,9 @@ export class MyBudgetsComponent {
           return;
         }
         seen = created.size;
+        // The new budgets may be the first of their scheme type or region.
+        this.api.forgetGridFilters();
+        this.loadFilterOptions();
         this.forget('pending');
         if (this.status() !== 'pending') {
           this.shown.set(null);
@@ -215,6 +277,18 @@ export class MyBudgetsComponent {
 
   // ─── Loading ────────────────────────────────────────────────────────────────
 
+  /** Cached by the service, so this is a request only on the first grid of a visit. */
+  private loadFilterOptions(): void {
+    this.api
+      .gridFilters()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (options) => this.filterOptions.set(options),
+        // The filters then offer only "All"; the grids themselves still work.
+        error: () => undefined,
+      });
+  }
+
   private load(query: ListQuery): Observable<unknown> {
     const hit = this.pages.get(cacheKey(query));
     if (hit) {
@@ -224,7 +298,7 @@ export class MyBudgetsComponent {
     }
     this.state.set({ kind: 'loading' });
     return this.api
-      .list(query.status, { year: query.year, search: query.search, page: query.page, pageSize: PAGE_SIZE })
+      .list(query.status, { ...this.filtersOf(query), page: query.page, pageSize: PAGE_SIZE })
       .pipe(
         tap((page) => {
           this.pages.set(cacheKey(query), page);
@@ -254,7 +328,7 @@ export class MyBudgetsComponent {
       return;
     }
     this.api
-      .list(other, { year: query.year, search: query.search, page: 1, pageSize: PAGE_SIZE })
+      .list(other, { ...this.filtersOf(query), page: 1, pageSize: PAGE_SIZE })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (page) => {
@@ -263,6 +337,15 @@ export class MyBudgetsComponent {
         },
         error: () => undefined,
       });
+  }
+
+  private filtersOf(query: ListQuery) {
+    return {
+      year: query.year,
+      schemeTypeId: query.schemeTypeId,
+      regionCode: query.regionCode,
+      search: query.search,
+    };
   }
 
   private forget(status: BudgetListStatus): void {
@@ -282,7 +365,16 @@ export class MyBudgetsComponent {
     }
     // Swap the rows now — the other tab's first page is usually read already — so this tab's
     // rows never sit under the other tab's columns while the switch settles.
-    const hit = this.pages.get(cacheKey({ status, year: this.year(), search: this.search(), page: 1 }));
+    const hit = this.pages.get(
+      cacheKey({
+        status,
+        year: this.year(),
+        schemeTypeId: this.schemeTypeId(),
+        regionCode: this.regionCode(),
+        search: this.search(),
+        page: 1,
+      }),
+    );
     this.shown.set(hit ?? null);
     this.status.set(status);
     this.page.set(1);
@@ -292,6 +384,8 @@ export class MyBudgetsComponent {
   protected clearFilters(): void {
     this.searchControl.setValue('');
     this.yearControl.setValue(null);
+    this.schemeTypeControl.setValue(null);
+    this.regionControl.setValue(null);
     // At once, rather than after the search's debounce.
     this.search.set('');
   }

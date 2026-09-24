@@ -7,6 +7,7 @@ import { refusalsSilent } from '../../../core/interceptors/error.interceptor';
 import {
   BudgetApproverResponse,
   BudgetCatalogueResponse,
+  BudgetGridFiltersResponse,
   BudgetListQuery,
   BudgetListStatus,
   BudgetOptionResponse,
@@ -46,6 +47,10 @@ function normaliseCatalogue(wire: BudgetCatalogueResponse): BudgetCatalogueRespo
       schemeTypes: asList(group.schemeTypes),
     })),
   };
+}
+
+function normaliseGridFilters(wire: BudgetGridFiltersResponse): BudgetGridFiltersResponse {
+  return { schemeTypes: asList(wire?.schemeTypes), regions: asList(wire?.regions) };
 }
 
 function normalisePage(wire: BudgetPageResponse): BudgetPageResponse {
@@ -113,11 +118,29 @@ export class MasterDataBudgetsApi {
     this.cache.delete(`approvers:${schemeGroupKey}`);
   }
 
+  /**
+   * The grids' Scheme type and Region filter options: whatever the caller's own budgets carry.
+   * Cached like reference data; {@link forgetGridFilters} after a save, which may add one.
+   */
+  gridFilters(): Observable<BudgetGridFiltersResponse> {
+    return this.cached('filters', () =>
+      this.api
+        .get<BudgetGridFiltersResponse | { data: BudgetGridFiltersResponse }>(`${BASE}/filters`)
+        .pipe(map(unwrapData), map(normaliseGridFilters)),
+    );
+  }
+
+  forgetGridFilters(): void {
+    this.cache.delete('filters');
+  }
+
   /** One page of the caller's approved or pending budgets, newest first. Never cached here. */
   list(status: BudgetListStatus, query: BudgetListQuery): Observable<BudgetPageResponse> {
     return this.api
       .get<BudgetPageResponse>(`${BASE}/${status}`, {
         year: query.year ?? undefined,
+        schemeTypeId: query.schemeTypeId ?? undefined,
+        regionCode: query.regionCode || undefined,
         search: query.search?.trim() || undefined,
         page: query.page,
         pageSize: query.pageSize,

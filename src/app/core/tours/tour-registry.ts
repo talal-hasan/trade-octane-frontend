@@ -635,7 +635,7 @@ export const CREATE_BUDGET_TOUR: TourDefinition = {
     {
       target: '[data-tour="cb-my-budgets"]',
       title: 'Where your budgets stand',
-      body: 'Pending budgets say which level they wait on, whose desk they are on and for how long. Open a row for the full approval chain, or Reuse it to raise the same budget again.',
+      body: 'Pending budgets say which level they wait on, whose desk they are on and for how long. Narrow either list by year, scheme type or region — closed regions included. Open a row for the full approval chain, or Reuse it to raise the same budget again.',
     },
   ],
 };

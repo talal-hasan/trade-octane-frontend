@@ -1436,7 +1436,10 @@ row 35 stays `pending`, so Edit Budget, Gross Profit, … still open their own p
     form; after a full save the scheme, period, regions and approver stay for the next budget.
     A double-submit 409 is read as "already saved as <code>".
 - `my-budgets/` — legacy's two grids as **Pending approval | Approved** tabs with counts,
-  server-paged 20 a page, search (debounced, shell code or description), Year filter; every
+  server-paged 20 a page, search (debounced, shell code or description), Year, **Scheme type
+  and Region filters** (searchable selects; options from `GET /budgets/filters` — what the
+  caller's own budgets carry, so closed regions such as Multan/North are offered, marked
+  "Closed"; cached 10 min, re-read after a save), all sent to the server; every
   page cached for the visit, the other tab's first page read after the visible one. Pending
   rows show the level, whose desk, and days waiting; rows open onto `to-approval-chain`
   (read-only) — returned / never-routed budgets say so instead. **Reuse** copies any budget

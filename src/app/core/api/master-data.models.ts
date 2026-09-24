@@ -154,9 +154,40 @@ export type BudgetListStatus = 'pending' | 'approved';
 /** Query for either grid. */
 export interface BudgetListQuery {
   year?: number | null;
+  /** A `schemeTypeId` from {@link BudgetGridFiltersResponse}. */
+  schemeTypeId?: number | null;
+  /** A region `code` from {@link BudgetGridFiltersResponse}. */
+  regionCode?: string | null;
   search?: string | null;
   page?: number;
   pageSize?: number;
+}
+
+/** A scheme type the grids can be filtered by. */
+export interface BudgetFilterSchemeTypeResponse {
+  schemeTypeId: ApiInt;
+  /** Empty for a scheme type that no longer exists. */
+  name: string;
+  /** Tells apart types of the same name: "Wholesale Discount" is in two groups. */
+  schemeGroup: string;
+}
+
+/** A region the grids can be filtered by. */
+export interface BudgetFilterRegionResponse {
+  code: string;
+  name: string;
+  /** False for a region since closed, such as Multan or North; its budgets remain. */
+  active: boolean;
+}
+
+/**
+ * `GET /master-data/budgets/filters` — the scheme types and regions of the caller's own budgets,
+ * in either grid. Not the catalogue: that lists only what may be raised today, and a third of
+ * all budgets are for regions since closed.
+ */
+export interface BudgetGridFiltersResponse {
+  schemeTypes: BudgetFilterSchemeTypeResponse[];
+  regions: BudgetFilterRegionResponse[];
 }
 
 /** Body of `POST /master-data/budgets` — every member is required. */
