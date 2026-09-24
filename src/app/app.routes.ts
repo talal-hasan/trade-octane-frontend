@@ -336,6 +336,18 @@ export const routes: Routes = [
           ),
       },
 
+      // ─── Approve ───────────────────────────────────────────────────────────
+      // Business screens under menu 2, over /api/v1/approve. Unported rows open their own
+      // legacy placeholder — see APPROVE in menu-blueprint.ts.
+      {
+        // Approve_Budget.aspx (menu 40): the budgets waiting on the signed-in approver. The
+        // budget type and level filters are `?type=<schemeGroupKey>&level=<1-3>`.
+        path: 'approve/budgets',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/approve/budgets/approve-budgets.component').then((m) => m.ApproveBudgetsComponent),
+      },
+
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {
         path: 'account',

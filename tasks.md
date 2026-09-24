@@ -1525,3 +1525,58 @@ row 35 stays `pending`, so Edit Budget, Gross Profit, … still open their own p
   Build, lint and 196 specs pass; both new stylesheets are under the 8 kB budget.
 - Local `BW_Dairy.dbo.SKU_Hierarchy` is empty, so Master SKU options cannot be checked locally.
 - Edit Budget (43) link on returned budgets still opens the legacy placeholder.
+
+## Approve — Budgets (2026-09-24)
+
+User request: build the Approve module's first screen, Budgets (menu 40, legacy
+`Approve_Budget.aspx`, "Pending Budgets for Approvals"), against the five
+`/api/v1/approve/budgets` endpoints — fast, optimised, following the frontend UI/UX scope.
+Scenario from the checklist: Nada (AhmadN03) raises a budget → Umair Awan (AwanU01, TCM,
+level 1) approves and forwards it → Mudassir Hussain (HussaM10, FBP On Invoice, level 2).
+Branch `feature/approve`. Route **`/approve/budgets?type=<schemeGroupKey>&level=<1-3>`**
+(MenuGuard on menu 40). Blueprint: new `APPROVE` block; the module row 2 stays `pending`, so
+Trade Offers, Trade Spend, JBP, … still open their own placeholders.
+
+### Built
+
+- `core/api/approve.models.ts` — wire types (outcomes and email states as string unions).
+- `features/approve/services/approve-budgets.api.ts` — catalogue (not cached: its counts are
+  the point), **the whole queue** (first page at the server's 200 ceiling; any further pages
+  read together, capped at 10), CSV export with the grid's filters, accept / reject with
+  `refusalsSilent()` so refusals are shown in the panel, not toasted.
+- `features/approve/budgets/` — queue mode (CLAUDE.md §7): list left, decision right.
+  - **Two requests on load**, in parallel; budget type, level, search, sort and paging are in
+    memory, so nothing after first paint waits on the network.
+  - **Budget type chips** (legacy's single-select dropdown, plus "All types") with counts, and
+    **level chips** when the approver holds several levels (7 BRD users hold 2 and 3). Type and
+    level are kept in the URL.
+  - Search = shell code or description, the server's own rule, so **Send to Excel** downloads
+    exactly what is shown (server CSV, same filters).
+  - Grid: tick box (header ticks every budget shown, all pages, indeterminate when some),
+    Shell code + description, Period, Region, Product, Scheme type, Amount ("was …" when
+    changed), Level (Final in green), Waiting (amber at 7+ days) + who raised it. Sortable
+    Period / Amount / Waiting; default longest waiting first. Row opens the approval chain
+    (Raised → L1 → L2 → L3, the caller's level current) and facts. Space ticks, Enter opens.
+  - **Decision panel** (`decision-panel/`): idle = the approver's queue (count, value, longest
+    wait) and every level they sign at, with a level that has nobody to forward to called out.
+    Ticked = the list (untick ×), total, "N hidden by your filters", Approve | Reject (legacy's
+    radios, Approve default). **Forward To offers only people on every ticked budget's
+    type-and-level list**, and disables whoever raised one of them (the server refuses it);
+    starts on the only choice or the last one used per type+level (localStorage). The effect
+    in words: how many move up and to whom, how many are finally approved; for Reject, whose
+    desks they land on. Reject is confirmed (`to-confirm-dialog`, danger).
+  - **Receipt** per budget: Forwarded / Approved / Returned / Already decided / Not found,
+    with who was told and the email state. Decided rows leave the grid at once, then a quiet
+    re-read; a Forward To refusal re-reads the catalogue; a 409 offers Try again.
+  - Re-reads on returning to a tab left 2+ minutes; Refresh button.
+- `approve-budgets.util.ts` + **23 specs** (filter/sort, Forward To intersection, initiator
+  exclusion, defaults, reject recipients, chain, outcomes, refusals).
+- Tour `approve-budgets` (4 steps).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in approver holding
+  menu 40 (e.g. AwanU01). Build, lint and 233 specs pass; both new stylesheets are under the
+  8 kB budget; the screen is its own 14.6 kB (gzip) lazy chunk.
+- Edit Budget link for returned budgets and the other Approve screens (Trade Offers 5, Trade
+  Spend 62, JBP 72, BRD / PS 73, PS 1.0 Schemes 105, JBP Claims 134) are still legacy.
