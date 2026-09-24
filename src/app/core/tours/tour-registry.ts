@@ -640,6 +640,48 @@ export const TRADE_OFFER_TOUR: TourDefinition = {
   ],
 };
 
+export const CREATE_BUDGET_TOUR: TourDefinition = {
+  id: 'master-data-create-budget',
+  label: 'How to raise a budget',
+  steps: [
+    {
+      target: '[data-tour="cb-scheme"]',
+      title: 'Start with the scheme',
+      body: 'The scheme type decides how far back a budget may be dated, and the scheme group decides who it can be forwarded to. The period and approver below follow from them.',
+    },
+    {
+      target: '[data-tour="cb-period"]',
+      title: 'This month, unless you plan ahead',
+      body: 'The period starts on the current month. Open the calendar to budget for a later month; earlier months are disabled.',
+    },
+    {
+      target: '[data-tour="cb-product"]',
+      title: 'Your options come from your brand mapping',
+      body: 'Pick Business, Category, Brand or Master SKU. Only what you are mapped to is offered, and your last choice of criteria is remembered.',
+    },
+    {
+      target: '[data-tour="cb-regions"]',
+      title: 'Several regions, one save',
+      body: 'Tick every region the budget is for and give each its own amount. Each region is saved as its own budget shell with the region added to its description, and you can reword any line.',
+    },
+    {
+      target: '[data-tour="cb-forward"]',
+      title: 'Who approves first',
+      body: 'Only approvers who share a region with you are offered. Whoever you forwarded this scheme group to last time is picked for you.',
+    },
+    {
+      target: '[data-tour="cb-summary"]',
+      title: 'Check it, save it, keep going',
+      body: 'The summary states exactly what will be created. After saving, the receipt lists every shell code, and the form keeps the scheme, period, regions and approver for your next budget.',
+    },
+    {
+      target: '[data-tour="cb-my-budgets"]',
+      title: 'Where your budgets stand',
+      body: 'Pending budgets say which level they wait on, whose desk they are on and for how long. Narrow either list by year, scheme type or region — closed regions included. Open a row for the full approval chain, or Reuse it to raise the same budget again.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -693,6 +735,7 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: exact('/admin2/user-mapping'), tour: USER_MAPPING_TOUR },
 
   { match: exact('/initiate/trade-offer'), tour: TRADE_OFFER_TOUR },
+  { match: exact('/master-data/create-budget'), tour: CREATE_BUDGET_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

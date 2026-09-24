@@ -1457,3 +1457,71 @@ Scheme Copier, BRD Schemes, … still open their own placeholders.
 
 - **Not visually checked against the live API yet** — needs a signed-in user holding menu 38.
   Build, lint and 192 specs pass; every new stylesheet is under the 8 kB budget.
+
+## Master Data — Create Budget (2026-09-23)
+
+User request: build Master Data → Create Budget (menu 36, legacy `Budget.aspx`) in the new UI
+against the six `/api/v1/master-data/budgets` endpoints — "optimised and fast", with any
+enhancements worth adding. Branch `feature/master-data`. Route **`/master-data/create-budget`**
+(MenuGuard on menu 36, UnsavedChangesGuard). Blueprint: new `MASTER_DATA` block; the module
+row 35 stays `pending`, so Edit Budget, Gross Profit, … still open their own placeholders.
+
+### What the data says (local copy, budgets dated 2025 onwards)
+
+- 5,932 shells. **3,096 (52%) were saved straight after one by the same user with the same
+  period, scheme type and product — only the region differed**; 93% sit in such multi-region
+  batches, ~4.9 regions each. 86% of those consecutive pairs differ in description (a region
+  suffix: `…_Aug_2026_KPK`, `…_CP`) and 96% in amount.
+- Criteria used: Business 3,576 · Brand 2,252 · Master SKU 96 · Category 8. 9 active regions.
+- Trade Offer and BRD allow 12 months of back-dating; every other type is current month on.
+
+### Built
+
+- `core/api/master-data.models.ts` — wire types (kept apart from the admin models).
+- `features/master-data/services/master-data-budgets.api.ts` — catalogue, criterion values
+  and approvers **cached 10 min** (shared in-flight, failures forgotten); `prefetch*` for
+  hover; create uses `refusalsSilent()` so a batch reports refusals per line, not as toasts.
+- `features/master-data/create-budget/` — the screen:
+  1. **Scheme first** (group → type; a single choice fills itself). Group decides Forward To.
+  2. **Period** — one field showing **the current month** by default ("September 2026"),
+     with a month-view calendar (`p-datepicker view="month"`, read-only input): **the current
+     month and later only**, earlier months disabled, for every scheme type (user's call,
+     2026-09-23 — legacy let Trade Offer / BRD back-date 12 months; the API still would). The
+     window is shown beside the label. A note says "This month", "Next month" or "3 months
+     ahead", with a "Use Sep 2026" link back. The form still holds `year`/`month`, so the
+     validator, request and Reuse are unchanged.
+  3. **Product** — criteria chips (prefetch on hover/focus; last one remembered per user) and
+     a searchable Select (virtual scroll over 60).
+  4. **Regions and amounts** — ticked region pills (Select all | None). One region = legacy.
+     Several = **one shell per region, saved one after another**, each with its own amount;
+     the description gets `_<region>` (switchable), each line editable ("custom" until reset).
+     Compact readout (`3.4M`) beside each amount; total.
+  5. **Forward to** — remembered per scheme group, or the only one; says why it is filled.
+  - Aside: live summary, "On save" facts, **receipt** (every shell code, duplicates flagged,
+    email state from `approverNotification`), Start over, Save (`Save 3 budgets`,
+    `Saving 2 of 3…`), **Ctrl/⌘+S**.
+  - Batch rules: a refusal about one region (region, amount, description, double submit)
+    lets the rest carry on; a refusal every region would get (period, product, scheme,
+    approver, 5xx, 429) stops the batch and is placed on its field. Saved regions leave the
+    form; after a full save the scheme, period, regions and approver stay for the next budget.
+    A double-submit 409 is read as "already saved as <code>".
+- `my-budgets/` — legacy's two grids as **Pending approval | Approved** tabs with counts,
+  server-paged 20 a page, search (debounced, shell code or description), Year, **Scheme type
+  and Region filters** (searchable selects; options from `GET /budgets/filters` — what the
+  caller's own budgets carry, so closed regions such as Multan/North are offered, marked
+  "Closed"; cached 10 min, re-read after a save), all sent to the server; every
+  page cached for the visit, the other tab's first page read after the visible one. Pending
+  rows show the level, whose desk, and days waiting; rows open onto `to-approval-chain`
+  (read-only) — returned / never-routed budgets say so instead. **Reuse** copies any budget
+  into the form (period kept if this month or later, otherwise the current month). **`@defer (on viewport; prefetch on idle)`**,
+  so first paint costs one request.
+- Validators: `shared/validators/period-window.validator.ts` (4 specs),
+  `shared/validators/one-of.validator.ts`. 17 specs in `create-budget.util.spec.ts`.
+- Tour `master-data-create-budget` (7 steps; the grid placeholder carries its target).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in budget initiator.
+  Build, lint and 196 specs pass; both new stylesheets are under the 8 kB budget.
+- Local `BW_Dairy.dbo.SKU_Hierarchy` is empty, so Master SKU options cannot be checked locally.
+- Edit Budget (43) link on returned budgets still opens the legacy placeholder.
