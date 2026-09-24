@@ -1,0 +1,374 @@
+<div class="to-ato">
+  <to-page-header
+    title="Trade Offers"
+    subtitle="Trade offers waiting for your approval. Tick them, then approve them up the chain or send them back to the RMC who sent them. Open one to see it in full."
+    [breadcrumbs]="[{ label: 'Approve' }, { label: 'Trade Offers' }]"
+  />
+
+  @if (catalogueState() === 'failed' && queueState() === 'failed') {
+    <to-empty-state icon="alert-triangle" heading="Your approval queue did not load" description="This is usually temporary.">
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="load(false)">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (catalogueState() === 'loading' || queueState() === 'loading') {
+    <div class="to-ato__layout" aria-busy="true" aria-label="Loading your approval queue">
+      <div class="to-adm__card to-ato__queue">
+        <div class="to-ato__head">
+          <to-skeleton width="220px" height="16px" />
+          <to-skeleton width="320px" height="28px" />
+        </div>
+        @for (row of skeletonRows; track row) {
+          <div class="to-adm__skeleton-row">
+            <to-skeleton width="16px" height="16px" />
+            <to-skeleton width="180px" height="12px" />
+            <to-skeleton width="30%" height="12px" />
+            <to-skeleton width="90px" height="12px" />
+          </div>
+        }
+      </div>
+      <to-skeleton width="100%" height="260px" />
+    </div>
+  } @else if (notAnApprover() && rows().length === 0) {
+    <to-empty-state
+      icon="shield-lock"
+      heading="You do not approve trade offers"
+      description="User is not defined in Any Role. Contact Administrator. Trade offer approvers (RSM, budget owner, FBP) are set up in Approval Hierarchy."
+    />
+  } @else {
+    <div class="to-ato__layout">
+      <section class="to-adm__card to-ato__queue" aria-labelledby="ato-title" data-tour="ato-queue">
+        <header class="to-ato__head">
+          <div class="to-ato__title-row">
+            <h2 class="to-adm__title" id="ato-title">Pending schemes for approval</h2>
+            @if (queueState() === 'ready') {
+              <span class="to-ato__meta to-numeric" aria-live="polite">
+                {{ visible().length }} {{ visible().length === 1 ? 'scheme' : 'schemes' }} ·
+                {{ formatMoney(visibleDiscount()) }} discount
+              </span>
+            }
+            <span class="to-ato__tools">
+              <button
+                type="button"
+                pButton
+                class="p-button-text p-button-sm"
+                [disabled]="refreshing() || deciding() !== null"
+                (click)="load(true)"
+                [title]="refreshing() ? 'Reading the queue…' : 'Read the queue again'"
+                aria-label="Refresh"
+              >
+                <tabler-icon [icon]="icons['refresh']" [size]="15" />
+              </button>
+              <button
+                type="button"
+                pButton
+                class="p-button-outlined p-button-sm"
+                [disabled]="exporting() || visible().length === 0"
+                (click)="exportCsv()"
+                data-tour="ato-export"
+              >
+                <tabler-icon [icon]="icons['file-spreadsheet']" [size]="15" />
+                {{ exporting() ? 'Preparing…' : 'Send to Excel' }}
+              </button>
+            </span>
+          </div>
+
+          <div class="to-ato__filters">
+            @if (levelChips().length > 1) {
+              <div class="to-adm__chipset" role="group" aria-label="Level" data-tour="ato-levels">
+                <button
+                  type="button"
+                  class="to-adm__chip"
+                  [class.to-adm__chip--on]="level() === null"
+                  [attr.aria-pressed]="level() === null"
+                  (click)="setLevel(null)"
+                >
+                  All levels <span class="to-ato__chip-count to-numeric">{{ rows().length }}</span>
+                </button>
+                @for (chip of levelChips(); track chip.level) {
+                  <button
+                    type="button"
+                    class="to-adm__chip"
+                    [class.to-adm__chip--on]="level() === chip.level"
+                    [attr.aria-pressed]="level() === chip.level"
+                    (click)="setLevel(chip.level)"
+                  >
+                    {{ chip.level === 3 ? 'Level 3 · final' : 'Level ' + chip.level }}
+                    <span class="to-ato__chip-count to-numeric">{{ chip.count }}</span>
+                  </button>
+                }
+              </div>
+            }
+
+            <div class="to-adm__search to-ato__search">
+              <tabler-icon [icon]="icons['search']" [size]="15" />
+              <input
+                pInputText
+                type="search"
+                [formControl]="searchControl"
+                placeholder="Seq id, scheme id, description or shell"
+                aria-label="Search pending schemes by sequence id, scheme id, description or shell code"
+                maxlength="60"
+              />
+            </div>
+          </div>
+        </header>
+
+        @if (catalogueState() === 'failed') {
+          <p class="to-adm__alert to-adm__alert--warn to-ato__notice" role="alert">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>Your approval levels did not load, so level 2 schemes cannot be forwarded yet. Everything else works.</span>
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="load(true)">Try again</button>
+          </p>
+        } @else if (catalogue()?.salesfloAvailable === false) {
+          <p class="to-adm__alert to-adm__alert--warn to-ato__notice" role="status">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>
+              <strong>Salesflo posting is off on this server.</strong> Schemes that run in Salesflo cannot be finally
+              approved here; Orange schemes and levels 1 and 2 are unaffected.
+            </span>
+          </p>
+        }
+        @if (truncated()) {
+          <p class="to-adm__alert to-adm__alert--warn to-ato__notice" role="status">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>
+              Showing the <span class="to-numeric">{{ rows().length }}</span> longest-waiting of
+              <span class="to-numeric">{{ serverCount() }}</span> schemes. Decide these and the rest follow.
+            </span>
+          </p>
+        }
+
+        @if (queueState() === 'failed') {
+          <div class="to-ato__body">
+            <to-empty-state icon="alert-triangle" heading="The schemes did not load" description="This is usually temporary.">
+              <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="load(false)">
+                <tabler-icon [icon]="icons['refresh']" [size]="15" />
+                Try again
+              </button>
+            </to-empty-state>
+          </div>
+        } @else if (rows().length === 0) {
+          <div class="to-ato__body">
+            <to-empty-state
+              icon="circle-check"
+              heading="Nothing is waiting for you"
+              description="A trade offer appears here when an RMC sends it for approval, or the approver before you signs it."
+            />
+          </div>
+        } @else if (visible().length === 0) {
+          <div class="to-ato__body">
+            <to-empty-state
+              icon="search"
+              heading="No pending scheme matches"
+              description="Try another search or clear the filters. Search looks at the sequence id, scheme id, description and shell code."
+            >
+              <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+                Clear filters
+              </button>
+            </to-empty-state>
+          </div>
+        } @else {
+          <div class="to-ato__body" [class.to-ato__body--busy]="deciding() !== null">
+            <div class="to-ato__scroll">
+              <table class="to-adm__table to-ato__table">
+                <thead>
+                  <tr>
+                    <th class="to-adm__th to-ato__check" scope="col">
+                      <input
+                        type="checkbox"
+                        class="to-ato__checkbox"
+                        [checked]="allVisibleSelected()"
+                        [indeterminate]="someVisibleSelected()"
+                        [attr.aria-label]="'Tick all ' + visible().length + ' schemes shown'"
+                        (change)="toggleAllVisible()"
+                      />
+                    </th>
+                    <th class="to-adm__th" scope="col">Scheme</th>
+                    <th class="to-adm__th" scope="col" [attr.aria-sort]="sortState('period')">
+                      <button type="button" class="to-ato__sort" (click)="sortBy('period')">
+                        Period
+                        <tabler-icon [icon]="sortState('period') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ato__sort-idle]="sortState('period') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th" scope="col">Region</th>
+                    <th class="to-adm__th" scope="col">Budget</th>
+                    <th class="to-adm__th to-adm__th--right" scope="col" [attr.aria-sort]="sortState('discount')">
+                      <button type="button" class="to-ato__sort" (click)="sortBy('discount')">
+                        Discount
+                        <tabler-icon [icon]="sortState('discount') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ato__sort-idle]="sortState('discount') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th to-adm__th--right" scope="col" [attr.aria-sort]="sortState('roi')">
+                      <button type="button" class="to-ato__sort" (click)="sortBy('roi')">
+                        ROI
+                        <tabler-icon [icon]="sortState('roi') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ato__sort-idle]="sortState('roi') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th to-adm__th--right" scope="col">Uplift</th>
+                    <th class="to-adm__th" scope="col">Level</th>
+                    <th class="to-adm__th" scope="col" [attr.aria-sort]="sortState('waiting')">
+                      <button type="button" class="to-ato__sort" (click)="sortBy('waiting')" title="How long it has waited on you">
+                        Waiting
+                        <tabler-icon [icon]="sortState('waiting') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ato__sort-idle]="sortState('waiting') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th" scope="col"><span class="to-ato__sr">View</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of pageRows(); track row.seqId) {
+                    <tr
+                      class="to-adm__row to-ato__row"
+                      [class.to-ato__row--on]="isSelected(row)"
+                      [class.to-ato__row--open]="viewing() === row.seqId"
+                      tabindex="0"
+                      (click)="openView(row)"
+                      (focus)="prefetch(row)"
+                      (keydown.enter)="openView(row)"
+                      (keydown.space)="$event.preventDefault(); toggle(row.seqId)"
+                    >
+                      <td class="to-adm__td to-ato__check" (click)="$event.stopPropagation()">
+                        <input
+                          type="checkbox"
+                          class="to-ato__checkbox"
+                          tabindex="-1"
+                          [checked]="isSelected(row)"
+                          [attr.aria-label]="'Tick ' + row.seqId"
+                          (change)="toggle(row.seqId)"
+                        />
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked to-ato__scheme">
+                        <span class="to-ato__clip" [title]="row.description">{{ row.description || '—' }}</span>
+                        <span class="to-ato__sub">
+                          <span class="to-ato__mono">{{ row.seqId }}</span>
+                          @if (row.schemeId) {
+                            · {{ row.schemeId }}
+                          }
+                        </span>
+                      </td>
+                      <td class="to-adm__td to-numeric to-ato__nowrap">{{ row.period }}</td>
+                      <td class="to-adm__td to-adm__td--stacked">
+                        <span>{{ row.regionName }}</span>
+                        <span class="to-ato__sub">{{ row.businessTypeName }}</span>
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked to-ato__budget">
+                        <span class="to-ato__mono">{{ row.shellCode || '—' }}</span>
+                        @if (ownerIssueOf(row); as issue) {
+                          <span class="to-ato__sub to-ato__warn" [title]="issue">
+                            <tabler-icon [icon]="icons['alert-triangle']" [size]="11" />
+                            {{ issue }}
+                          </span>
+                        } @else {
+                          <span class="to-ato__sub to-ato__clip" title="The budget's owner — level 2">
+                            {{ row.budgetOwner?.fullName || row.budgetOwner?.userId || '—' }}
+                          </span>
+                        }
+                      </td>
+                      <td class="to-adm__td to-adm__td--right to-adm__td--stacked to-numeric">
+                        <span>{{ formatMoney(row.totalDiscount) }}</span>
+                        <span class="to-ato__sub" title="Discount per litre">{{ formatRate(row.perLitreDiscount) }} / L</span>
+                      </td>
+                      <td class="to-adm__td to-adm__td--right to-numeric" [class.to-ato__good]="row.roi > 0" [class.to-ato__bad]="row.roi <= 0">
+                        {{ formatPercent(row.roi) }}
+                      </td>
+                      <td class="to-adm__td to-adm__td--right to-numeric" [class.to-ato__good]="row.uplift > 0" [class.to-ato__bad]="row.uplift <= 0">
+                        {{ formatPercent(row.uplift) }}
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked">
+                        <span class="to-ato__level" [class.to-ato__level--final]="row.isFinal" [title]="levelLabel(row.level)">
+                          {{ row.isFinal ? 'Final' : 'Level ' + row.level }}
+                        </span>
+                        @if (row.salesflo; as answer) {
+                          <span class="to-ato__sub to-ato__warn" [title]="salesfloLine(answer)">Salesflo refused</span>
+                        } @else if (row.isFinal) {
+                          <span class="to-ato__sub">{{ row.database }}</span>
+                        }
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked">
+                        <span class="to-numeric" [class.to-ato__late]="(row.waitingDays ?? 0) >= 7">{{ waitingLabel(row.waitingDays) }}</span>
+                        <span class="to-ato__sub to-ato__clip">by {{ row.initiatedBy?.fullName || row.initiatedBy?.userId || '—' }}</span>
+                      </td>
+                      <td class="to-adm__td to-ato__actions">
+                        <button
+                          type="button"
+                          pButton
+                          class="p-button-text p-button-sm"
+                          tabindex="-1"
+                          [attr.aria-label]="'View ' + row.seqId"
+                          (pointerenter)="prefetch(row)"
+                          (click)="$event.stopPropagation(); openView(row)"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (range(); as r) {
+              <div class="to-adm__pager to-ato__pager">
+                <span class="to-adm__pager-range to-numeric" aria-live="polite">
+                  @if (pageCount() > 1) {
+                    {{ r.first }}–{{ r.last }} of {{ r.total }}
+                  } @else {
+                    {{ r.total }} {{ r.total === 1 ? 'scheme' : 'schemes' }}
+                  }
+                  @if (selected().size > 0) {
+                    · {{ selected().size }} ticked
+                  }
+                </span>
+                @if (pageCount() > 1) {
+                  <span class="to-adm__pager-buttons">
+                    <button type="button" pButton class="p-button-text p-button-sm" [disabled]="page() <= 1" (click)="goTo(page() - 1)">
+                      <tabler-icon [icon]="icons['arrow-left']" [size]="14" />
+                      Previous
+                    </button>
+                    <button type="button" pButton class="p-button-text p-button-sm" [disabled]="page() >= pageCount()" (click)="goTo(page() + 1)">
+                      Next
+                      <tabler-icon [icon]="icons['arrow-right']" [size]="14" />
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <to-trade-offer-decision
+        [selected]="selectedRows()"
+        [hiddenSelected]="hiddenSelected()"
+        [queue]="rows()"
+        [catalogue]="catalogue()"
+        [callerId]="callerId()"
+        [rememberedForwardTo]="rememberedForwardTo()"
+        [deciding]="deciding()"
+        [receipt]="receipt()"
+        [refusal]="refusal()"
+        (decide)="decide($event)"
+        (unselect)="unselect($event)"
+        (clear)="clearSelection()"
+        (retry)="retryDecision()"
+        (dismissReceipt)="dismissReceipt()"
+        (retick)="retick($event)"
+        (view)="openView($event)"
+      />
+    </div>
+  }
+</div>
+
+<!-- Its own chunk: fetched while the browser is idle, and at once when a scheme is opened first. -->
+@defer (when viewing() !== null; prefetch on idle) {
+  <to-approve-scheme-view
+    [seqId]="viewing()"
+    [inQueue]="viewingRow() !== null"
+    [ticked]="viewing() !== null && selected().has(viewing()!)"
+    [budgetOwner]="viewingRow()?.budgetOwner ?? null"
+    (closed)="closeView()"
+    (toggleTick)="toggle($event)"
+  />
+}

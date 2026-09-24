@@ -347,6 +347,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/approve/budgets/approve-budgets.component').then((m) => m.ApproveBudgetsComponent),
       },
+      {
+        // Approve_Scheme.aspx (menu 5) and its View link, View_TradePromotions.aspx. The level
+        // filter is `?level=<1-3>`; `?scheme=<sequence id>` opens that scheme's view.
+        path: 'approve/trade-offers',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/approve/trade-offers/approve-trade-offers.component').then(
+            (m) => m.ApproveTradeOffersComponent,
+          ),
+      },
 
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {

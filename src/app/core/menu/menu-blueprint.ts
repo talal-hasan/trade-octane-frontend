@@ -488,6 +488,15 @@ const MASTER_DATA: MenuBlueprintEntry[] = [
 // Trade Spend, JBP, …) fold into it and open their own legacy placeholder.
 const APPROVE: MenuBlueprintEntry[] = [
   {
+    menuId: 5,
+    legacyName: 'Trade Offers',
+    route: '/approve/trade-offers',
+    navLabel: 'Trade Offers',
+    icon: 'discount-2',
+    group: NAV_GROUP_TRADE,
+    ported: true,
+  },
+  {
     menuId: 40,
     legacyName: 'Budgets',
     route: '/approve/budgets',

@@ -6,12 +6,14 @@ import {
   ApproveBudgetDecisionItemResponse,
   ApproveBudgetOutcome,
   ApproveBudgetResponse,
-  ApproveNotificationState,
   ApproveUserResponse,
 } from '../../../core/api/approve.models';
 import { isRefusal, messageFor, serverDetail } from '../../../core/interceptors/error.interceptor';
 import { ApprovalStep } from '../../../shared/components/approval-chain/approval-chain.component';
 import { StatusPillStatus } from '../../../shared/components/status-pill/status-pill.component';
+import { daysSince, emailNote } from '../shared/approve-common.util';
+
+export { daysSince, emailNote, formatDate, waitingLabel } from '../shared/approve-common.util';
 
 // Pure helpers for Approve → Budgets: no Angular, no signals, so every rule the screen states
 // before a click can be tested on its own. The server checks the same rules on submit; these
@@ -91,39 +93,6 @@ export function toRow(wire: ApproveBudgetResponse, now = new Date()): BudgetRow 
   };
 }
 
-/** Whole days since an ISO timestamp, or null when there is none. */
-export function daysSince(iso: string | null | undefined, now = new Date()): number | null {
-  if (!iso) {
-    return null;
-  }
-  const then = new Date(iso);
-  if (Number.isNaN(then.getTime())) {
-    return null;
-  }
-  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / 86_400_000));
-}
-
-/** `Today`, `1 day`, `12 days`; an em dash when unknown. */
-export function waitingLabel(days: number | null): string {
-  if (days === null) {
-    return '—';
-  }
-  if (days === 0) {
-    return 'Today';
-  }
-  return days === 1 ? '1 day' : `${days} days`;
-}
-
-const DATE_FORMAT = new Intl.DateTimeFormat('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
-
-/** `07 Mar 2024`, or an em dash for a missing or unreadable value. */
-export function formatDate(value: string | null | undefined): string {
-  if (!value) {
-    return '—';
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : DATE_FORMAT.format(date);
-}
 
 export function levelLabel(level: number): string {
   return level >= FINAL_LEVEL ? `Level ${level} · final` : `Level ${level} of ${FINAL_LEVEL}`;
@@ -401,20 +370,6 @@ export function outcomeNote(item: ApproveBudgetDecisionItemResponse): string {
   }
 }
 
-export function emailNote(state: ApproveNotificationState): string {
-  switch (state) {
-    case 'Queued':
-      return 'Emailed.';
-    case 'Disabled':
-      return 'Email is switched off on this server.';
-    case 'NoEmailAddress':
-      return 'Not emailed: no email address on file.';
-    case 'QueueFull':
-      return 'Not emailed: the mail queue was full.';
-    default:
-      return '';
-  }
-}
 
 // ─── Refusals ─────────────────────────────────────────────────────────────────
 
