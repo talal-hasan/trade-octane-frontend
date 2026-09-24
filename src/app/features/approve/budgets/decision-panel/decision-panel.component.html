@@ -1,0 +1,260 @@
+<div class="to-dp" data-tour="ab-decision">
+  @if (receipt(); as r) {
+    <!-- ─── Receipt ─────────────────────────────────────────────────────────── -->
+    <section class="to-adm__summary to-dp__card" role="status" aria-live="polite" aria-labelledby="dp-receipt">
+      <h2 class="to-adm__summary-title to-dp__receipt-title" id="dp-receipt" [class.to-dp__receipt-title--warn]="r.actedOn === 0">
+        <tabler-icon [icon]="r.actedOn > 0 ? icons['circle-check'] : icons['alert-triangle']" [size]="16" />
+        {{ receiptTitle(r) }}
+      </h2>
+      <ul class="to-dp__lines">
+        @for (line of r.lines; track line.shellCode) {
+          <li class="to-dp__line">
+            <span class="to-dp__line-head">
+              <span class="to-dp__mono">{{ line.shellCode }}</span>
+              <to-status-pill [status]="line.pill" [label]="line.label" />
+            </span>
+            @if (line.detail) {
+              <span class="to-dp__sub">
+                {{ line.detail }}
+                @if (line.amount !== null) {
+                  · <span class="to-numeric">{{ line.amount | pkrCurrency }}</span>
+                }
+              </span>
+            }
+            <span class="to-dp__note">{{ line.note }}</span>
+          </li>
+        }
+      </ul>
+      <div class="to-adm__form-actions">
+        <button type="button" pButton class="p-button-sm p-button-outlined" (click)="dismissReceipt.emit()">Done</button>
+      </div>
+    </section>
+  } @else if (selected().length === 0) {
+    <!-- ─── Nothing ticked: the approver's own queue ─────────────────────────── -->
+    <section class="to-adm__summary to-dp__card" aria-labelledby="dp-queue">
+      <h2 class="to-adm__summary-title" id="dp-queue">Your queue</h2>
+      <dl class="to-adm__summary-list">
+        <div class="to-adm__summary-row">
+          <dt>Waiting on you</dt>
+          <dd class="to-numeric">{{ queue().length }}</dd>
+        </div>
+        <div class="to-adm__summary-row">
+          <dt>Total value</dt>
+          <dd class="to-numeric">{{ queueTotal() | pkrCurrency }}</dd>
+        </div>
+        <div class="to-adm__summary-row">
+          <dt>Longest waiting</dt>
+          <dd class="to-numeric">{{ oldest() }}</dd>
+        </div>
+      </dl>
+
+      @if (levels().length > 0) {
+        <div class="to-adm__summary-block">
+          <h3 class="to-adm__summary-heading">You approve</h3>
+          <ul class="to-dp__levels">
+            @for (entry of levels(); track entry.key) {
+              <li class="to-dp__level">
+                <span class="to-dp__level-name">
+                  {{ entry.typeName }} · {{ levelLabel(entry.level) }}
+                  @if (entry.roleName) {
+                    <span class="to-dp__sub">as {{ entry.roleName }}</span>
+                  }
+                  @if (entry.unrouted) {
+                    <span class="to-dp__sub to-dp__sub--warn">Nobody to forward to — these can only be rejected</span>
+                  }
+                </span>
+                <span class="to-dp__count to-numeric">{{ entry.waiting }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <p class="to-adm__hint to-dp__tip">
+        Tick budgets in the list to approve them or send them back. <kbd>Space</kbd> ticks the focused row,
+        <kbd>Enter</kbd> opens it.
+      </p>
+    </section>
+  } @else {
+    <!-- ─── The decision ────────────────────────────────────────────────────── -->
+    <section class="to-adm__summary to-dp__card" aria-labelledby="dp-title">
+      <header class="to-dp__head">
+        <h2 class="to-adm__summary-title to-dp__title" id="dp-title">
+          {{ selected().length === 1 ? '1 budget' : selected().length + ' budgets' }} ticked
+        </h2>
+        <button type="button" pButton class="p-button-text p-button-sm" [disabled]="deciding() !== null" (click)="clear.emit()">
+          Clear
+        </button>
+      </header>
+      <p class="to-dp__total to-numeric">{{ total() | pkrCurrency }}</p>
+      @if (hiddenSelected() > 0) {
+        <p class="to-dp__hidden">
+          <tabler-icon [icon]="icons['eye']" [size]="13" />
+          {{ hiddenSelected() === 1 ? '1 of them is' : hiddenSelected() + ' of them are' }} hidden by your filters.
+        </p>
+      }
+
+      <ul class="to-dp__list" aria-label="Ticked budgets">
+        @for (row of listed(); track row.shellCode) {
+          <li class="to-dp__item">
+            <span class="to-dp__item-main">
+              <span class="to-dp__mono">{{ row.shellCode }}</span>
+              <span class="to-dp__sub">{{ row.regionName }} · {{ levelLabel(row.level) }}</span>
+            </span>
+            <span class="to-numeric to-dp__amount">{{ row.amount | pkrCurrency }}</span>
+            <button
+              type="button"
+              class="to-dp__remove"
+              [attr.aria-label]="'Untick ' + row.shellCode"
+              [disabled]="deciding() !== null"
+              (click)="unselect.emit(row.shellCode)"
+            >
+              <tabler-icon [icon]="icons['x']" [size]="13" />
+            </button>
+          </li>
+        }
+        @if (unlisted() > 0) {
+          <li class="to-dp__more">and {{ unlisted() }} more</li>
+        }
+      </ul>
+
+      <div class="to-adm__segmented to-dp__switch" role="radiogroup" aria-label="Decision">
+        <button
+          type="button"
+          role="radio"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="action() === 'accept'"
+          [attr.aria-checked]="action() === 'accept'"
+          (click)="setAction('accept')"
+        >
+          <tabler-icon [icon]="icons['check']" [size]="14" />
+          Approve
+        </button>
+        <button
+          type="button"
+          role="radio"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="action() === 'reject'"
+          [attr.aria-checked]="action() === 'reject'"
+          (click)="setAction('reject')"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="14" />
+          Reject
+        </button>
+      </div>
+
+      @if (action() === 'accept') {
+        @if (plan().forwarding.length > 0 && plan().options.length > 0) {
+          <div class="to-adm__form-field" [attr.data-invalid]="refusal()?.target === 'forwardTo' || null" data-tour="ab-forward">
+            <label class="to-adm__form-label" for="dp-forward">Forward to</label>
+            <p-select
+              class="to-dp__select"
+              inputId="dp-forward"
+              [formControl]="forwardControl"
+              [options]="plan().options"
+              optionLabel="fullName"
+              optionValue="userId"
+              optionDisabled="disabledReason"
+              [filter]="plan().options.length > 8"
+              filterBy="fullName,userId"
+              filterPlaceholder="Search approvers"
+              placeholder="Choose the next approver"
+              [invalid]="refusal()?.target === 'forwardTo'"
+              appendTo="body"
+            >
+              <ng-template #item let-option>
+                <span class="to-dp__option">
+                  <span class="to-dp__option-name">{{ option.fullName }}</span>
+                  @if (option.disabledReason) {
+                    <span class="to-dp__option-meta">{{ option.disabledReason }}</span>
+                  }
+                </span>
+              </ng-template>
+            </p-select>
+            <span class="to-adm__form-hint">Next-level approvers who share a region with you and can take every ticked budget.</span>
+          </div>
+        }
+
+        <ul class="to-adm__facts">
+          @if (plan().forwarding.length > 0) {
+            <li>
+              <strong>{{ plan().forwarding.length === 1 ? '1 budget moves' : plan().forwarding.length + ' budgets move' }} up a level</strong>
+              to {{ forwardName() || 'the approver you choose' }}, who is emailed.
+            </li>
+          }
+          @if (plan().finals.length > 0) {
+            <li>
+              <strong>{{ plan().finals.length === 1 ? '1 budget is' : plan().finals.length + ' budgets are' }} finally approved</strong>
+              — level 3 is the last sign-off, so no one else is asked.
+            </li>
+          }
+        </ul>
+      } @else {
+        <ul class="to-adm__facts">
+          <li>
+            <strong>Sent back to</strong>
+            @for (recipient of recipients(); track recipient.name; let last = $last) {
+              {{ recipient.name }}@if (recipient.count > 1) {
+                <span class="to-numeric"> ×{{ recipient.count }}</span>
+              }{{ last ? '' : ', ' }}
+            }
+            — {{ recipients().length === 1 ? 'they are' : 'each is' }} emailed.
+          </li>
+          <li>Every sign-off so far is cleared. The initiator changes it on Edit Budget and resubmits it from level 1.</li>
+        </ul>
+      }
+
+      @if (refusal(); as r) {
+        <p class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>
+            {{ r.message }}
+            @if (r.staleForwardTo) {
+              The Forward To list has been read again.
+            }
+          </span>
+          @if (r.retryable) {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="retry.emit()">Try again</button>
+          }
+        </p>
+      }
+
+      @if (action() === 'accept' ? acceptBlocker() : rejectBlocker(); as blocker) {
+        <p class="to-adm__attention" role="status">
+          <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+          {{ blocker }}
+        </p>
+      }
+
+      <div class="to-adm__form-actions">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm"
+          [class.p-button-danger]="action() === 'reject'"
+          [disabled]="deciding() !== null || (action() === 'accept' ? acceptBlocker() : rejectBlocker()) !== null"
+          (click)="submit()"
+          data-tour="ab-submit"
+        >
+          {{ submitLabel() }}
+        </button>
+      </div>
+    </section>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="confirmingReject()"
+  (visibleChange)="confirmingReject.set($event)"
+  title="Send these budgets back?"
+  [message]="
+    selected().length === 1
+      ? 'The budget goes back to the person who raised it.'
+      : 'Each budget goes back to the person who raised it.'
+  "
+  [details]="rejectDetails()"
+  note="Every sign-off so far is cleared, and the budget starts again at level 1 once it is resubmitted."
+  [confirmLabel]="selected().length === 1 ? 'Reject budget' : 'Reject ' + selected().length + ' budgets'"
+  variant="danger"
+  (confirmed)="confirmReject()"
+/>

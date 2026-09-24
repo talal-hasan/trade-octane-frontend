@@ -1,0 +1,387 @@
+<div class="to-ab">
+  <to-page-header
+    title="Budgets"
+    subtitle="Budgets waiting for your approval. Tick them, then approve and forward them to the next level or send them back to whoever raised them."
+    [breadcrumbs]="[{ label: 'Approve' }, { label: 'Budgets' }]"
+  />
+
+  @if (catalogueState() === 'failed' && queueState() === 'failed') {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="Your approval queue did not load"
+      description="This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="load(false)">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (catalogueState() === 'loading' || queueState() === 'loading') {
+    <div class="to-ab__layout" aria-busy="true" aria-label="Loading your approval queue">
+      <div class="to-adm__card to-ab__queue">
+        <div class="to-ab__head">
+          <to-skeleton width="220px" height="16px" />
+          <to-skeleton width="360px" height="28px" />
+        </div>
+        @for (row of skeletonRows; track row) {
+          <div class="to-adm__skeleton-row">
+            <to-skeleton width="16px" height="16px" />
+            <to-skeleton width="140px" height="12px" />
+            <to-skeleton width="30%" height="12px" />
+            <to-skeleton width="90px" height="12px" />
+          </div>
+        }
+      </div>
+      <to-skeleton width="100%" height="260px" />
+    </div>
+  } @else if (notAnApprover() && rows().length === 0) {
+    <to-empty-state
+      icon="shield-lock"
+      heading="You do not approve budgets"
+      description="User is not defined in Any Role. Contact Administrator. Budget approvers are set up per scheme group in Approval Hierarchy."
+    />
+  } @else {
+    <div class="to-ab__layout">
+      <section class="to-adm__card to-ab__queue" aria-labelledby="ab-title" data-tour="ab-queue">
+        <header class="to-ab__head">
+          <div class="to-ab__title-row">
+            <h2 class="to-adm__title" id="ab-title">Pending budgets for approval</h2>
+            @if (queueState() === 'ready') {
+              <span class="to-ab__meta to-numeric" aria-live="polite">
+                {{ visible().length }} {{ visible().length === 1 ? 'budget' : 'budgets' }} ·
+                {{ queueValue() | pkrCurrency }}
+              </span>
+            }
+            <span class="to-ab__tools">
+              <button
+                type="button"
+                pButton
+                class="p-button-text p-button-sm"
+                [disabled]="refreshing() || deciding() !== null"
+                (click)="load(true)"
+                [title]="refreshing() ? 'Reading the queue…' : 'Read the queue again'"
+                aria-label="Refresh"
+              >
+                <tabler-icon [icon]="icons['refresh']" [size]="15" />
+              </button>
+              <button
+                type="button"
+                pButton
+                class="p-button-outlined p-button-sm"
+                [disabled]="exporting() || visible().length === 0"
+                (click)="exportCsv()"
+                data-tour="ab-export"
+              >
+                <tabler-icon [icon]="icons['file-spreadsheet']" [size]="15" />
+                {{ exporting() ? 'Preparing…' : 'Send to Excel' }}
+              </button>
+            </span>
+          </div>
+
+          <div class="to-ab__filters">
+            <div class="to-adm__chipset" role="group" aria-label="Budget type" data-tour="ab-types">
+              <button
+                type="button"
+                class="to-adm__chip"
+                [class.to-adm__chip--on]="typeKey() === null"
+                [attr.aria-pressed]="typeKey() === null"
+                (click)="setType(null)"
+              >
+                All types <span class="to-ab__chip-count to-numeric">{{ rows().length }}</span>
+              </button>
+              @for (chip of typeChips(); track chip.key) {
+                <button
+                  type="button"
+                  class="to-adm__chip"
+                  [class.to-adm__chip--on]="typeKey() === chip.key"
+                  [attr.aria-pressed]="typeKey() === chip.key"
+                  (click)="setType(chip.key)"
+                >
+                  {{ chip.name }} <span class="to-ab__chip-count to-numeric">{{ chip.count }}</span>
+                </button>
+              }
+            </div>
+
+            @if (levelChips().length > 1) {
+              <div class="to-adm__chipset" role="group" aria-label="Level">
+                <button
+                  type="button"
+                  class="to-adm__chip"
+                  [class.to-adm__chip--on]="level() === null"
+                  [attr.aria-pressed]="level() === null"
+                  (click)="setLevel(null)"
+                >
+                  All levels
+                </button>
+                @for (chip of levelChips(); track chip.level) {
+                  <button
+                    type="button"
+                    class="to-adm__chip"
+                    [class.to-adm__chip--on]="level() === chip.level"
+                    [attr.aria-pressed]="level() === chip.level"
+                    (click)="setLevel(chip.level)"
+                  >
+                    {{ chip.level === 3 ? 'Level 3 · final' : 'Level ' + chip.level }}
+                    <span class="to-ab__chip-count to-numeric">{{ chip.count }}</span>
+                  </button>
+                }
+              </div>
+            }
+
+            <div class="to-adm__search to-ab__search">
+              <tabler-icon [icon]="icons['search']" [size]="15" />
+              <input
+                pInputText
+                type="search"
+                [formControl]="searchControl"
+                placeholder="Shell code or description"
+                aria-label="Search pending budgets by shell code or description"
+                maxlength="100"
+              />
+            </div>
+          </div>
+        </header>
+
+        @if (catalogueState() === 'failed') {
+          <p class="to-adm__alert to-adm__alert--warn to-ab__notice" role="alert">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>Your approval levels did not load, so budgets cannot be forwarded yet. Rejecting still works.</span>
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="load(true)">Try again</button>
+          </p>
+        }
+        @if (truncated()) {
+          <p class="to-adm__alert to-adm__alert--warn to-ab__notice" role="status">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>
+              Showing the <span class="to-numeric">{{ rows().length }}</span> longest-waiting of
+              <span class="to-numeric">{{ serverCount() }}</span> budgets. Decide these and the rest follow.
+            </span>
+          </p>
+        }
+
+        @if (queueState() === 'failed') {
+          <div class="to-ab__body">
+            <to-empty-state icon="alert-triangle" heading="The budgets did not load" description="This is usually temporary.">
+              <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="load(false)">
+                <tabler-icon [icon]="icons['refresh']" [size]="15" />
+                Try again
+              </button>
+            </to-empty-state>
+          </div>
+        } @else if (rows().length === 0) {
+          <div class="to-ab__body">
+            <to-empty-state
+              icon="circle-check"
+              heading="Nothing is waiting for you"
+              description="A budget appears here when its initiator, or the approver before you, forwards it to you."
+            />
+          </div>
+        } @else if (visible().length === 0) {
+          <div class="to-ab__body">
+            <to-empty-state
+              icon="search"
+              heading="No pending budget matches"
+              description="Try another search or clear the filters. Search looks at the shell code and the description."
+            >
+              <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="clearFilters()">
+                Clear filters
+              </button>
+            </to-empty-state>
+          </div>
+        } @else {
+          <div class="to-ab__body" [class.to-ab__body--busy]="deciding() !== null">
+            <div class="to-ab__scroll">
+              <table class="to-adm__table to-ab__table">
+                <thead>
+                  <tr>
+                    <th class="to-adm__th to-ab__check" scope="col">
+                      <input
+                        type="checkbox"
+                        class="to-ab__checkbox"
+                        [checked]="allVisibleSelected()"
+                        [indeterminate]="someVisibleSelected()"
+                        [attr.aria-label]="'Tick all ' + visible().length + ' budgets shown'"
+                        (change)="toggleAllVisible()"
+                      />
+                    </th>
+                    <th class="to-adm__th" scope="col">Shell code</th>
+                    <th class="to-adm__th" scope="col" [attr.aria-sort]="sortState('period')">
+                      <button type="button" class="to-ab__sort" (click)="sortBy('period')">
+                        Period
+                        <tabler-icon [icon]="sortState('period') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ab__sort-idle]="sortState('period') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th" scope="col">Region</th>
+                    <th class="to-adm__th" scope="col">Product</th>
+                    <th class="to-adm__th" scope="col">Scheme type</th>
+                    <th class="to-adm__th to-adm__th--right" scope="col" [attr.aria-sort]="sortState('amount')">
+                      <button type="button" class="to-ab__sort" (click)="sortBy('amount')">
+                        Amount
+                        <tabler-icon [icon]="sortState('amount') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ab__sort-idle]="sortState('amount') === 'none'" />
+                      </button>
+                    </th>
+                    <th class="to-adm__th" scope="col">Level</th>
+                    <th class="to-adm__th" scope="col" [attr.aria-sort]="sortState('waiting')">
+                      <button type="button" class="to-ab__sort" (click)="sortBy('waiting')" title="How long it has waited on you">
+                        Waiting
+                        <tabler-icon [icon]="sortState('waiting') === 'ascending' ? icons['arrow-up'] : icons['arrow-down']" [size]="12" [class.to-ab__sort-idle]="sortState('waiting') === 'none'" />
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of pageRows(); track row.shellCode) {
+                    <tr
+                      class="to-adm__row to-ab__row"
+                      [class.to-ab__row--on]="isSelected(row)"
+                      [class.to-ab__row--open]="expanded() === row.shellCode"
+                      tabindex="0"
+                      [attr.aria-expanded]="expanded() === row.shellCode"
+                      (click)="toggleExpanded(row)"
+                      (keydown.enter)="toggleExpanded(row)"
+                      (keydown.space)="$event.preventDefault(); toggleRow(row)"
+                    >
+                      <td class="to-adm__td to-ab__check" (click)="$event.stopPropagation()">
+                        <input
+                          type="checkbox"
+                          class="to-ab__checkbox"
+                          tabindex="-1"
+                          [checked]="isSelected(row)"
+                          [attr.aria-label]="'Tick ' + row.shellCode"
+                          (change)="toggleRow(row)"
+                        />
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked to-ab__code">
+                        <span class="to-ab__mono">
+                          <tabler-icon
+                            class="to-ab__caret"
+                            [icon]="expanded() === row.shellCode ? icons['chevron-down'] : icons['chevron-right']"
+                            [size]="13"
+                          />
+                          {{ row.shellCode }}
+                        </span>
+                        <span class="to-ab__sub to-ab__clip" [title]="row.description">{{ row.description }}</span>
+                      </td>
+                      <td class="to-adm__td to-numeric">{{ row.period }}</td>
+                      <td class="to-adm__td">{{ row.regionName }}</td>
+                      <td class="to-adm__td to-adm__td--stacked to-ab__product">
+                        <span class="to-ab__clip" [title]="row.product">{{ row.product || '—' }}</span>
+                        <span class="to-ab__sub">{{ row.dimension }}</span>
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked to-ab__type">
+                        <span class="to-ab__clip" [title]="row.schemeType">{{ row.schemeType }}</span>
+                        @if (groupNote(row); as group) {
+                          <span class="to-ab__sub">{{ group }}</span>
+                        }
+                      </td>
+                      <td class="to-adm__td to-adm__td--right to-adm__td--stacked to-numeric">
+                        <span>{{ row.amount | pkrCurrency }}</span>
+                        @if (row.amount !== row.originalAmount) {
+                          <span class="to-ab__sub" title="The amount it was raised with">was {{ row.originalAmount | pkrCurrency }}</span>
+                        }
+                      </td>
+                      <td class="to-adm__td">
+                        <span class="to-ab__level" [class.to-ab__level--final]="row.isFinal" [title]="levelLabel(row.level)">
+                          {{ row.isFinal ? 'Final' : 'Level ' + row.level }}
+                        </span>
+                      </td>
+                      <td class="to-adm__td to-adm__td--stacked">
+                        <span class="to-numeric" [class.to-ab__late]="(row.waitingDays ?? 0) >= 7">{{ waitingLabel(row.waitingDays) }}</span>
+                        <span class="to-ab__sub to-ab__clip">by {{ row.initiatedBy?.fullName || row.initiatedBy?.userId || '—' }}</span>
+                      </td>
+                    </tr>
+
+                    @if (expanded() === row.shellCode) {
+                      <tr class="to-ab__detail-row">
+                        <td colspan="9" class="to-ab__detail">
+                          <div class="to-ab__detail-grid">
+                            <to-approval-chain [steps]="chainOf(row)" [currentStepIndex]="chainIndexOf(row)" />
+                            <dl class="to-ab__facts">
+                              <div>
+                                <dt>Description</dt>
+                                <dd class="to-ab__wrap">{{ row.description || '—' }}</dd>
+                              </div>
+                              <div>
+                                <dt>Scheme group</dt>
+                                <dd>{{ row.schemeGroup || row.schemeGroupKey }}</dd>
+                              </div>
+                              <div>
+                                <dt>Amount</dt>
+                                <dd class="to-numeric">
+                                  {{ row.amount | pkrCurrency }}
+                                  @if (row.amount !== row.originalAmount) {
+                                    <span class="to-ab__sub">raised as {{ row.originalAmount | pkrCurrency }}</span>
+                                  }
+                                </dd>
+                              </div>
+                              <div>
+                                <dt>Submitted</dt>
+                                <dd class="to-numeric">{{ formatDate(row.initiatedOn) }}</dd>
+                              </div>
+                              <div>
+                                <dt>With you since</dt>
+                                <dd class="to-numeric">{{ formatDate(row.waitingSince) }}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (range(); as r) {
+              <div class="to-adm__pager to-ab__pager">
+                <span class="to-adm__pager-range to-numeric" aria-live="polite">
+                  @if (pageCount() > 1) {
+                    {{ r.first }}–{{ r.last }} of {{ r.total }}
+                  } @else {
+                    {{ r.total }} {{ r.total === 1 ? 'budget' : 'budgets' }}
+                  }
+                  @if (selected().size > 0) {
+                    · {{ selected().size }} ticked
+                  }
+                </span>
+                @if (pageCount() > 1) {
+                  <span class="to-adm__pager-buttons">
+                    <button type="button" pButton class="p-button-text p-button-sm" [disabled]="page() <= 1" (click)="goTo(page() - 1)">
+                      <tabler-icon [icon]="icons['arrow-left']" [size]="14" />
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      pButton
+                      class="p-button-text p-button-sm"
+                      [disabled]="page() >= pageCount()"
+                      (click)="goTo(page() + 1)"
+                    >
+                      Next
+                      <tabler-icon [icon]="icons['arrow-right']" [size]="14" />
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <to-approve-decision
+        [selected]="selectedRows()"
+        [hiddenSelected]="hiddenSelected()"
+        [queue]="rows()"
+        [catalogue]="catalogue()"
+        [deciding]="deciding()"
+        [receipt]="receipt()"
+        [refusal]="refusal()"
+        (decide)="decide($event)"
+        (unselect)="unselect($event)"
+        (clear)="clearSelection()"
+        (retry)="retryDecision()"
+        (dismissReceipt)="dismissReceipt()"
+      />
+    </div>
+  }
+</div>

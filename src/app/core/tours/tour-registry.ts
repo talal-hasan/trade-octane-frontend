@@ -682,6 +682,33 @@ export const CREATE_BUDGET_TOUR: TourDefinition = {
   ],
 };
 
+export const APPROVE_BUDGETS_TOUR: TourDefinition = {
+  id: 'approve-budgets',
+  label: 'How to approve budgets',
+  steps: [
+    {
+      target: '[data-tour="ab-queue"]',
+      title: 'Everything waiting on you',
+      body: 'Every budget waiting for your signature, at every level you approve, longest waiting first. A week or more on your desk shows in amber. Open a row to see who raised it and who has signed so far.',
+    },
+    {
+      target: '[data-tour="ab-types"]',
+      title: 'Narrow it by budget type',
+      body: 'Each budget type shows how many wait. Pick one to see only those; pick it again for everything. If you approve at more than one level, level chips appear beside it.',
+    },
+    {
+      target: '[data-tour="ab-decision"]',
+      title: 'Tick, then decide',
+      body: 'Tick budgets — or the header box for every one shown — and this panel says exactly what will happen: who each budget moves up to, which are finally approved, and whose desk a rejection lands on. Space ticks the focused row.',
+    },
+    {
+      target: '[data-tour="ab-export"]',
+      title: 'Send to Excel',
+      body: 'Downloads the budgets shown, with the same filters and search, plus who raised each one and how long it has waited.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -736,6 +763,7 @@ const ROUTE_TOURS: RouteTour[] = [
 
   { match: exact('/initiate/trade-offer'), tour: TRADE_OFFER_TOUR },
   { match: exact('/master-data/create-budget'), tour: CREATE_BUDGET_TOUR },
+  { match: exact('/approve/budgets'), tour: APPROVE_BUDGETS_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

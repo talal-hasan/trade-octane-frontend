@@ -480,6 +480,24 @@ const MASTER_DATA: MenuBlueprintEntry[] = [
   },
 ];
 
+// ─── Approve ──────────────────────────────────────────────────────────────────
+//
+// The screens under Approve (menuId 2, catalog "1"), where budgets and schemes climb their
+// approval cycles, served from `/api/v1/approve/...` and authorised on each screen's own menu
+// grant. The module row itself stays `pending` below: its unported screens (Trade Offers,
+// Trade Spend, JBP, …) fold into it and open their own legacy placeholder.
+const APPROVE: MenuBlueprintEntry[] = [
+  {
+    menuId: 40,
+    legacyName: 'Budgets',
+    route: '/approve/budgets',
+    navLabel: 'Budgets',
+    icon: 'square-check',
+    group: NAV_GROUP_TRADE,
+    ported: true,
+  },
+];
+
 // ─── Everything else ──────────────────────────────────────────────────────────
 //
 // The other 19 root modules are outside the Administration 1.0 scope being built now.
@@ -535,6 +553,7 @@ export const MENU_BLUEPRINT: readonly MenuBlueprintEntry[] = [
   ...ADMINISTRATION_2,
   ...INITIATE,
   ...MASTER_DATA,
+  ...APPROVE,
   ...OTHER_MODULES,
 ];
 

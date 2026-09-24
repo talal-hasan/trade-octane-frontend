@@ -1,0 +1,292 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// The card, table, chips, search, pager and skeleton rows are shared Administration chrome
+// from _admin.scss (`.to-adm__card`, `.to-adm__table`, `.to-adm__chip*`, …). Only what is
+// particular to the approval queue is declared here.
+
+.to-ab {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+// Queue left, decision right (CLAUDE.md §7, queue mode). The list gets the room: it has nine
+// columns, the panel a handful of lines.
+.to-ab__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: t.$to-space-4;
+  align-items: start;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-ab__queue {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+// ─── Header: title, tools, filters ────────────────────────────────────────────
+
+.to-ab__head {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  padding: t.$to-space-3 t.$to-space-4;
+  border-bottom: 1px solid var(--to-border);
+}
+
+.to-ab__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+
+  .to-adm__title {
+    margin: 0;
+  }
+}
+
+.to-ab__meta {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+.to-ab__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin-left: auto;
+
+  button {
+    gap: t.$to-space-1;
+  }
+}
+
+.to-ab__filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+}
+
+.to-ab__chip-count {
+  margin-left: 2px;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ab__search {
+  flex: 1 1 200px;
+  min-width: 200px;
+  max-width: 320px;
+  margin-left: auto;
+
+  @include u.respond-to(tablet) {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+.to-ab__notice {
+  margin: t.$to-space-3 t.$to-space-4 0;
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+.to-ab__body {
+  min-width: 0;
+  @include u.motion(opacity);
+
+  // A decision is in flight: the rows it is about must not change under it.
+  &--busy {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+}
+
+.to-ab__scroll {
+  overflow-x: auto;
+}
+
+.to-ab__table thead .to-adm__th {
+  border-top: none;
+  white-space: nowrap;
+}
+
+.to-ab__check {
+  width: 36px;
+  padding-right: 0 !important;
+  cursor: default;
+}
+
+.to-ab__checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  vertical-align: middle;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+}
+
+.to-ab__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.to-ab__sort-idle {
+  opacity: 0.3;
+}
+
+.to-ab__row {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: -2px;
+  }
+
+  // Ticked: a tint and a rail, the app's shared "state" language.
+  &--on {
+    background: color-mix(in srgb, var(--to-accent) 7%, var(--to-bg-1));
+
+    td:first-child {
+      box-shadow: inset 3px 0 0 var(--to-accent);
+    }
+  }
+
+  &--open:not(&--on) {
+    background: color-mix(in srgb, var(--to-accent) 4%, var(--to-bg-1));
+  }
+}
+
+.to-ab__mono {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+}
+
+.to-ab__caret {
+  color: var(--to-text-muted);
+}
+
+.to-ab__sub {
+  display: block;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-ab__clip {
+  display: block;
+  @include u.truncate;
+}
+
+.to-ab__code {
+  max-width: 240px;
+}
+
+.to-ab__product {
+  max-width: 180px;
+}
+
+.to-ab__type {
+  max-width: 170px;
+}
+
+.to-ab__level {
+  display: inline-block;
+  padding: 1px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  white-space: nowrap;
+  color: var(--to-text-secondary);
+
+  &--final {
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+}
+
+// A week on one desk is the SLA amber the palette reserves for "pending too long".
+.to-ab__late {
+  color: var(--to-warning);
+}
+
+// ─── Expanded row ─────────────────────────────────────────────────────────────
+
+.to-ab__detail {
+  padding: t.$to-space-3 t.$to-space-4 t.$to-space-4;
+  border-top: 1px dashed var(--to-border);
+  background: color-mix(in srgb, var(--to-accent) 3%, var(--to-bg-1));
+  cursor: default;
+}
+
+.to-ab__detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 1fr);
+  gap: t.$to-space-4;
+  align-items: start;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.to-ab__facts {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  margin: 0;
+
+  div {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: t.$to-space-2;
+  }
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-ab__wrap {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.to-ab__pager {
+  padding: t.$to-space-2 t.$to-space-4;
+  border-top: 1px solid var(--to-border);
+}
