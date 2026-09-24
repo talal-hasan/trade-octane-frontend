@@ -1,0 +1,107 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-tro-bar {
+  padding: t.$to-space-3 t.$to-space-4;
+}
+
+.to-tro-bar__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+}
+
+.to-tro-bar__label {
+  font-size: t.$to-font-size-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-tro-bar__picker {
+  flex: 1 1 360px;
+  min-width: 0;
+  max-width: 640px;
+
+  ::ng-deep .p-autocomplete {
+    width: 100%;
+  }
+
+  ::ng-deep .p-autocomplete-input {
+    width: 100%;
+  }
+}
+
+.to-tro-bar__hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  flex: 1 1 360px;
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-tro-bar__actions {
+  margin-left: auto;
+}
+
+// ─── Picker options ───────────────────────────────────────────────────────────
+
+.to-tro-bar__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.to-tro-bar__option-top {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 0;
+}
+
+.to-tro-bar__seq {
+  font-weight: 500;
+  color: var(--to-text-primary);
+}
+
+.to-tro-bar__code {
+  @include u.truncate;
+  min-width: 0;
+  color: var(--to-text-secondary);
+}
+
+.to-tro-bar__period {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-tro-bar__desc {
+  @include u.truncate;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-tro-bar__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-3;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}

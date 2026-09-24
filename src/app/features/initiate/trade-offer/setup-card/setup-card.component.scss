@@ -1,0 +1,126 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-tro-setup {
+  scroll-margin-top: t.$to-space-12;
+}
+
+.to-tro-setup__seq {
+  margin-left: t.$to-space-1;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--to-text-secondary);
+}
+
+// From · To · "22 days  Rest of this month  All of October", level with the inputs.
+.to-tro-setup__period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: t.$to-space-2 t.$to-space-3;
+
+  .to-adm__form-field {
+    flex: 0 1 200px;
+  }
+}
+
+.to-tro-setup__period-note {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+  min-height: var(--to-field-height);
+}
+
+.to-tro-setup__days {
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-secondary);
+}
+
+.to-tro-setup__period-error {
+  margin-top: calc(-1 * #{t.$to-space-2});
+}
+
+.to-tro-setup__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: t.$to-space-3;
+
+  &--types {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+// A type with one option is not a choice: shown as text, not as a dropdown of one.
+.to-tro-setup__fixed {
+  display: flex;
+  align-items: center;
+  min-height: var(--to-field-height);
+  padding: 0 t.$to-space-3;
+  border: 1px dashed var(--to-border);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+}
+
+.to-tro-setup__created {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-2;
+  padding: t.$to-space-2 t.$to-space-3;
+  border: 1px solid var(--to-border);
+  border-left: 3px solid var(--to-success-solid);
+  border-radius: t.$to-radius-control;
+  background: var(--to-success-subtle);
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+
+  > tabler-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--to-success);
+  }
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-tro-setup__copied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px t.$to-space-3;
+  margin: t.$to-space-1 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--to-success);
+
+    &.to-tro-setup__copied--failed {
+      flex-basis: 100%;
+      color: var(--to-danger);
+    }
+  }
+}
+
+.to-tro-setup__copied-why {
+  color: var(--to-text-secondary);
+}
+
+.to-tro-setup__attention {
+  margin-right: auto;
+}
+
+@media (max-width: 720px) {
+  .to-tro-setup__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

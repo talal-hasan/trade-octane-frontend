@@ -1,0 +1,56 @@
+@use '../../../../../styles/tokens' as t;
+
+.to-tro-slab {
+  scroll-margin-top: t.$to-space-12;
+}
+
+.to-tro-slab__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: t.$to-space-3;
+}
+
+.to-tro-slab__fixed {
+  display: flex;
+  align-items: center;
+  min-height: var(--to-field-height);
+  padding: 0 t.$to-space-3;
+  border: 1px dashed var(--to-border);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-muted);
+}
+
+.to-tro-slab__readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-4;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-radius: t.$to-radius-control;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-tro-slab__total {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-tro-slab__formula {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-tro-slab__delete {
+  margin-right: auto;
+}

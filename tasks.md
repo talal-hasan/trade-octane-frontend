@@ -1387,3 +1387,73 @@ there, and the blueprint row for menu 22 is now labelled "Re-Route Scheme" (no `
   signed in. Build, lint and 175 specs pass.
 - `re-route.component.scss` is 10.9 kB, over the 8 kB warning (under the 16 kB error), like
   Approval Hierarchy. The overview and receipt were split out to get it there.
+
+## Initiate — Trade Offer - in Litres (2026-09-24)
+
+User request: build Initiate's first screen, Trade Offer - in Litres (menu 38, legacy
+`Based_Weight_Return_In_Value.aspx`), against the 16 `/api/v1/initiate/trade-offers` endpoints —
+"fast and optimised", within the project's UI/UX scope. Branch `feature/initiate` (== `develop`;
+the Master Data screen is on `feature/master-data`, so the blueprint and routes will conflict on
+merge in the same places). Route **`/initiate/trade-offer`**, `?scheme=<sequence id>` for an open
+scheme, none for a new one (legacy's Scheme Status defaulted to New). MenuGuard on 38,
+UnsavedChangesGuard. Blueprint: new `INITIATE` block; row 1 stays `pending`, so Scheme Expire,
+Scheme Copier, BRD Schemes, … still open their own placeholders.
+
+### What the data says (local copy, process 002 `shma02` schemes since 2025)
+
+- 21,755 schemes; **84% saved within 10 minutes of the same user's previous one**, 71% with the
+  same dates, 36% with the same dates, master SKU and region. One initiator has 706 unsent drafts.
+- Criteria: Master SKU and Region on ~100%, Perfect Store 98%, Distributor 65%, POP Type 63%,
+  POP 32%; ~5 criteria a scheme. POP lists up to 29,620 outlets for one distributor.
+- Slab: To-Qty 99,999 in 55% ("no upper limit"); From-Qty = For Every in 77%. 90% end on a month's
+  last day. Claim type TO 88%, WD 11%.
+
+### Built
+
+- `core/api/initiate.models.ts`; `ApiDecimal`/`dec()` in `api.types.ts`; `ApiClient.put/delete`
+  take an `HttpContext` (for `refusalsSilent()`).
+- `features/initiate/services/trade-offers.api.ts` — catalogue and criterion options cached
+  10 min (shared in-flight, failures forgotten), `prefetchOptions` on hover. Every write returns the
+  whole scheme; writes, the calculation and the approval check report refusals in place.
+- `features/initiate/trade-offer/` — one page, provided `TradeOfferStore` (signals): the open
+  scheme, `revision` bumped by every write, budget shells (keyed on month + claim type), the
+  calculation (follows revision + shell) and the approval check (runs by itself once the slab,
+  criteria rules and saved mechanics are in place; re-runs after every change while shown).
+  - **Scheme bar** — New | Existing (legacy's radio); Existing is a server-searched AutoComplete
+    (sequence id, scheme id, description; 50 a page, Show more; returned schemes flagged).
+    **Copy into a new scheme**: prefills the setup (dates kept while still open), then replays the
+    slab and every criterion through the normal endpoints after create; mechanics are not copied.
+  - **1 Setup** — From/To pickers (min today; To limited to From's month and follows it to the
+    month end), presets "Rest of this month" / "All of <next month>", Scheme ID / description
+    counters from the catalogue limits, single-option types shown as text, claim type remembered
+    per user (else TO), claim % only for WD. Create seeds the Perfect Store default (legacy's
+    Select Criteria). 409 duplicate offers "Open <id>".
+  - **2 Slab** — one form (add → update, delete with confirm); To-Qty prefilled 99,999; From-Qty
+    follows For Every until typed; offer read back in words with the total discount.
+  - **3 Criteria** — criteria list (Where it applies | What it applies to) with counts, ≠ for
+    Exclude, unsaved dots, "Required"/"Blocks sending" tags; editor with Include | Exclude,
+    Available (CDK virtual scroll, client search, click to tick, Add all shown stops at 4,000
+    chars) | Selected (remove, Remove all, char meter). POP: distributor picker (scheme's own
+    first) + search by previous POP code. Drafts kept per criterion; Save / Save all N. The three
+    approval rules (one region, a master SKU, no brand) shown from what is saved. Legacy's
+    criteria text box as "Saved on the scheme". Criteria saved elsewhere (Channel, Business) are
+    shown read-only.
+  - **4 Discount mechanics** — shell picker (scheme's region first, "other region" flagged,
+    what is left), `to-headroom-bar`, ten figures computed by the server whenever slab, master
+    SKUs or shell change (no GP/Total Discount buttons); hints instead of a sure 400 when the slab
+    or master SKU is missing; exceeds-budget blocks Save; "Out of date" when the slab changed.
+  - **5 Approval route** — local readiness list with Go to links until the check runs; every
+    issue with a Go to link; Forward To remembered per user / only one; Send confirmed with a
+    summary; receipt with the email state, `to-approval-chain`, Copy / Start a new scheme.
+  - **Summary aside** — offer, discount, ROI, shell headroom, a 5-step progress list (each a
+    link), Ctrl/⌘+S saves the part the cursor is in.
+  - Criteria, mechanics and approval cards are `@defer (on viewport; prefetch on idle)` — their
+    own chunks (criteria 35 kB, approval 15 kB).
+- `shared/validators/scheme-period.validator.ts` (5 specs); `trade-offer.util.spec.ts` (13 specs).
+- `_admin.scss`: `.to-adm__section-head`, `__step-no`, `__link`, `__locked`, `__card--flash`.
+- Tour `initiate-trade-offer` (7 steps).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in user holding menu 38.
+  Build, lint and 192 specs pass; every new stylesheet is under the 8 kB budget.

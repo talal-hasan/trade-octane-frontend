@@ -309,6 +309,19 @@ export const routes: Routes = [
           ),
       },
 
+      // ─── Initiate ──────────────────────────────────────────────────────────
+      // Business screens under menu 1, over /api/v1/initiate. Unported rows open their own
+      // legacy placeholder — see INITIATE in menu-blueprint.ts.
+      {
+        // Based_Weight_Return_In_Value.aspx (menu 38). The open scheme is `?scheme=<sequence id>`;
+        // no parameter is a new scheme, as legacy's Scheme Status defaulted to New.
+        path: 'initiate/trade-offer',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/initiate/trade-offer/trade-offer.component').then((m) => m.TradeOfferComponent),
+      },
+
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {
         path: 'account',

@@ -1021,3 +1021,82 @@
   justify-content: flex-end;
   gap: t.$to-space-2;
 }
+
+// ─── Numbered builder sections ────────────────────────────────────────────────
+//
+// A builder screen whose sections are saved one at a time (Trade Offer: setup, slab,
+// criteria, mechanics, approval) numbers them, and states on each section's head whether
+// it is saved. Emitted once via main.scss; never @use this file from a component.
+
+.to-adm__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+
+  .to-adm__subtitle {
+    margin: 0;
+  }
+}
+
+.to-adm__step-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: t.$to-space-1;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent-subtle);
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  letter-spacing: 0;
+
+  &--done {
+    background: var(--to-success-subtle);
+    color: var(--to-success);
+  }
+}
+
+// A text button that reads as a link: "Rest of this month", "Go to Criteria".
+.to-adm__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: var(--to-text-muted);
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
+// A section that waits on an earlier one: "Create the scheme first".
+.to-adm__locked {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-muted);
+}
+
+// The moment a section is scrolled to on request ("Go to Criteria").
+.to-adm__card--flash {
+  box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  @include u.motion(box-shadow);
+}

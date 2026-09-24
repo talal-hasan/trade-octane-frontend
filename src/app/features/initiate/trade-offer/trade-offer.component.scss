@@ -1,0 +1,32 @@
+@use '../../../../styles/tokens' as t;
+
+// Layout, cards, fields and the summary aside are the shared builder-form chrome from
+// _admin.scss. Only the page's own pieces are declared here.
+
+.to-tro {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+}
+
+.to-tro__banner {
+  margin: 0;
+
+  strong {
+    font-weight: 500;
+    color: var(--to-text-primary);
+  }
+
+  &--returned {
+    border-left-color: var(--to-warning-solid);
+  }
+}
+
+.to-tro__placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  padding: t.$to-space-4;
+  // Scrolling to a step ("Go to Criteria") must clear the fixed top bar.
+  scroll-margin-top: t.$to-space-12;
+}

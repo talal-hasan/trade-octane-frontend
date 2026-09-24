@@ -1,0 +1,94 @@
+<div class="to-adm__summary" data-tour="tro-summary">
+  <div class="to-tro-sum__head">
+    <h2 class="to-adm__summary-title">{{ title() }}</h2>
+    @if (scheme(); as current) {
+      <to-status-pill [status]="statusPill(current.status)" [label]="statusLabel(current.status)" />
+    }
+  </div>
+
+  <dl class="to-adm__summary-list">
+    <div class="to-adm__summary-row">
+      <dt>Period</dt>
+      <dd class="to-numeric">{{ period() }}</dd>
+    </div>
+    <div class="to-adm__summary-row">
+      <dt>Scheme</dt>
+      <dd class="to-adm__summary-stack">
+        @if (scheme(); as current) {
+          <span [title]="current.schemeId">{{ current.schemeId }}</span>
+          <span class="to-adm__summary-sub" [title]="current.description">{{ current.description }}</span>
+        } @else {
+          —
+        }
+      </dd>
+    </div>
+    <div class="to-adm__summary-row">
+      <dt>Claim</dt>
+      <dd>{{ scheme()?.claimType?.name || '—' }}</dd>
+    </div>
+    <div class="to-adm__summary-row">
+      <dt>Offer</dt>
+      <dd class="to-adm__summary-stack">
+        @if (offer(); as slab) {
+          <span class="to-numeric">{{ slab.discount }}</span>
+          <span class="to-adm__summary-sub to-numeric">{{ slab.range }} · forecast {{ slab.forecast }}</span>
+        } @else {
+          —
+        }
+      </dd>
+    </div>
+    <div class="to-adm__summary-row">
+      <dt>Discount</dt>
+      <dd class="to-numeric to-tro-sum__strong">{{ formatMoney(store.totalDiscount()) }}</dd>
+    </div>
+    @if (roi(); as value) {
+      <div class="to-adm__summary-row">
+        <dt>ROI</dt>
+        <dd class="to-numeric" [class.to-tro-sum__good]="value.good" [class.to-tro-sum__bad]="value.bad">{{ value.text }}</dd>
+      </div>
+    }
+  </dl>
+
+  @if (shell(); as budget) {
+    <div class="to-adm__summary-block">
+      <h3 class="to-adm__summary-heading">Budget shell</h3>
+      <p class="to-tro-sum__shell" [title]="budget.name">{{ budget.name }}</p>
+      <to-headroom-bar [total]="budget.total" [consumed]="budget.allocated" [pending]="store.totalDiscount() ?? 0" />
+    </div>
+  }
+
+  <div class="to-adm__summary-block">
+    <h3 class="to-adm__summary-heading">Before it can be sent</h3>
+    <ol class="to-tro-sum__progress">
+      @for (item of progress(); track item.step; let index = $index) {
+        <li>
+          <button
+            type="button"
+            class="to-tro-sum__step"
+            [class.to-tro-sum__step--done]="item.state === 'done'"
+            [class.to-tro-sum__step--warn]="item.state === 'warn'"
+            [class.to-tro-sum__step--locked]="item.state === 'locked'"
+            [disabled]="item.state === 'locked'"
+            (click)="goTo(item)"
+          >
+            <span class="to-tro-sum__marker" aria-hidden="true">
+              @if (item.state === 'done') {
+                <tabler-icon [icon]="icons['check']" [size]="11" />
+              } @else {
+                {{ index + 1 }}
+              }
+            </span>
+            <span class="to-tro-sum__step-text">
+              <span>{{ item.label }}</span>
+              @if (item.note) {
+                <span class="to-tro-sum__note">{{ item.note }}</span>
+              }
+            </span>
+          </button>
+        </li>
+      }
+    </ol>
+  </div>
+
+  <p class="to-tro-sum__shortcut"><kbd>Ctrl</kbd> + <kbd>S</kbd> saves the part you are in</p>
+</div>
