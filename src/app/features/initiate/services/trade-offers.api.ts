@@ -5,6 +5,7 @@ import { ApiClient } from '../../../core/api/api-client.service';
 import { asList, unwrapData } from '../../../core/api/api.types';
 import {
   SaveTradeOfferCriterionRequest,
+  SaveTradeOfferMechanicsRequest,
   SaveTradeOfferSchemeRequest,
   SaveTradeOfferSlabRequest,
   SubmitTradeOfferResponse,
@@ -41,6 +42,7 @@ function normaliseCatalogue(wire: TradeOfferCatalogueResponse): TradeOfferCatalo
     schemeTypes: asList(wire?.schemeTypes),
     claimTypes: asList(wire?.claimTypes),
     criteria: asList(wire?.criteria),
+    databases: asList(wire?.databases),
   };
 }
 
@@ -183,10 +185,10 @@ export class TradeOffersApi {
       .pipe(map(unwrapData));
   }
 
-  saveMechanics(sequenceId: string, budgetShellCode: string): Observable<TradeOfferScheme> {
-    return this.write(
-      this.api.put(`${this.path(sequenceId)}/mechanics`, { budgetShellCode }, undefined, refusalsSilent()),
-    );
+  /** `database` is sent only when the server lists the systems; otherwise it saves its default. */
+  saveMechanics(sequenceId: string, budgetShellCode: string, database: string | null): Observable<TradeOfferScheme> {
+    const body: SaveTradeOfferMechanicsRequest = database ? { budgetShellCode, database } : { budgetShellCode };
+    return this.write(this.api.put(`${this.path(sequenceId)}/mechanics`, body, undefined, refusalsSilent()));
   }
 
   // ─── Approval ───────────────────────────────────────────────────────────────

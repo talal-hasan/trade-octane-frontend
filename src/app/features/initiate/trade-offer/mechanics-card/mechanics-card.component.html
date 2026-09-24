@@ -69,8 +69,30 @@
         }
       </div>
       <div class="to-adm__form-field to-tro-mech__db">
-        <span class="to-adm__form-label">Posted to</span>
-        <span class="to-tro-mech__fixed">{{ database() }}</span>
+        <label class="to-adm__form-label" for="troPostedTo">Posted to</label>
+        @if (editable()) {
+          <p-select
+            inputId="troPostedTo"
+            [formControl]="databaseControl"
+            [options]="databases().choices"
+            optionLabel="name"
+            optionValue="code"
+            optionDisabled="disabled"
+            [fluid]="true"
+            appendTo="body"
+          >
+            <ng-template #item let-choice>
+              <span class="to-tro-mech__option">
+                <span class="to-tro-mech__option-name">{{ choice.name }}</span>
+                @if (choice.note) {
+                  <span class="to-tro-mech__option-meta">{{ choice.note }}</span>
+                }
+              </span>
+            </ng-template>
+          </p-select>
+        } @else {
+          <span class="to-tro-mech__fixed">{{ saved()?.database?.name || databaseName() || '—' }}</span>
+        }
       </div>
     </div>
 

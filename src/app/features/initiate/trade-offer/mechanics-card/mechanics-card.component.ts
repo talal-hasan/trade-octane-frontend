@@ -1,5 +1,5 @@
 import { Component, DestroyRef, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TablerIconComponent } from '@tabler/icons-angular';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +14,7 @@ import { TradeOffersApi } from '../../services/trade-offers.api';
 import { TradeOfferStore } from '../trade-offer.store';
 import {
   TradeOfferRefusal,
+  databaseChoices,
   formatDate,
   formatLitres,
   formatMoney,
@@ -82,7 +83,22 @@ export class MechanicsCardComponent implements OnDestroy {
 
   protected readonly locked = this.store.isNew;
   protected readonly editable = this.store.editable;
-  protected readonly database = computed(() => this.store.catalogue()?.database.name ?? '');
+  // ─── Posted to ───────────────────────────────────────────────────────────────
+  // Legacy's Database dropdown: Salesflo today, IBY once schemes move there.
+
+  protected readonly databases = computed(() => databaseChoices(this.store.catalogue(), this.store.scheme()?.mechanics?.database));
+  protected readonly databaseControl = new FormControl('', { nonNullable: true });
+  private readonly pickedDatabase = toSignal(this.databaseControl.valueChanges, { initialValue: '' });
+  /** The saved code as a string, so a write that leaves it alone does not reset the pick. */
+  private readonly savedDatabase = computed(() => this.store.scheme()?.mechanics?.database?.code ?? '');
+  private readonly defaultDatabase = computed(() => this.databases().defaultCode);
+  protected readonly databaseName = computed(
+    () => this.databases().choices.find((choice) => choice.code === this.pickedDatabase())?.name ?? '',
+  );
+  /** A different system picked than the saved mechanics name — only meaningful once the server lists them. */
+  protected readonly databaseChanged = computed(
+    () => this.databases().listed && !!this.savedDatabase() && this.pickedDatabase() !== this.savedDatabase(),
+  );
 
   protected readonly shellControl = new FormControl('', { nonNullable: true });
 
@@ -120,10 +136,12 @@ export class MechanicsCardComponent implements OnDestroy {
     return !!selected && !!region && selected.regionCode !== region;
   });
 
-  /** Saved against the shell picked, and the slab has not changed since. */
+  /** Saved against the shell and system picked, and the slab has not changed since. */
   protected readonly upToDate = computed(() => {
     const saved = this.saved();
-    return !!saved && saved.budgetShellCode === this.store.shellCode() && !this.store.outdated();
+    return (
+      !!saved && saved.budgetShellCode === this.store.shellCode() && !this.databaseChanged() && !this.store.outdated()
+    );
   });
 
   protected readonly month = computed(() => {
@@ -145,6 +163,9 @@ export class MechanicsCardComponent implements OnDestroy {
     if (this.editable() && saved.budgetShellCode !== this.store.shellCode()) {
       return { text: 'Unsaved shell', tone: 'warn' as const };
     }
+    if (this.editable() && this.databaseChanged()) {
+      return { text: 'Unsaved changes', tone: 'warn' as const };
+    }
     return { text: 'Saved', tone: 'ok' as const };
   });
 
@@ -157,6 +178,7 @@ export class MechanicsCardComponent implements OnDestroy {
       !!this.store.shellCode() &&
       !!this.store.calculation() &&
       !this.store.calcLoading() &&
+      !this.databases().choices.find((choice) => choice.code === this.pickedDatabase())?.disabled &&
       !this.exceeds() &&
       !this.upToDate() &&
       !this.saving(),
@@ -177,17 +199,34 @@ export class MechanicsCardComponent implements OnDestroy {
       this.refusal.set(null);
     });
 
+    // Posted To starts at what the mechanics were saved with, or the server's default.
+    effect(() => {
+      const code = this.savedDatabase() || this.defaultDatabase();
+      this.store.sequenceId();
+      untracked(() => this.databaseControl.setValue(code));
+    });
+    this.databaseControl.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.refusal.set(null));
+
     effect(() => {
       const enabled = this.editable() && !this.locked();
-      untracked(() => (enabled ? this.shellControl.enable({ emitEvent: false }) : this.shellControl.disable({ emitEvent: false })));
+      untracked(() => {
+        for (const control of [this.shellControl, this.databaseControl]) {
+          if (enabled) {
+            control.enable({ emitEvent: false });
+          } else {
+            control.disable({ emitEvent: false });
+          }
+        }
+      });
     });
 
-    // Only a deliberate change of shell is unsaved work; a shell picked for a scheme without
-    // mechanics is a default, and must not make leaving the page ask for confirmation.
+    // Only a deliberate change of shell or system is unsaved work; a shell picked for a scheme
+    // without mechanics is a default, and must not make leaving the page ask for confirmation.
     effect(() => {
       const saved = this.saved();
       const code = this.store.shellCode();
-      const unsaved = this.editable() && !!saved && !!code && saved.budgetShellCode !== code;
+      const unsaved =
+        this.editable() && !!saved && ((!!code && saved.budgetShellCode !== code) || this.databaseChanged());
       untracked(() => this.store.setDirty('mechanics', unsaved));
     });
 
@@ -231,7 +270,7 @@ export class MechanicsCardComponent implements OnDestroy {
     this.saving.set(true);
     this.refusal.set(null);
     this.api
-      .saveMechanics(sequenceId, shellCode)
+      .saveMechanics(sequenceId, shellCode, this.databases().listed ? this.pickedDatabase() || null : null)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (scheme) => {
