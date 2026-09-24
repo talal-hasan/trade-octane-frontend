@@ -1580,3 +1580,59 @@ Trade Offers, Trade Spend, JBP, … still open their own placeholders.
   8 kB budget; the screen is its own 14.6 kB (gzip) lazy chunk.
 - Edit Budget link for returned budgets and the other Approve screens (Trade Offers 5, Trade
   Spend 62, JBP 72, BRD / PS 73, PS 1.0 Schemes 105, JBP Claims 134) are still legacy.
+
+## Approve — Trade Offers (2026-09-25)
+
+User request: the Approve module's Trade Offers screen (menu 5, legacy `Approve_Scheme.aspx`,
+"Pending Schemes for Approval", and its View link `View_TradePromotions.aspx`) against the six
+`/api/v1/approve/trade-offers` endpoints — fast, optimised, following the frontend UI/UX scope.
+Branch `feature/approve`. Route **`/approve/trade-offers?level=<1-3>&scheme=<seqId>`**
+(MenuGuard on menu 5); blueprint row 5 in the `APPROVE` block.
+
+### Chain (from the API)
+
+Level 1 RSM → goes to the scheme's **budget owner** automatically (legacy disabled Forward To);
+level 2 budget owner → Forward To an FBP (catalogue's `forwardTo`); level 3 FBP → approves:
+Salesflo schemes are posted to Salesflo first and approved only if it accepts; Orange schemes are
+approved directly. At most 20 final approvals per request (~7 s per Salesflo post, 4 at a time).
+Initiators are **not** excluded from Forward To here (unlike budgets).
+
+### Built
+
+- `core/api/approve.models.ts` — trade offer wire types (11 outcomes as a string union).
+- `features/approve/services/approve-trade-offers.api.ts` — catalogue, whole queue (200 a page,
+  rest in parallel, cap 10), **scheme view cached for the visit** (shared in flight, 60 kept,
+  failures forgotten, `prefetchDetail` on View hover / row focus, forgotten after a decision),
+  export, accept / reject with `refusalsSilent()`.
+- `features/approve/shared/approve-common.util.ts` — days/waiting/date/email helpers and scoped
+  preferences, shared with Budgets (whose util re-exports them, so its callers are unchanged).
+- `features/approve/trade-offers/` — queue mode like Budgets:
+  - Level chips (when the approver holds several) with counts; search = the server's rule
+    (seq id, scheme id, description, shell code) so **Send to Excel** matches the grid.
+  - Grid: tick, Scheme (description + seq id · scheme id), Period (`01 – 07 Oct 2026`), Region
+    + business type, Budget (shell + owner, **warning when a level 1 scheme's owner is missing,
+    inactive or the caller**), Discount (+ per litre), ROI and Uplift (**green > 0, red ≤ 0, as
+    legacy**), Level (Final in green; Salesflo/Orange, or "Salesflo refused" with its answer),
+    Waiting (amber at 7+ days) + initiator, View. Sort by period, discount, ROI, waiting.
+    Header shows legacy's footer total discount. Row click / Enter opens the view; Space ticks.
+  - **Scheme view** (`scheme-view/`, `p-drawer` 48 rem, `@defer` so it is its own chunk):
+    status tags, Salesflo's last refusal, setup, slabs, criteria by name (Excludes flagged,
+    long lists cut at 12), discount mechanics with `to-headroom-bar` (total / other schemes /
+    this one / left) and Initiate's figure labels, approval route; "Tick for a decision".
+  - **Decision panel** (`decision-panel/`): idle = queue count, total discount, longest wait,
+    each level held with where it goes (and "nobody to forward to" / "Salesflo off" warnings).
+    Ticked = list (ids open the view), total discount, Approve | Reject; Forward To only when
+    a level 2 scheme is ticked (only / remembered choice preselected); the plan in words (owners
+    ×n, the FBP, finals and the Salesflo wait); schemes the server would skip are railed and
+    listed with an Untick button; blockers for >200, >20 finals, no FBP, all skipped.
+    **Final approvals and rejections are confirmed.** Receipt per scheme with Salesflo's answer;
+    schemes still waiting (Salesflo refused, owner cannot receive, busy…) stay in the grid with
+    "Tick the N still waiting".
+- `approve-trade-offers.util.ts` + **21 specs**. Tour `approve-trade-offers` (3 steps).
+- `_primeng-overrides.scss`: `.p-drawer.to-ato-drawer` width.
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in approver holding menu 5.
+  Build, lint and 254 specs pass; new stylesheets under 8 kB; queue chunk 13.1 kB gzip, drawer
+  separate.

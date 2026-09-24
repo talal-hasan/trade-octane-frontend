@@ -709,6 +709,28 @@ export const APPROVE_BUDGETS_TOUR: TourDefinition = {
   ],
 };
 
+export const APPROVE_TRADE_OFFERS_TOUR: TourDefinition = {
+  id: 'approve-trade-offers',
+  label: 'How to approve trade offers',
+  steps: [
+    {
+      target: '[data-tour="ato-queue"]',
+      title: 'Everything waiting on you',
+      body: 'Every trade offer waiting for your signature, at every level you approve, longest waiting first. ROI and uplift are green above zero and red at or below it. Click a row, or View, to open the scheme in full.',
+    },
+    {
+      target: '[data-tour="ato-decision"]',
+      title: 'Tick, then decide',
+      body: 'Tick schemes and this panel says where each one goes: level 1 to its budget owner, level 2 to the FBP you choose, level 3 approved — posted to Salesflo first when it runs there. A scheme that would be refused is flagged before you send. Space ticks the focused row.',
+    },
+    {
+      target: '[data-tour="ato-export"]',
+      title: 'Send to Excel',
+      body: 'Downloads the schemes shown, with the same level and search, in the legacy column order, plus the level, the initiator and how long each has waited.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -764,6 +786,7 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: exact('/initiate/trade-offer'), tour: TRADE_OFFER_TOUR },
   { match: exact('/master-data/create-budget'), tour: CREATE_BUDGET_TOUR },
   { match: exact('/approve/budgets'), tour: APPROVE_BUDGETS_TOUR },
+  { match: exact('/approve/trade-offers'), tour: APPROVE_TRADE_OFFERS_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

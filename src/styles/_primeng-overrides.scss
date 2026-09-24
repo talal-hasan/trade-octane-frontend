@@ -219,6 +219,11 @@ a.p-button-success.p-button-outlined {
   width: min(36rem, 100vw);
 }
 
+// A trade offer's full view (Approve → Trade Offers): slabs and mechanics need the width.
+.p-drawer.to-ato-drawer {
+  width: min(48rem, 100vw);
+}
+
 // Password fields fill their container, like every other input.
 //
 // `p-password` is a wrapper around its own `<input>`, so widening only the wrapper leaves

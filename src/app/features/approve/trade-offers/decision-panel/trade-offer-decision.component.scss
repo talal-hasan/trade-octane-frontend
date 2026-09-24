@@ -1,0 +1,257 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// The card, rows, facts, alerts and actions are shared builder chrome from _admin.scss
+// (`.to-adm__summary*`, `.to-adm__facts`, `.to-adm__alert`, `.to-adm__segmented`). Only what is
+// particular to the trade offer decision is declared here.
+
+:host {
+  display: block;
+  // Follows the queue down the page: the decision is only useful beside the rows it is about.
+  position: sticky;
+  top: 0;
+}
+
+.to-td__card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+
+  .to-adm__summary-title,
+  .to-adm__summary-block,
+  .to-adm__facts,
+  .to-adm__alert,
+  .to-adm__attention,
+  .to-adm__form-actions {
+    margin: 0;
+  }
+}
+
+.to-td__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+}
+
+.to-td__total {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  margin: 0;
+  font-size: t.$to-font-size-lg;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--to-text-primary);
+}
+
+.to-td__hidden {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  margin: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-warning);
+}
+
+.to-td__sub {
+  display: block;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 400;
+  color: var(--to-text-muted);
+
+  &--warn {
+    color: var(--to-warning);
+  }
+}
+
+.to-td__total .to-td__sub {
+  display: inline;
+}
+
+// A sequence id that opens the scheme: reads as data, behaves as a link.
+.to-td__code {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-accent-text);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+// ─── Ticked schemes ───────────────────────────────────────────────────────────
+
+.to-td__list,
+.to-td__levels,
+.to-td__lines {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-td__list {
+  border-top: 1px solid var(--to-border);
+}
+
+.to-td__item {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 0;
+  border-bottom: 1px solid var(--to-border);
+
+  // The server will skip it as things stand: a rail in the warning hue says so.
+  &--doomed {
+    box-shadow: inset 3px 0 0 var(--to-warning-solid);
+    padding-left: t.$to-space-2;
+  }
+}
+
+.to-td__item-main {
+  flex: 1;
+  min-width: 0;
+
+  .to-td__sub {
+    @include u.truncate;
+  }
+}
+
+.to-td__amount {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-xs;
+}
+
+.to-td__remove {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: t.$to-space-1;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: none;
+  color: var(--to-text-muted);
+  cursor: pointer;
+  @include u.motion(background-color, color);
+
+  &:hover:not(:disabled) {
+    background: var(--to-bg-2);
+    color: var(--to-danger);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+    outline-offset: 1px;
+  }
+}
+
+.to-td__more {
+  padding: t.$to-space-1 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-td__switch {
+  align-self: flex-start;
+}
+
+.to-td__select {
+  width: 100%;
+}
+
+.to-td__skip {
+  display: block;
+}
+
+// ─── The approver's levels ────────────────────────────────────────────────────
+
+.to-td__level {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  padding: t.$to-space-1 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+
+  & + & {
+    border-top: 1px solid var(--to-border);
+  }
+}
+
+.to-td__level-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.to-td__count {
+  min-width: 24px;
+  padding: 0 6px;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--to-text-secondary);
+}
+
+.to-td__tip kbd {
+  padding: 0 4px;
+  border: 1px solid var(--to-border);
+  border-radius: 4px;
+  background: var(--to-bg-2);
+  font-family: inherit;
+  font-size: t.$to-font-size-2xs;
+}
+
+// ─── Receipt ──────────────────────────────────────────────────────────────────
+
+.to-td__receipt-title {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  color: var(--to-success);
+
+  &--warn {
+    color: var(--to-warning);
+  }
+}
+
+.to-td__lines {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.to-td__line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: t.$to-space-2 0;
+
+  & + & {
+    border-top: 1px solid var(--to-border);
+  }
+}
+
+.to-td__line-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$to-space-2;
+}
+
+.to-td__note {
+  font-size: t.$to-font-size-xs;
+  line-height: 1.5;
+  color: var(--to-text-secondary);
+}

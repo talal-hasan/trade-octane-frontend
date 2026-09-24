@@ -1,0 +1,208 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+// The drawer's width is a PrimeNG internal: see `.to-ato-drawer` in _primeng-overrides.scss.
+// Tables, alerts, flags and links are shared chrome from _admin.scss.
+
+.to-sv__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.to-sv__title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-md;
+  font-weight: 500;
+  color: var(--to-text-primary);
+}
+
+.to-sv__scheme-id {
+  font-size: t.$to-font-size-xs;
+  font-weight: 400;
+  color: var(--to-text-muted);
+}
+
+.to-sv__desc {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-sv__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+.to-sv {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+
+  .to-adm__alert {
+    margin: 0;
+  }
+}
+
+.to-sv__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+.to-sv__tag {
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-secondary);
+
+  &--pending {
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+  }
+
+  &--warn {
+    background: var(--to-warning-subtle);
+    color: var(--to-warning);
+  }
+}
+
+.to-sv__section {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-2;
+  padding-top: t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+}
+
+.to-sv__heading {
+  margin: 0;
+  font-size: t.$to-font-size-2xs;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--to-text-muted);
+}
+
+.to-sv__sub {
+  display: block;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// Two columns of label + value, one on narrow screens.
+.to-sv__facts,
+.to-sv__figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: t.$to-space-2 t.$to-space-4;
+  margin: 0;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  div {
+    min-width: 0;
+  }
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+  }
+}
+
+.to-sv__good {
+  color: var(--to-success) !important;
+}
+
+.to-sv__bad {
+  color: var(--to-danger) !important;
+}
+
+.to-sv__scroll {
+  overflow-x: auto;
+}
+
+.to-sv__table thead .to-adm__th {
+  border-top: none;
+  white-space: nowrap;
+}
+
+// ─── Criteria ─────────────────────────────────────────────────────────────────
+
+.to-sv__criteria {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.to-sv__criterion {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: t.$to-space-3;
+
+  @include u.respond-to(tablet) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: t.$to-space-1;
+  }
+}
+
+.to-sv__criterion-name {
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-primary);
+
+  .to-adm__flag {
+    margin-left: t.$to-space-1;
+  }
+}
+
+.to-sv__values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$to-space-1;
+}
+
+.to-sv__value {
+  padding: 1px t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-secondary);
+
+  &--out {
+    text-decoration: line-through;
+    text-decoration-color: var(--to-danger-solid);
+  }
+}
+
+.to-sv__shell {
+  margin: 0;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+}
+
+.to-sv__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: t.$to-space-2;
+  width: 100%;
+
+  button {
+    gap: t.$to-space-1;
+  }
+}
