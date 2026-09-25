@@ -1,0 +1,249 @@
+<p-drawer
+  [visible]="seqId() !== null"
+  (visibleChange)="onVisibleChange($event)"
+  position="right"
+  styleClass="to-ato-drawer"
+  [blockScroll]="true"
+>
+  <ng-template #header>
+    <div class="to-sv__head">
+      <span class="to-sv__title">
+        <span class="to-sv__mono">002-{{ seqId() }}</span>
+        @if (scheme(); as s) {
+          @if (s.schemeId) {
+            <span class="to-sv__scheme-id">{{ s.schemeId }}</span>
+          }
+        }
+      </span>
+      @if (scheme(); as s) {
+        <span class="to-sv__desc">{{ s.description || '—' }}</span>
+      }
+    </div>
+  </ng-template>
+
+  @switch (state().kind) {
+    @case ('loading') {
+      <div class="to-sv" aria-busy="true" aria-label="Loading the scheme">
+        <to-skeleton width="60%" height="16px" />
+        <to-skeleton width="100%" height="120px" />
+        <to-skeleton width="100%" height="72px" />
+        <to-skeleton width="100%" height="160px" />
+      </div>
+    }
+    @case ('failed') {
+      @if (failure(); as failed) {
+        <div class="to-sv">
+          <p class="to-adm__alert to-adm__alert--warn" role="alert">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>
+              @if (failed.missing) {
+                This scheme is not among the schemes you approve — it may have been decided or re-routed.
+              } @else {
+                {{ failed.message }}
+              }
+            </span>
+            @if (!failed.missing) {
+              <button type="button" pButton class="p-button-sm p-button-text" (click)="retry()">Try again</button>
+            }
+          </p>
+        </div>
+      }
+    }
+    @case ('ready') {
+      @if (scheme(); as s) {
+        <div class="to-sv">
+          <!-- ─── Where it stands ──────────────────────────────────────────── -->
+          <div class="to-sv__status">
+            @if (pendingLevel(); as level) {
+              <span class="to-sv__tag to-sv__tag--pending">Waits on you · {{ levelLabel(level) }}</span>
+            } @else {
+              <span class="to-sv__tag">Not waiting on you</span>
+            }
+            @if (s.mechanics; as m) {
+              <span class="to-sv__tag" [title]="m.database === 'Salesflo' ? 'Posted to Salesflo on final approval' : 'Copied to Orange on final approval'">
+                Runs in {{ m.database }}
+              </span>
+            }
+            @if (s.expired) {
+              <span class="to-sv__tag to-sv__tag--warn">Expired</span>
+            }
+          </div>
+
+          @if (salesflo()) {
+            <p class="to-adm__alert to-adm__alert--warn" role="status">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span><strong>Salesflo refused it before:</strong> {{ salesflo() }}</span>
+            </p>
+          }
+
+          <!-- ─── Setup ──────────────────────────────────────────────────────── -->
+          <section class="to-sv__section" aria-labelledby="sv-setup">
+            <h3 class="to-sv__heading" id="sv-setup">Scheme</h3>
+            <dl class="to-sv__facts">
+              <div>
+                <dt>Period</dt>
+                <dd class="to-numeric">{{ period() }}</dd>
+              </div>
+              <div>
+                <dt>Scheme type</dt>
+                <dd>{{ s.schemeTypeName || s.schemeType || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Discount type</dt>
+                <dd>{{ s.discountTypeName || s.discountType || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Claim type</dt>
+                <dd>
+                  {{ s.claimTypeName || s.claimType || '—' }}
+                  <span class="to-sv__sub to-numeric">{{ formatPlain(dec(s.claimPercentage)) }}% claimed</span>
+                </dd>
+              </div>
+              <div>
+                <dt>Business type</dt>
+                <dd>{{ s.businessTypeName || s.businessType || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Created by</dt>
+                <dd>
+                  {{ s.owner?.fullName || s.owner?.userId || '—' }}
+                  <span class="to-sv__sub to-numeric">{{ formatDate(s.createdOn) }}</span>
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- ─── Slabs ──────────────────────────────────────────────────────── -->
+          <section class="to-sv__section" aria-labelledby="sv-slabs">
+            <h3 class="to-sv__heading" id="sv-slabs">Slabs</h3>
+            @if (s.slabs.length === 0) {
+              <p class="to-adm__hint">No slab is saved on this scheme.</p>
+            } @else {
+              <div class="to-sv__scroll">
+                <table class="to-adm__table to-sv__table">
+                  <thead>
+                    <tr>
+                      <th class="to-adm__th" scope="col">#</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">Quantity from</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">Quantity to</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">For every</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">Discount</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">Purchase limit</th>
+                      <th class="to-adm__th to-adm__th--right" scope="col">Forecast limit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (slab of s.slabs; track $index) {
+                      <tr class="to-adm__row">
+                        <td class="to-adm__td to-numeric">{{ int(slab.serialNo) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.quantityFrom)) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.quantityTo)) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.forEvery)) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.discountValue)) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.purchaseLimit)) }}</td>
+                        <td class="to-adm__td to-adm__td--right to-numeric">{{ formatPlain(dec(slab.forecastLimit)) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <!-- ─── Criteria ───────────────────────────────────────────────────── -->
+          <section class="to-sv__section" aria-labelledby="sv-criteria">
+            <h3 class="to-sv__heading" id="sv-criteria">Where it applies</h3>
+            @if (s.criteria.length === 0) {
+              <p class="to-adm__hint">No criterion is saved on this scheme.</p>
+            } @else {
+              <ul class="to-sv__criteria">
+                @for (criterion of s.criteria; track criterion.criterion + criterion.excluded) {
+                  <li class="to-sv__criterion">
+                    <span class="to-sv__criterion-name">
+                      {{ criterion.dimension || criterion.criterion }}
+                      @if (criterion.excluded) {
+                        <span class="to-adm__flag to-adm__flag--warn">Excludes</span>
+                      }
+                      <span class="to-sv__sub to-numeric">{{ criterion.values.length }}</span>
+                    </span>
+                    <span class="to-sv__values">
+                      @for (value of criterion.values; track value.code; let i = $index) {
+                        @if (i < preview || isExpanded(criterion.criterion + criterion.excluded)) {
+                          <span class="to-sv__value" [class.to-sv__value--out]="criterion.excluded" [title]="value.code">
+                            {{ valueLabel(value) }}
+                          </span>
+                        }
+                      }
+                      @if (criterion.values.length > preview && !isExpanded(criterion.criterion + criterion.excluded)) {
+                        <button type="button" class="to-adm__link" (click)="expand(criterion.criterion + criterion.excluded)">
+                          and {{ criterion.values.length - preview }} more
+                        </button>
+                      }
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <!-- ─── Discount mechanics ─────────────────────────────────────────── -->
+          <section class="to-sv__section" aria-labelledby="sv-mechanics">
+            <h3 class="to-sv__heading" id="sv-mechanics">Discount mechanics</h3>
+            @if (s.mechanics; as m) {
+              <p class="to-sv__shell">
+                Budget shell <span class="to-sv__mono">{{ m.shellCode || '—' }}</span>
+              </p>
+              @if (budget(); as b) {
+                <to-headroom-bar [total]="b.total" [consumed]="b.elsewhere" [pending]="b.discount" />
+                <p class="to-adm__hint">
+                  Other schemes hold {{ formatMoney(b.elsewhere) }} of {{ formatMoney(b.total) }}; this one takes
+                  {{ formatMoney(b.discount) }}, leaving {{ formatMoney(b.left) }}.
+                </p>
+              }
+              <dl class="to-sv__figures">
+                @for (figure of figures(); track figure.label) {
+                  <div>
+                    <dt>{{ figure.label }}</dt>
+                    <dd
+                      class="to-numeric"
+                      [class.to-sv__good]="figure.tone === 'good'"
+                      [class.to-sv__bad]="figure.tone === 'bad'"
+                    >
+                      {{ figure.value }}
+                    </dd>
+                  </div>
+                }
+              </dl>
+            } @else {
+              <p class="to-adm__hint">No discount mechanics are saved on this scheme.</p>
+            }
+          </section>
+
+          <!-- ─── Approval route ─────────────────────────────────────────────── -->
+          <section class="to-sv__section" aria-labelledby="sv-route">
+            <h3 class="to-sv__heading" id="sv-route">Approval route</h3>
+            <to-approval-chain [steps]="chain()" [currentStepIndex]="chainIndex()" />
+          </section>
+        </div>
+      }
+    }
+  }
+
+  <ng-template #footer>
+    <div class="to-sv__footer">
+      @if (inQueue() && pendingLevel() !== null) {
+        <button
+          type="button"
+          pButton
+          class="p-button-sm"
+          [class.p-button-outlined]="ticked()"
+          (click)="toggleTick.emit(seqId()!)"
+        >
+          <tabler-icon [icon]="ticked() ? icons['x'] : icons['check']" [size]="14" />
+          {{ ticked() ? 'Untick' : 'Tick for a decision' }}
+        </button>
+      }
+      <button type="button" pButton class="p-button-sm p-button-text" (click)="closed.emit()">Close</button>
+    </div>
+  </ng-template>
+</p-drawer>

@@ -1,0 +1,309 @@
+<section
+  id="to-trade-offer-setup"
+  class="to-adm__card to-adm__card--pad to-adm__form-section to-tro-setup"
+  [class.to-adm__card--flash]="store.highlighted() === 'setup'"
+  data-step="setup"
+  data-tour="tro-setup"
+  [formGroup]="form"
+>
+  <div class="to-adm__section-head">
+    <h2 class="to-adm__subtitle">
+      <span class="to-adm__step-no" [class.to-adm__step-no--done]="!isNew()">1</span>
+      Setup
+      @if (store.scheme(); as scheme) {
+        <span class="to-tro-setup__seq to-numeric">· Sequence ID {{ scheme.sequenceId }}</span>
+      }
+    </h2>
+    <span
+      class="to-adm__flag"
+      [class.to-adm__flag--ok]="headFlag().tone === 'ok'"
+      [class.to-adm__flag--warn]="headFlag().tone === 'warn'"
+    >
+      {{ headFlag().text }}
+    </span>
+  </div>
+
+  <!-- ─── Dates ──────────────────────────────────────────────────────────────── -->
+  <div class="to-tro-setup__period" [attr.data-invalid]="!!periodError() || null">
+    <div class="to-adm__form-field">
+      <label class="to-adm__form-label" for="troFromDate">From date</label>
+      <p-datepicker
+        inputId="troFromDate"
+        formControlName="fromDate"
+        dateFormat="dd M yy"
+        placeholder="Pick a date"
+        [readonlyInput]="true"
+        [showIcon]="true"
+        iconDisplay="input"
+        [minDate]="store.today()"
+        [invalid]="!!periodError()"
+        [fluid]="true"
+        appendTo="body"
+      />
+    </div>
+    <div class="to-adm__form-field">
+      <label class="to-adm__form-label" for="troToDate">To date</label>
+      <p-datepicker
+        inputId="troToDate"
+        formControlName="toDate"
+        dateFormat="dd M yy"
+        placeholder="Pick a date"
+        [readonlyInput]="true"
+        [showIcon]="true"
+        iconDisplay="input"
+        [minDate]="toBounds().min"
+        [maxDate]="toBounds().max"
+        [invalid]="!!periodError()"
+        [fluid]="true"
+        appendTo="body"
+      />
+    </div>
+    <div class="to-tro-setup__period-note">
+      @if (days(); as count) {
+        <span class="to-tro-setup__days to-numeric">{{ count }} {{ count === 1 ? 'day' : 'days' }}</span>
+      }
+      @if (editable()) {
+        @for (preset of presets(); track preset.label) {
+          <button
+            type="button"
+            class="to-adm__link"
+            [disabled]="isPreset(preset.range)"
+            (click)="applyPreset(preset.range)"
+          >
+            {{ preset.label }}
+          </button>
+        }
+      }
+    </div>
+  </div>
+  @if (periodError(); as message) {
+    <span class="to-adm__form-error to-tro-setup__period-error" role="alert">{{ message }}</span>
+  } @else if (startedAlready()) {
+    <span class="to-adm__hint to-tro-setup__period-error">
+      This scheme started on {{ formatDate(store.scheme()?.fromDate) }}. Its slab, criteria and mechanics can still be
+      saved; saving the setup needs a From Date from today.
+    </span>
+  }
+
+  <!-- ─── Scheme ID and description ──────────────────────────────────────────── -->
+  <div class="to-tro-setup__grid">
+    <div
+      class="to-adm__form-field"
+      [attr.data-invalid]="showError(form.controls.schemeId) || !!fieldRefusal('schemeId') || null"
+    >
+      <label class="to-adm__form-label" for="troSchemeId">
+        Scheme ID
+        <span class="to-adm__form-hint to-numeric">{{ value().schemeId.length }}/{{ limits.schemeId }}</span>
+      </label>
+      <input
+        pInputText
+        id="troSchemeId"
+        type="text"
+        formControlName="schemeId"
+        autocomplete="off"
+        placeholder="e.g. WS_0001_KHI"
+        [attr.maxlength]="limits.schemeId"
+        [invalid]="showError(form.controls.schemeId) || !!fieldRefusal('schemeId')"
+      />
+      @if (fieldRefusal('schemeId'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      } @else if (showError(form.controls.schemeId)) {
+        <span class="to-adm__form-error">{{ lengthError(form.controls.schemeId, limits.schemeId, 'scheme ID') }}</span>
+      } @else {
+        <span class="to-adm__hint">Your own code for the scheme — type, month and city, say.</span>
+      }
+    </div>
+
+    <div
+      class="to-adm__form-field"
+      [attr.data-invalid]="showError(form.controls.description) || !!fieldRefusal('description') || null"
+    >
+      <label class="to-adm__form-label" for="troDescription">
+        Scheme description
+        <span class="to-adm__form-hint to-numeric">{{ value().description.length }}/{{ limits.description }}</span>
+      </label>
+      <input
+        pInputText
+        id="troDescription"
+        type="text"
+        formControlName="description"
+        autocomplete="off"
+        placeholder="e.g. South Procal 200 All"
+        [attr.maxlength]="limits.description"
+        [invalid]="showError(form.controls.description) || !!fieldRefusal('description')"
+      />
+      @if (fieldRefusal('description'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      } @else if (showError(form.controls.description)) {
+        <span class="to-adm__form-error">
+          {{ lengthError(form.controls.description, limits.description, 'description approvers will read') }}
+        </span>
+      }
+    </div>
+  </div>
+
+  <!-- ─── Types ──────────────────────────────────────────────────────────────── -->
+  <div class="to-tro-setup__grid to-tro-setup__grid--types">
+    <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.discountType) || null">
+      <span class="to-adm__form-label" id="troDiscountTypeLabel">Discount type</span>
+      @if (discountTypes.length === 1) {
+        <span class="to-tro-setup__fixed" aria-labelledby="troDiscountTypeLabel">{{ discountTypes[0].name }}</span>
+      } @else {
+        <p-select
+          inputId="troDiscountType"
+          ariaLabelledBy="troDiscountTypeLabel"
+          formControlName="discountType"
+          [options]="discountTypes"
+          optionLabel="name"
+          optionValue="code"
+          placeholder="Select discount type"
+          [invalid]="showError(form.controls.discountType) || !!fieldRefusal('discountType')"
+          [fluid]="true"
+          appendTo="body"
+        />
+      }
+      @if (fieldRefusal('discountType'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      }
+    </div>
+
+    <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.schemeType) || null">
+      <span class="to-adm__form-label" id="troSchemeTypeLabel">Scheme type</span>
+      @if (schemeTypes.length === 1) {
+        <span class="to-tro-setup__fixed" aria-labelledby="troSchemeTypeLabel">{{ schemeTypes[0].name }}</span>
+      } @else {
+        <p-select
+          inputId="troSchemeType"
+          ariaLabelledBy="troSchemeTypeLabel"
+          formControlName="schemeType"
+          [options]="schemeTypes"
+          optionLabel="name"
+          optionValue="code"
+          placeholder="Select scheme type"
+          [invalid]="showError(form.controls.schemeType) || !!fieldRefusal('schemeType')"
+          [fluid]="true"
+          appendTo="body"
+        />
+      }
+      @if (fieldRefusal('schemeType'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      }
+    </div>
+
+    <div
+      class="to-adm__form-field"
+      [attr.data-invalid]="showError(form.controls.claimType) || !!fieldRefusal('claimType') || null"
+    >
+      <label class="to-adm__form-label" for="troClaimType">Claim type</label>
+      <p-select
+        inputId="troClaimType"
+        formControlName="claimType"
+        [options]="claimTypes"
+        optionLabel="name"
+        optionValue="code"
+        placeholder="Select claim type"
+        [invalid]="showError(form.controls.claimType) || !!fieldRefusal('claimType')"
+        [fluid]="true"
+        appendTo="body"
+      />
+      @if (fieldRefusal('claimType'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      } @else if (showError(form.controls.claimType)) {
+        <span class="to-adm__form-error">Pick a claim type.</span>
+      }
+    </div>
+
+    <div
+      class="to-adm__form-field"
+      [attr.data-invalid]="showError(form.controls.claimPercentage) || !!fieldRefusal('claimPercentage') || null"
+    >
+      <label class="to-adm__form-label" for="troClaimPercentage">Claim percentage</label>
+      <p-inputnumber
+        inputId="troClaimPercentage"
+        formControlName="claimPercentage"
+        mode="decimal"
+        suffix=" %"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [min]="0"
+        [max]="100"
+        [fluid]="true"
+        [invalid]="showError(form.controls.claimPercentage) || !!fieldRefusal('claimPercentage')"
+      />
+      @if (fieldRefusal('claimPercentage'); as message) {
+        <span class="to-adm__form-error">{{ message }}</span>
+      } @else if (showError(form.controls.claimPercentage)) {
+        <span class="to-adm__form-error">Enter a percentage above 0 and at most 100.</span>
+      } @else if (!claimType()?.claimPercentageEditable) {
+        <span class="to-adm__hint">Always 100% — only {{ percentageClaimType }} takes a percentage.</span>
+      }
+    </div>
+  </div>
+
+  <!-- ─── Outcome and actions ────────────────────────────────────────────────── -->
+  @if (refusal(); as refused) {
+    @if (!refused.field && !refused.toasted) {
+      <div class="to-adm__alert to-adm__alert--warn" role="alert">
+        <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+        <span>{{ refused.message }}</span>
+        @if (refused.existing) {
+          <button type="button" pButton class="p-button-sm p-button-text" (click)="openExisting(refused.existing)">
+            Open {{ refused.existing }}
+          </button>
+        }
+      </div>
+    }
+  }
+
+  @if (created(); as done) {
+    <div class="to-tro-setup__created" role="status" aria-live="polite">
+      <tabler-icon [icon]="icons['circle-check']" [size]="16" />
+      <div>
+        <strong>Created as Sequence ID <span class="to-numeric">{{ done.sequenceId }}</span>.</strong>
+        @if (done.copying) {
+          Copying the slab and criteria…
+        } @else if (done.copied; as copied) {
+          <ul class="to-tro-setup__copied">
+            @for (outcome of copied; track outcome.label) {
+              <li [class.to-tro-setup__copied--failed]="!outcome.ok">
+                <tabler-icon [icon]="outcome.ok ? icons['check'] : icons['x']" [size]="13" />
+                {{ outcome.label }}
+                @if (outcome.message) {
+                  <span class="to-tro-setup__copied-why">— {{ outcome.message }}</span>
+                }
+              </li>
+            }
+          </ul>
+          <span class="to-adm__hint">Mechanics are not copied: pick this scheme's budget shell under Discount Mechanics.</span>
+        } @else {
+          Now add its slab.
+        }
+      </div>
+    </div>
+  }
+
+  @if (editable()) {
+    <div class="to-adm__form-actions">
+      @if (attempted() && invalidCount() > 0 && !saving()) {
+        <span class="to-adm__attention to-tro-setup__attention" role="status">
+          <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+          {{ invalidCount() === 1 ? '1 field needs' : invalidCount() + ' fields need' }} attention.
+        </span>
+      }
+      @if (!isNew() && dirty()) {
+        <button type="button" pButton class="p-button-text p-button-sm" [disabled]="saving()" (click)="discard()">
+          Discard
+        </button>
+      }
+      @if (isNew()) {
+        <button type="button" pButton class="p-button-sm" [disabled]="saving()" data-tour="tro-create" (click)="save()">
+          {{ saving() ? 'Creating…' : store.copySource() ? 'Create the copy' : 'Create scheme' }}
+        </button>
+      } @else {
+        <button type="button" pButton class="p-button-sm" [disabled]="saving() || !dirty()" (click)="save()">
+          {{ saving() ? 'Saving…' : 'Save setup' }}
+        </button>
+      }
+    </div>
+  }
+</section>

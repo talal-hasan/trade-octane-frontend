@@ -1,0 +1,300 @@
+<div class="to-td" data-tour="ato-decision">
+  @if (receipt(); as r) {
+    <!-- ─── Receipt ─────────────────────────────────────────────────────────── -->
+    <section class="to-adm__summary to-td__card" role="status" aria-live="polite" aria-labelledby="td-receipt">
+      <h2 class="to-adm__summary-title to-td__receipt-title" id="td-receipt" [class.to-td__receipt-title--warn]="r.actedOn === 0">
+        <tabler-icon [icon]="r.actedOn > 0 ? icons['circle-check'] : icons['alert-triangle']" [size]="16" />
+        {{ receiptTitle(r) }}
+      </h2>
+      <ul class="to-td__lines">
+        @for (line of r.lines; track line.seqId) {
+          <li class="to-td__line">
+            <span class="to-td__line-head">
+              <button type="button" class="to-td__code" (click)="view.emit(line.seqId)">{{ line.seqId }}</button>
+              <to-status-pill [status]="line.pill" [label]="line.label" />
+            </span>
+            @if (line.detail) {
+              <span class="to-td__sub">{{ line.detail }}</span>
+            }
+            <span class="to-td__note">{{ line.note }}</span>
+          </li>
+        }
+      </ul>
+      <div class="to-adm__form-actions">
+        @if (stillWaitingOf(r); as waiting) {
+          @if (waiting.length > 0) {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="retick.emit(waiting)">
+              Tick the {{ waiting.length === 1 ? 'one' : waiting.length }} still waiting
+            </button>
+          }
+        }
+        <button type="button" pButton class="p-button-sm p-button-outlined" (click)="dismissReceipt.emit()">Done</button>
+      </div>
+    </section>
+  } @else if (selected().length === 0) {
+    <!-- ─── Nothing ticked: the approver's own queue ─────────────────────────── -->
+    <section class="to-adm__summary to-td__card" aria-labelledby="td-queue">
+      <h2 class="to-adm__summary-title" id="td-queue">Your queue</h2>
+      <dl class="to-adm__summary-list">
+        <div class="to-adm__summary-row">
+          <dt>Waiting on you</dt>
+          <dd class="to-numeric">{{ queue().length }}</dd>
+        </div>
+        <div class="to-adm__summary-row">
+          <dt>Total discount</dt>
+          <dd class="to-numeric">{{ formatMoney(queueTotal()) }}</dd>
+        </div>
+        <div class="to-adm__summary-row">
+          <dt>Longest waiting</dt>
+          <dd class="to-numeric">{{ oldest() }}</dd>
+        </div>
+      </dl>
+
+      @if (levels().length > 0) {
+        <div class="to-adm__summary-block">
+          <h3 class="to-adm__summary-heading">You approve</h3>
+          <ul class="to-td__levels">
+            @for (entry of levels(); track entry.level) {
+              <li class="to-td__level">
+                <span class="to-td__level-name">
+                  {{ levelLabel(entry.level) }} · {{ entry.role }}
+                  <span class="to-td__sub">{{ entry.note }}</span>
+                  @if (entry.warn) {
+                    <span class="to-td__sub to-td__sub--warn">{{ entry.warn }}</span>
+                  }
+                </span>
+                <span class="to-td__count to-numeric" [title]="formatMoney(entry.discount)">{{ entry.count }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <p class="to-adm__hint to-td__tip">
+        Tick schemes in the list to approve them or send them back. <kbd>Space</kbd> ticks the focused row,
+        <kbd>Enter</kbd> opens the scheme.
+      </p>
+    </section>
+  } @else {
+    <!-- ─── The decision ────────────────────────────────────────────────────── -->
+    <section class="to-adm__summary to-td__card" aria-labelledby="td-title">
+      <header class="to-td__head">
+        <h2 class="to-adm__summary-title" id="td-title">
+          {{ selected().length === 1 ? '1 scheme' : selected().length + ' schemes' }} ticked
+        </h2>
+        <button type="button" pButton class="p-button-text p-button-sm" [disabled]="deciding() !== null" (click)="clear.emit()">
+          Clear
+        </button>
+      </header>
+      <p class="to-td__total to-numeric">{{ formatMoney(total()) }} <span class="to-td__sub">total discount</span></p>
+      @if (hiddenSelected() > 0) {
+        <p class="to-td__hidden">
+          <tabler-icon [icon]="icons['eye']" [size]="13" />
+          {{ hiddenSelected() === 1 ? '1 of them is' : hiddenSelected() + ' of them are' }} hidden by your filters.
+        </p>
+      }
+
+      <ul class="to-td__list" aria-label="Ticked schemes">
+        @for (row of listed(); track row.seqId) {
+          <li class="to-td__item" [class.to-td__item--doomed]="doomed().has(row.seqId)">
+            <span class="to-td__item-main">
+              <button type="button" class="to-td__code" (click)="view.emit(row.seqId)">{{ row.seqId }}</button>
+              <span class="to-td__sub">{{ row.description || row.schemeId }} · {{ levelLabel(row.level) }}</span>
+            </span>
+            <span class="to-numeric to-td__amount">{{ formatMoney(row.totalDiscount) }}</span>
+            <button
+              type="button"
+              class="to-td__remove"
+              [attr.aria-label]="'Untick ' + row.seqId"
+              [disabled]="deciding() !== null"
+              (click)="unselect.emit([row.seqId])"
+            >
+              <tabler-icon [icon]="icons['x']" [size]="13" />
+            </button>
+          </li>
+        }
+        @if (unlisted() > 0) {
+          <li class="to-td__more">and {{ unlisted() }} more</li>
+        }
+      </ul>
+
+      <div class="to-adm__segmented to-td__switch" role="radiogroup" aria-label="Decision">
+        <button
+          type="button"
+          role="radio"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="action() === 'accept'"
+          [attr.aria-checked]="action() === 'accept'"
+          (click)="setAction('accept')"
+        >
+          <tabler-icon [icon]="icons['check']" [size]="14" />
+          Approve
+        </button>
+        <button
+          type="button"
+          role="radio"
+          class="to-adm__segment"
+          [class.to-adm__segment--on]="action() === 'reject'"
+          [attr.aria-checked]="action() === 'reject'"
+          (click)="setAction('reject')"
+        >
+          <tabler-icon [icon]="icons['arrow-left']" [size]="14" />
+          Reject
+        </button>
+      </div>
+
+      @if (action() === 'accept') {
+        @if (plan().toChosen.length > 0 && forwardOptions().length > 0) {
+          <div class="to-adm__form-field" [attr.data-invalid]="refusal()?.target === 'forwardTo' || null" data-tour="ato-forward">
+            <label class="to-adm__form-label" for="td-forward">Forward level 2 schemes to</label>
+            <p-select
+              class="to-td__select"
+              inputId="td-forward"
+              [formControl]="forwardControl"
+              [options]="forwardOptions()"
+              optionLabel="fullName"
+              optionValue="userId"
+              [filter]="forwardOptions().length > 8"
+              filterBy="fullName,userId"
+              filterPlaceholder="Search approvers"
+              placeholder="Choose the FBP"
+              [invalid]="refusal()?.target === 'forwardTo'"
+              appendTo="body"
+            />
+            <span class="to-adm__form-hint">Level 3 approvers who share a region with you.</span>
+          </div>
+        }
+
+        <ul class="to-adm__facts">
+          @if (plan().owners.length > 0) {
+            <li>
+              <strong>
+                {{ plan().toOwners.length - plan().ownerProblems.length === 1 ? '1 scheme goes' : plan().toOwners.length - plan().ownerProblems.length + ' schemes go' }}
+                to the budget owner:
+              </strong>
+              @for (owner of plan().owners; track owner.name; let last = $last) {
+                {{ owner.name }}@if (owner.count > 1) {
+                  <span class="to-numeric"> ×{{ owner.count }}</span>
+                }{{ last ? '' : ', ' }}
+              }
+              — emailed.
+            </li>
+          }
+          @if (plan().toChosen.length > 0) {
+            <li>
+              <strong>{{ plan().toChosen.length === 1 ? '1 scheme moves' : plan().toChosen.length + ' schemes move' }} to level 3</strong>
+              with {{ forwardName() || 'the FBP you choose' }}, who is emailed.
+            </li>
+          }
+          @if (plan().finals.length - plan().unpostable.length > 0) {
+            <li>
+              <strong>
+                {{ plan().finals.length - plan().unpostable.length === 1 ? '1 scheme is' : plan().finals.length - plan().unpostable.length + ' schemes are' }}
+                finally approved.
+              </strong>
+              @if (plan().salesfloFinals.length - plan().unpostable.length > 0) {
+                Salesflo schemes are posted first and approved only if Salesflo accepts them
+                @if (seconds() > 0) {
+                  (about <span class="to-numeric">{{ seconds() }}</span> s).
+                }
+              }
+              The initiator is emailed.
+            </li>
+          }
+        </ul>
+
+        @if (plan().ownerProblems.length > 0 || plan().unpostable.length > 0) {
+          <div class="to-adm__alert to-adm__alert--warn" role="status">
+            <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+            <span>
+              <strong>{{ doomed().size === 1 ? '1 will be skipped:' : doomed().size + ' will be skipped:' }}</strong>
+              @for (row of plan().ownerProblems; track row.seqId) {
+                <span class="to-td__skip">{{ row.seqId }} — {{ issueOf(row) }}.</span>
+              }
+              @for (row of plan().unpostable; track row.seqId) {
+                <span class="to-td__skip">{{ row.seqId }} — runs in Salesflo, which this server does not post to.</span>
+              }
+            </span>
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="untickDoomed()">Untick</button>
+          </div>
+        }
+      } @else {
+        <ul class="to-adm__facts">
+          <li>
+            <strong>Sent back to</strong>
+            @for (recipient of recipients(); track recipient.name; let last = $last) {
+              {{ recipient.name }}@if (recipient.count > 1) {
+                <span class="to-numeric"> ×{{ recipient.count }}</span>
+              }{{ last ? '' : ', ' }}
+            }
+            — {{ recipients().length === 1 ? 'they are' : 'each is' }} emailed.
+          </li>
+          <li>Every sign-off so far is cleared. The initiator changes the scheme and sends it again from level 1.</li>
+        </ul>
+      }
+
+      @if (refusal(); as r) {
+        <p class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>
+            {{ r.message }}
+            @if (r.staleForwardTo) {
+              The Forward To list has been read again.
+            }
+          </span>
+          @if (r.retryable) {
+            <button type="button" pButton class="p-button-sm p-button-text" (click)="retry.emit()">Try again</button>
+          }
+        </p>
+      }
+
+      @if (action() === 'accept' ? acceptBlocker() : rejectBlocker(); as blocker) {
+        <p class="to-adm__attention" role="status">
+          <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+          {{ blocker }}
+        </p>
+      }
+
+      <div class="to-adm__form-actions">
+        <button
+          type="button"
+          pButton
+          class="p-button-sm"
+          [class.p-button-danger]="action() === 'reject'"
+          [disabled]="deciding() !== null || (action() === 'accept' ? acceptBlocker() : rejectBlocker()) !== null"
+          (click)="submit()"
+          data-tour="ato-submit"
+        >
+          {{ submitLabel() }}
+        </button>
+      </div>
+    </section>
+  }
+</div>
+
+<to-confirm-dialog
+  [visible]="confirming() === 'reject'"
+  (visibleChange)="$event || confirming.set(null)"
+  title="Send these schemes back?"
+  [message]="
+    selected().length === 1
+      ? 'The scheme goes back to the RMC who sent it for approval.'
+      : 'Each scheme goes back to the RMC who sent it for approval.'
+  "
+  [details]="rejectDetails()"
+  note="Every sign-off so far is cleared, and the scheme starts again at level 1 once it is sent again."
+  [confirmLabel]="selected().length === 1 ? 'Reject scheme' : 'Reject ' + selected().length + ' schemes'"
+  variant="danger"
+  (confirmed)="confirmAs('reject')"
+/>
+
+<to-confirm-dialog
+  [visible]="confirming() === 'accept'"
+  (visibleChange)="$event || confirming.set(null)"
+  title="Give final approval?"
+  message="Final approval makes a scheme live. Salesflo schemes go live for distributors once Salesflo accepts them."
+  [details]="finalDetails()"
+  [note]="seconds() > 0 ? 'Posting to Salesflo takes about ' + seconds() + ' seconds. Keep this page open until the receipt appears.' : null"
+  [confirmLabel]="'Approve ' + (selected().length === 1 ? 'scheme' : selected().length + ' schemes')"
+  (confirmed)="confirmAs('accept')"
+/>

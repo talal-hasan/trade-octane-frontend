@@ -309,6 +309,55 @@ export const routes: Routes = [
           ),
       },
 
+      // ─── Initiate ──────────────────────────────────────────────────────────
+      // Business screens under menu 1, over /api/v1/initiate. Unported rows open their own
+      // legacy placeholder — see INITIATE in menu-blueprint.ts.
+      {
+        // Based_Weight_Return_In_Value.aspx (menu 38). The open scheme is `?scheme=<sequence id>`;
+        // no parameter is a new scheme, as legacy's Scheme Status defaulted to New.
+        path: 'initiate/trade-offer',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/initiate/trade-offer/trade-offer.component').then((m) => m.TradeOfferComponent),
+      },
+
+      // ─── Master Data ───────────────────────────────────────────────────────
+      // Business screens under menu 35, over /api/v1/master-data. Unported rows open their
+      // own legacy placeholder — see MASTER_DATA in menu-blueprint.ts.
+      {
+        // Budget.aspx: the form, and the caller's own pending and approved budgets beneath it.
+        path: 'master-data/create-budget',
+        canActivate: [MenuGuard],
+        canDeactivate: [UnsavedChangesGuard],
+        loadComponent: () =>
+          import('./features/master-data/create-budget/create-budget.component').then(
+            (m) => m.CreateBudgetComponent,
+          ),
+      },
+
+      // ─── Approve ───────────────────────────────────────────────────────────
+      // Business screens under menu 2, over /api/v1/approve. Unported rows open their own
+      // legacy placeholder — see APPROVE in menu-blueprint.ts.
+      {
+        // Approve_Budget.aspx (menu 40): the budgets waiting on the signed-in approver. The
+        // budget type and level filters are `?type=<schemeGroupKey>&level=<1-3>`.
+        path: 'approve/budgets',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/approve/budgets/approve-budgets.component').then((m) => m.ApproveBudgetsComponent),
+      },
+      {
+        // Approve_Scheme.aspx (menu 5) and its View link, View_TradePromotions.aspx. The level
+        // filter is `?level=<1-3>`; `?scheme=<sequence id>` opens that scheme's view.
+        path: 'approve/trade-offers',
+        canActivate: [MenuGuard],
+        loadComponent: () =>
+          import('./features/approve/trade-offers/approve-trade-offers.component').then(
+            (m) => m.ApproveTradeOffersComponent,
+          ),
+      },
+
       // The signed-in user's own account. Reached from the avatar menu, never the sidebar.
       {
         path: 'account',

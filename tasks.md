@@ -1387,3 +1387,252 @@ there, and the blueprint row for menu 22 is now labelled "Re-Route Scheme" (no `
   signed in. Build, lint and 175 specs pass.
 - `re-route.component.scss` is 10.9 kB, over the 8 kB warning (under the 16 kB error), like
   Approval Hierarchy. The overview and receipt were split out to get it there.
+
+## Initiate — Trade Offer - in Litres (2026-09-24)
+
+User request: build Initiate's first screen, Trade Offer - in Litres (menu 38, legacy
+`Based_Weight_Return_In_Value.aspx`), against the 16 `/api/v1/initiate/trade-offers` endpoints —
+"fast and optimised", within the project's UI/UX scope. Branch `feature/initiate` (== `develop`;
+the Master Data screen is on `feature/master-data`, so the blueprint and routes will conflict on
+merge in the same places). Route **`/initiate/trade-offer`**, `?scheme=<sequence id>` for an open
+scheme, none for a new one (legacy's Scheme Status defaulted to New). MenuGuard on 38,
+UnsavedChangesGuard. Blueprint: new `INITIATE` block; row 1 stays `pending`, so Scheme Expire,
+Scheme Copier, BRD Schemes, … still open their own placeholders.
+
+### What the data says (local copy, process 002 `shma02` schemes since 2025)
+
+- 21,755 schemes; **84% saved within 10 minutes of the same user's previous one**, 71% with the
+  same dates, 36% with the same dates, master SKU and region. One initiator has 706 unsent drafts.
+- Criteria: Master SKU and Region on ~100%, Perfect Store 98%, Distributor 65%, POP Type 63%,
+  POP 32%; ~5 criteria a scheme. POP lists up to 29,620 outlets for one distributor.
+- Slab: To-Qty 99,999 in 55% ("no upper limit"); From-Qty = For Every in 77%. 90% end on a month's
+  last day. Claim type TO 88%, WD 11%.
+
+### Built
+
+- `core/api/initiate.models.ts`; `ApiDecimal`/`dec()` in `api.types.ts`; `ApiClient.put/delete`
+  take an `HttpContext` (for `refusalsSilent()`).
+- `features/initiate/services/trade-offers.api.ts` — catalogue and criterion options cached
+  10 min (shared in-flight, failures forgotten), `prefetchOptions` on hover. Every write returns the
+  whole scheme; writes, the calculation and the approval check report refusals in place.
+- `features/initiate/trade-offer/` — one page, provided `TradeOfferStore` (signals): the open
+  scheme, `revision` bumped by every write, budget shells (keyed on month + claim type), the
+  calculation (follows revision + shell) and the approval check (runs by itself once the slab,
+  criteria rules and saved mechanics are in place; re-runs after every change while shown).
+  - **Scheme bar** — New | Existing (legacy's radio); Existing is a server-searched AutoComplete
+    (sequence id, scheme id, description; 50 a page, Show more; returned schemes flagged).
+    **Copy into a new scheme**: prefills the setup (dates kept while still open), then replays the
+    slab and every criterion through the normal endpoints after create; mechanics are not copied.
+  - **1 Setup** — From/To pickers (min today; To limited to From's month and follows it to the
+    month end), presets "Rest of this month" / "All of <next month>", Scheme ID / description
+    counters from the catalogue limits, single-option types shown as text, claim type remembered
+    per user (else TO), claim % only for WD. Create seeds the Perfect Store default (legacy's
+    Select Criteria). 409 duplicate offers "Open <id>".
+  - **2 Slab** — one form (add → update, delete with confirm); To-Qty prefilled 99,999; From-Qty
+    follows For Every until typed; offer read back in words with the total discount.
+  - **3 Criteria** — criteria list (Where it applies | What it applies to) with counts, ≠ for
+    Exclude, unsaved dots, "Required"/"Blocks sending" tags; editor with Include | Exclude,
+    Available (CDK virtual scroll, client search, click to tick, Add all shown stops at 4,000
+    chars) | Selected (remove, Remove all, char meter). POP: distributor picker (scheme's own
+    first) + search by previous POP code. Drafts kept per criterion; Save / Save all N. The three
+    approval rules (one region, a master SKU, no brand) shown from what is saved. Legacy's
+    criteria text box as "Saved on the scheme". Criteria saved elsewhere (Channel, Business) are
+    shown read-only.
+  - **4 Discount mechanics** — shell picker (scheme's region first, "other region" flagged,
+    what is left), `to-headroom-bar`, ten figures computed by the server whenever slab, master
+    SKUs or shell change (no GP/Total Discount buttons); hints instead of a sure 400 when the slab
+    or master SKU is missing; exceeds-budget blocks Save; "Out of date" when the slab changed.
+  - **5 Approval route** — local readiness list with Go to links until the check runs; every
+    issue with a Go to link; Forward To remembered per user / only one; Send confirmed with a
+    summary; receipt with the email state, `to-approval-chain`, Copy / Start a new scheme.
+  - **Summary aside** — offer, discount, ROI, shell headroom, a 5-step progress list (each a
+    link), Ctrl/⌘+S saves the part the cursor is in.
+  - Criteria, mechanics and approval cards are `@defer (on viewport; prefetch on idle)` — their
+    own chunks (criteria 35 kB, approval 15 kB).
+- `shared/validators/scheme-period.validator.ts` (5 specs); `trade-offer.util.spec.ts` (13 specs).
+- `_admin.scss`: `.to-adm__section-head`, `__step-no`, `__link`, `__locked`, `__card--flash`.
+- Tour `initiate-trade-offer` (7 steps).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in user holding menu 38.
+  Build, lint and 192 specs pass; every new stylesheet is under the 8 kB budget.
+
+## Master Data — Create Budget (2026-09-23)
+
+User request: build Master Data → Create Budget (menu 36, legacy `Budget.aspx`) in the new UI
+against the six `/api/v1/master-data/budgets` endpoints — "optimised and fast", with any
+enhancements worth adding. Branch `feature/master-data`. Route **`/master-data/create-budget`**
+(MenuGuard on menu 36, UnsavedChangesGuard). Blueprint: new `MASTER_DATA` block; the module
+row 35 stays `pending`, so Edit Budget, Gross Profit, … still open their own placeholders.
+
+### What the data says (local copy, budgets dated 2025 onwards)
+
+- 5,932 shells. **3,096 (52%) were saved straight after one by the same user with the same
+  period, scheme type and product — only the region differed**; 93% sit in such multi-region
+  batches, ~4.9 regions each. 86% of those consecutive pairs differ in description (a region
+  suffix: `…_Aug_2026_KPK`, `…_CP`) and 96% in amount.
+- Criteria used: Business 3,576 · Brand 2,252 · Master SKU 96 · Category 8. 9 active regions.
+- Trade Offer and BRD allow 12 months of back-dating; every other type is current month on.
+
+### Built
+
+- `core/api/master-data.models.ts` — wire types (kept apart from the admin models).
+- `features/master-data/services/master-data-budgets.api.ts` — catalogue, criterion values
+  and approvers **cached 10 min** (shared in-flight, failures forgotten); `prefetch*` for
+  hover; create uses `refusalsSilent()` so a batch reports refusals per line, not as toasts.
+- `features/master-data/create-budget/` — the screen:
+  1. **Scheme first** (group → type; a single choice fills itself). Group decides Forward To.
+  2. **Period** — one field showing **the current month** by default ("September 2026"),
+     with a month-view calendar (`p-datepicker view="month"`, read-only input): **the current
+     month and later only**, earlier months disabled, for every scheme type (user's call,
+     2026-09-23 — legacy let Trade Offer / BRD back-date 12 months; the API still would). The
+     window is shown beside the label. A note says "This month", "Next month" or "3 months
+     ahead", with a "Use Sep 2026" link back. The form still holds `year`/`month`, so the
+     validator, request and Reuse are unchanged.
+  3. **Product** — criteria chips (prefetch on hover/focus; last one remembered per user) and
+     a searchable Select (virtual scroll over 60).
+  4. **Regions and amounts** — ticked region pills (Select all | None). One region = legacy.
+     Several = **one shell per region, saved one after another**, each with its own amount;
+     the description gets `_<region>` (switchable), each line editable ("custom" until reset).
+     Compact readout (`3.4M`) beside each amount; total.
+  5. **Forward to** — remembered per scheme group, or the only one; says why it is filled.
+  - Aside: live summary, "On save" facts, **receipt** (every shell code, duplicates flagged,
+    email state from `approverNotification`), Start over, Save (`Save 3 budgets`,
+    `Saving 2 of 3…`), **Ctrl/⌘+S**.
+  - Batch rules: a refusal about one region (region, amount, description, double submit)
+    lets the rest carry on; a refusal every region would get (period, product, scheme,
+    approver, 5xx, 429) stops the batch and is placed on its field. Saved regions leave the
+    form; after a full save the scheme, period, regions and approver stay for the next budget.
+    A double-submit 409 is read as "already saved as <code>".
+- `my-budgets/` — legacy's two grids as **Pending approval | Approved** tabs with counts,
+  server-paged 20 a page, search (debounced, shell code or description), Year, **Scheme type
+  and Region filters** (searchable selects; options from `GET /budgets/filters` — what the
+  caller's own budgets carry, so closed regions such as Multan/North are offered, marked
+  "Closed"; cached 10 min, re-read after a save), all sent to the server; every
+  page cached for the visit, the other tab's first page read after the visible one. Pending
+  rows show the level, whose desk, and days waiting; rows open onto `to-approval-chain`
+  (read-only) — returned / never-routed budgets say so instead. **Reuse** copies any budget
+  into the form (period kept if this month or later, otherwise the current month). **`@defer (on viewport; prefetch on idle)`**,
+  so first paint costs one request.
+- Validators: `shared/validators/period-window.validator.ts` (4 specs),
+  `shared/validators/one-of.validator.ts`. 17 specs in `create-budget.util.spec.ts`.
+- Tour `master-data-create-budget` (7 steps; the grid placeholder carries its target).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in budget initiator.
+  Build, lint and 196 specs pass; both new stylesheets are under the 8 kB budget.
+- Local `BW_Dairy.dbo.SKU_Hierarchy` is empty, so Master SKU options cannot be checked locally.
+- Edit Budget (43) link on returned budgets still opens the legacy placeholder.
+
+## Approve — Budgets (2026-09-24)
+
+User request: build the Approve module's first screen, Budgets (menu 40, legacy
+`Approve_Budget.aspx`, "Pending Budgets for Approvals"), against the five
+`/api/v1/approve/budgets` endpoints — fast, optimised, following the frontend UI/UX scope.
+Scenario from the checklist: Nada (AhmadN03) raises a budget → Umair Awan (AwanU01, TCM,
+level 1) approves and forwards it → Mudassir Hussain (HussaM10, FBP On Invoice, level 2).
+Branch `feature/approve`. Route **`/approve/budgets?type=<schemeGroupKey>&level=<1-3>`**
+(MenuGuard on menu 40). Blueprint: new `APPROVE` block; the module row 2 stays `pending`, so
+Trade Offers, Trade Spend, JBP, … still open their own placeholders.
+
+### Built
+
+- `core/api/approve.models.ts` — wire types (outcomes and email states as string unions).
+- `features/approve/services/approve-budgets.api.ts` — catalogue (not cached: its counts are
+  the point), **the whole queue** (first page at the server's 200 ceiling; any further pages
+  read together, capped at 10), CSV export with the grid's filters, accept / reject with
+  `refusalsSilent()` so refusals are shown in the panel, not toasted.
+- `features/approve/budgets/` — queue mode (CLAUDE.md §7): list left, decision right.
+  - **Two requests on load**, in parallel; budget type, level, search, sort and paging are in
+    memory, so nothing after first paint waits on the network.
+  - **Budget type chips** (legacy's single-select dropdown, plus "All types") with counts, and
+    **level chips** when the approver holds several levels (7 BRD users hold 2 and 3). Type and
+    level are kept in the URL.
+  - Search = shell code or description, the server's own rule, so **Send to Excel** downloads
+    exactly what is shown (server CSV, same filters).
+  - Grid: tick box (header ticks every budget shown, all pages, indeterminate when some),
+    Shell code + description, Period, Region, Product, Scheme type, Amount ("was …" when
+    changed), Level (Final in green), Waiting (amber at 7+ days) + who raised it. Sortable
+    Period / Amount / Waiting; default longest waiting first. Row opens the approval chain
+    (Raised → L1 → L2 → L3, the caller's level current) and facts. Space ticks, Enter opens.
+  - **Decision panel** (`decision-panel/`): idle = the approver's queue (count, value, longest
+    wait) and every level they sign at, with a level that has nobody to forward to called out.
+    Ticked = the list (untick ×), total, "N hidden by your filters", Approve | Reject (legacy's
+    radios, Approve default). **Forward To offers only people on every ticked budget's
+    type-and-level list**, and disables whoever raised one of them (the server refuses it);
+    starts on the only choice or the last one used per type+level (localStorage). The effect
+    in words: how many move up and to whom, how many are finally approved; for Reject, whose
+    desks they land on. Reject is confirmed (`to-confirm-dialog`, danger).
+  - **Receipt** per budget: Forwarded / Approved / Returned / Already decided / Not found,
+    with who was told and the email state. Decided rows leave the grid at once, then a quiet
+    re-read; a Forward To refusal re-reads the catalogue; a 409 offers Try again.
+  - Re-reads on returning to a tab left 2+ minutes; Refresh button.
+- `approve-budgets.util.ts` + **23 specs** (filter/sort, Forward To intersection, initiator
+  exclusion, defaults, reject recipients, chain, outcomes, refusals).
+- Tour `approve-budgets` (4 steps).
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in approver holding
+  menu 40 (e.g. AwanU01). Build, lint and 233 specs pass; both new stylesheets are under the
+  8 kB budget; the screen is its own 14.6 kB (gzip) lazy chunk.
+- Edit Budget link for returned budgets and the other Approve screens (Trade Offers 5, Trade
+  Spend 62, JBP 72, BRD / PS 73, PS 1.0 Schemes 105, JBP Claims 134) are still legacy.
+
+## Approve — Trade Offers (2026-09-25)
+
+User request: the Approve module's Trade Offers screen (menu 5, legacy `Approve_Scheme.aspx`,
+"Pending Schemes for Approval", and its View link `View_TradePromotions.aspx`) against the six
+`/api/v1/approve/trade-offers` endpoints — fast, optimised, following the frontend UI/UX scope.
+Branch `feature/approve`. Route **`/approve/trade-offers?level=<1-3>&scheme=<seqId>`**
+(MenuGuard on menu 5); blueprint row 5 in the `APPROVE` block.
+
+### Chain (from the API)
+
+Level 1 RSM → goes to the scheme's **budget owner** automatically (legacy disabled Forward To);
+level 2 budget owner → Forward To an FBP (catalogue's `forwardTo`); level 3 FBP → approves:
+Salesflo schemes are posted to Salesflo first and approved only if it accepts; Orange schemes are
+approved directly. At most 20 final approvals per request (~7 s per Salesflo post, 4 at a time).
+Initiators are **not** excluded from Forward To here (unlike budgets).
+
+### Built
+
+- `core/api/approve.models.ts` — trade offer wire types (11 outcomes as a string union).
+- `features/approve/services/approve-trade-offers.api.ts` — catalogue, whole queue (200 a page,
+  rest in parallel, cap 10), **scheme view cached for the visit** (shared in flight, 60 kept,
+  failures forgotten, `prefetchDetail` on View hover / row focus, forgotten after a decision),
+  export, accept / reject with `refusalsSilent()`.
+- `features/approve/shared/approve-common.util.ts` — days/waiting/date/email helpers and scoped
+  preferences, shared with Budgets (whose util re-exports them, so its callers are unchanged).
+- `features/approve/trade-offers/` — queue mode like Budgets:
+  - Level chips (when the approver holds several) with counts; search = the server's rule
+    (seq id, scheme id, description, shell code) so **Send to Excel** matches the grid.
+  - Grid: tick, Scheme (description + seq id · scheme id), Period (`01 – 07 Oct 2026`), Region
+    + business type, Budget (shell + owner, **warning when a level 1 scheme's owner is missing,
+    inactive or the caller**), Discount (+ per litre), ROI and Uplift (**green > 0, red ≤ 0, as
+    legacy**), Level (Final in green; Salesflo/Orange, or "Salesflo refused" with its answer),
+    Waiting (amber at 7+ days) + initiator, View. Sort by period, discount, ROI, waiting.
+    Header shows legacy's footer total discount. Row click / Enter opens the view; Space ticks.
+  - **Scheme view** (`scheme-view/`, `p-drawer` 48 rem, `@defer` so it is its own chunk):
+    status tags, Salesflo's last refusal, setup, slabs, criteria by name (Excludes flagged,
+    long lists cut at 12), discount mechanics with `to-headroom-bar` (total / other schemes /
+    this one / left) and Initiate's figure labels, approval route; "Tick for a decision".
+  - **Decision panel** (`decision-panel/`): idle = queue count, total discount, longest wait,
+    each level held with where it goes (and "nobody to forward to" / "Salesflo off" warnings).
+    Ticked = list (ids open the view), total discount, Approve | Reject; Forward To only when
+    a level 2 scheme is ticked (only / remembered choice preselected); the plan in words (owners
+    ×n, the FBP, finals and the Salesflo wait); schemes the server would skip are railed and
+    listed with an Untick button; blockers for >200, >20 finals, no FBP, all skipped.
+    **Final approvals and rejections are confirmed.** Receipt per scheme with Salesflo's answer;
+    schemes still waiting (Salesflo refused, owner cannot receive, busy…) stay in the grid with
+    "Tick the N still waiting".
+- `approve-trade-offers.util.ts` + **21 specs**. Tour `approve-trade-offers` (3 steps).
+- `_primeng-overrides.scss`: `.p-drawer.to-ato-drawer` width.
+
+### Not done
+
+- **Not visually checked against the live API yet** — needs a signed-in approver holding menu 5.
+  Build, lint and 254 specs pass; new stylesheets under 8 kB; queue chunk 13.1 kB gzip, drawer
+  separate.

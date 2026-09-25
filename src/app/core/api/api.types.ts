@@ -30,6 +30,17 @@ export function int(value: ApiInt | null | undefined, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+/**
+ * A wire decimal. The contract declares decimals as `["number","string"]`, for the same
+ * reason as integers — see `ApiInt` — so every read goes through `dec()`.
+ */
+export type ApiDecimal = number | string;
+
+/** Coerces a wire decimal to a real number. Returns `fallback` for null/blank/NaN. */
+export function dec(value: ApiDecimal | null | undefined, fallback = 0): number {
+  return int(value, fallback);
+}
+
 /** Coerces a list of wire integers. Non-numeric entries are dropped, not silently zeroed. */
 export function intList(values: readonly ApiInt[] | null | undefined): number[] {
   if (!values) {

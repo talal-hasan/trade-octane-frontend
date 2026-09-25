@@ -1,0 +1,194 @@
+<section
+  id="to-trade-offer-slab"
+  class="to-adm__card to-adm__card--pad to-adm__form-section to-tro-slab"
+  [class.to-adm__card--flash]="store.highlighted() === 'slab'"
+  data-step="slab"
+  data-tour="tro-slab"
+  [formGroup]="form"
+>
+  <div class="to-adm__section-head">
+    <h2 class="to-adm__subtitle">
+      <span class="to-adm__step-no" [class.to-adm__step-no--done]="!!slab() && !dirty()">2</span>
+      Slab
+    </h2>
+    <span
+      class="to-adm__flag"
+      [class.to-adm__flag--ok]="headFlag().tone === 'ok'"
+      [class.to-adm__flag--warn]="headFlag().tone === 'warn'"
+    >
+      {{ headFlag().text }}
+    </span>
+  </div>
+
+  @if (locked()) {
+    <p class="to-adm__locked">
+      <tabler-icon [icon]="icons['lock']" [size]="14" />
+      Create the scheme first — its one slab is saved against the new sequence ID.
+    </p>
+  } @else if (!editable() && !slab()) {
+    <p class="to-adm__locked">No slab was defined.</p>
+  } @else {
+    <div class="to-tro-slab__grid">
+      <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.fromQuantity) || null">
+        <label class="to-adm__form-label" for="troFromQty">From-Qty in Ltrs</label>
+        <p-inputnumber
+          inputId="troFromQty"
+          formControlName="fromQuantity"
+          mode="decimal"
+          [maxFractionDigits]="4"
+          [min]="0"
+          [max]="limits.quantity"
+          [fluid]="true"
+          [invalid]="showError(form.controls.fromQuantity)"
+        />
+      </div>
+
+      <div
+        class="to-adm__form-field"
+        [attr.data-invalid]="showError(form.controls.toQuantity) || rangeError() || null"
+      >
+        <label class="to-adm__form-label" for="troToQty">To-Qty in Ltrs</label>
+        <p-inputnumber
+          inputId="troToQty"
+          formControlName="toQuantity"
+          mode="decimal"
+          [maxFractionDigits]="4"
+          [min]="0"
+          [max]="limits.quantity"
+          [fluid]="true"
+          [invalid]="showError(form.controls.toQuantity) || rangeError()"
+        />
+      </div>
+
+      <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.discountValue) || null">
+        <label class="to-adm__form-label" for="troDiscount">Discount value</label>
+        <p-inputnumber
+          inputId="troDiscount"
+          formControlName="discountValue"
+          mode="decimal"
+          [maxFractionDigits]="6"
+          [min]="0"
+          [max]="limits.sixPlace"
+          [fluid]="true"
+          [invalid]="showError(form.controls.discountValue)"
+        />
+      </div>
+
+      <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.forEvery) || null">
+        <label class="to-adm__form-label" for="troForEvery">For every (Ltrs)</label>
+        <p-inputnumber
+          inputId="troForEvery"
+          formControlName="forEvery"
+          mode="decimal"
+          [maxFractionDigits]="6"
+          [min]="0"
+          [max]="limits.sixPlace"
+          [fluid]="true"
+          [invalid]="showError(form.controls.forEvery)"
+        />
+      </div>
+
+      <div class="to-adm__form-field" [attr.data-invalid]="showError(form.controls.forecastLimit) || null">
+        <label class="to-adm__form-label" for="troForecast">Forecast limit (Ltrs)</label>
+        <p-inputnumber
+          inputId="troForecast"
+          formControlName="forecastLimit"
+          mode="decimal"
+          [maxFractionDigits]="4"
+          [min]="0"
+          [max]="limits.quantity"
+          [fluid]="true"
+          [invalid]="showError(form.controls.forecastLimit)"
+        />
+      </div>
+
+      <div class="to-adm__form-field">
+        <span class="to-adm__form-label">Purchase limit</span>
+        <span class="to-tro-slab__fixed to-numeric" title="Always 0 on this screen">0</span>
+      </div>
+    </div>
+
+    @if (rangeError()) {
+      <span class="to-adm__form-error" role="alert">To-Qty must not be below From-Qty.</span>
+    } @else if (showError(form.controls.forEvery) && !form.controls.forEvery.hasError('required')) {
+      <span class="to-adm__form-error" role="alert">For Every must be above 0.</span>
+    } @else if (
+      form.invalid && attempted()
+    ) {
+      <span class="to-adm__form-error" role="alert">Fill in every figure: each must be 0 or more, litres with up to 4 decimals and at most 8 digits.</span>
+    }
+
+    <!-- The offer, read back in words: a misplaced decimal is obvious here. -->
+    <div class="to-tro-slab__readout" aria-live="polite">
+      @if (readback(); as offer) {
+        <span>
+          <strong class="to-numeric">{{ offer.discount }}</strong> off every
+          <strong class="to-numeric">{{ offer.every }}</strong>
+          @if (offer.range; as range) {
+            bought, from <span class="to-numeric">{{ range.from }}</span> up to
+            <span class="to-numeric">{{ range.to }}</span>
+          }
+        </span>
+      } @else {
+        <span>Enter the discount and For Every to read the offer back.</span>
+      }
+      <span class="to-tro-slab__total">
+        Total discount
+        <strong class="to-numeric">{{ formatMoney(preview()) }}</strong>
+        <span class="to-tro-slab__formula">= discount ÷ for every × forecast</span>
+      </span>
+    </div>
+
+    @if (refusal(); as refused) {
+      @if (!refused.toasted) {
+        <div class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>{{ refused.message }}</span>
+        </div>
+      }
+    }
+
+    @if (editable()) {
+      <div class="to-adm__form-actions">
+        @if (slab()) {
+          <button
+            type="button"
+            pButton
+            class="p-button-text p-button-sm p-button-danger to-tro-slab__delete"
+            [disabled]="saving() || deleting()"
+            (click)="askDelete()"
+          >
+            <tabler-icon [icon]="icons['trash']" [size]="14" />
+            {{ deleting() ? 'Deleting…' : 'Delete slab' }}
+          </button>
+        }
+        @if (dirty() && slab()) {
+          <button type="button" pButton class="p-button-text p-button-sm" [disabled]="saving()" (click)="discard()">
+            Discard
+          </button>
+        }
+        <button
+          type="button"
+          pButton
+          class="p-button-sm"
+          [disabled]="saving() || deleting() || (!!slab() && !dirty())"
+          (click)="save()"
+        >
+          {{ saving() ? 'Saving…' : slab() ? 'Update slab' : 'Add slab' }}
+        </button>
+      </div>
+    }
+  }
+</section>
+
+<to-confirm-dialog
+  [visible]="confirmDelete()"
+  (visibleChange)="confirmDelete.set($event)"
+  title="Delete the slab?"
+  message="The scheme cannot be sent for approval without a slab, and its saved mechanics will no longer match."
+  [details]="deleteDetails()"
+  confirmLabel="Delete slab"
+  variant="danger"
+  (confirmed)="deleteSlab()"
+  (cancelled)="confirmDelete.set(false)"
+/>

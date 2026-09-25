@@ -1,0 +1,117 @@
+@use '../../../../../styles/tokens' as t;
+@use '../../../../../styles/utilities' as u;
+
+.to-tro-mech {
+  scroll-margin-top: t.$to-space-12;
+}
+
+.to-tro-mech__shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: t.$to-space-3;
+  align-items: end;
+}
+
+.to-tro-mech__fixed {
+  @include u.truncate;
+  display: flex;
+  align-items: center;
+  min-height: var(--to-field-height);
+  padding: 0 t.$to-space-3;
+  border: 1px dashed var(--to-border);
+  border-radius: t.$to-radius-control;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-secondary);
+}
+
+// Shell options carry their name and what is left; the name is long, so it truncates.
+.to-tro-mech__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-3;
+  width: 100%;
+  min-width: 0;
+}
+
+.to-tro-mech__option-name {
+  @include u.truncate;
+  flex: 1;
+  min-width: 0;
+}
+
+.to-tro-mech__option-meta {
+  flex-shrink: 0;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-tro-mech__other {
+  color: var(--to-warning);
+}
+
+.to-tro-mech__headroom {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+}
+
+// ─── The ten figures ──────────────────────────────────────────────────────────
+
+.to-tro-mech__figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+  background: var(--to-border);
+  @include u.motion(opacity);
+
+  &--busy {
+    opacity: 0.55;
+  }
+}
+
+.to-tro-mech__figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: t.$to-space-2 t.$to-space-3;
+  background: var(--to-bg-1);
+
+  dt {
+    font-size: t.$to-font-size-2xs;
+    color: var(--to-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: t.$to-font-size-sm;
+    color: var(--to-text-primary);
+
+    &.to-tro-mech__good {
+      color: var(--to-success);
+    }
+
+    &.to-tro-mech__bad {
+      color: var(--to-danger);
+    }
+  }
+}
+
+.to-tro-mech__exceeds strong {
+  display: block;
+}
+
+.to-tro-mech__state {
+  margin-right: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+@media (max-width: 720px) {
+  .to-tro-mech__shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

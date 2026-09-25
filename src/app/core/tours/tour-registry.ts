@@ -598,6 +598,139 @@ export const CLAIM_HIERARCHY_TOUR: TourDefinition = {
   ],
 };
 
+export const TRADE_OFFER_TOUR: TourDefinition = {
+  id: 'initiate-trade-offer',
+  label: 'How a trade offer is defined and sent',
+  steps: [
+    {
+      target: '[data-tour="tro-scheme"]',
+      title: 'New, existing, or a copy',
+      body: 'A new scheme gets its sequence ID when it is created. Existing searches your drafts and the schemes approvers sent back to you. Most schemes follow one just like them: Copy into a new scheme starts from the setup, slab and criteria of the open one.',
+    },
+    {
+      target: '[data-tour="tro-setup"]',
+      title: 'The setup comes first',
+      body: 'A scheme runs within one month and may not start before today. The slab, criteria and mechanics are saved against the sequence ID, so they open once the scheme is created.',
+    },
+    {
+      target: '[data-tour="tro-slab"]',
+      title: 'One slab, read back in words',
+      body: 'The discount is given for every "For every" litres. The forecast is the volume the scheme is expected to move, and the total discount — discount ÷ for every × forecast — is what it takes from the budget.',
+    },
+    {
+      target: '[data-tour="tro-criteria"]',
+      title: 'Where it applies, and to what',
+      body: 'Click a value to add it; the selected list stays beside the options. To be sent, a scheme needs exactly one region and at least one master SKU, and no brand. Unsaved selections are kept while you edit another criterion.',
+    },
+    {
+      target: '[data-tour="tro-mechanics"]',
+      title: 'The mechanics compute themselves',
+      body: 'Gross profit, total discount, ROI and uplift follow the saved slab, master SKUs and the shell you pick. The discount may not exceed what the shell has left; saving takes it from the shell.',
+    },
+    {
+      target: '[data-tour="tro-approval"]',
+      title: 'Every reason, and a way to each',
+      body: 'Once everything looks in place the check runs by itself and lists who can approve. Sending emails the approver, and the scheme becomes read-only until an approver returns it.',
+    },
+    {
+      target: '[data-tour="tro-summary"]',
+      title: 'What still stands in the way',
+      body: 'The summary follows you down the page: the offer, the discount against the shell, and each part still to do. Ctrl+S saves the part you are in.',
+    },
+  ],
+};
+
+export const CREATE_BUDGET_TOUR: TourDefinition = {
+  id: 'master-data-create-budget',
+  label: 'How to raise a budget',
+  steps: [
+    {
+      target: '[data-tour="cb-scheme"]',
+      title: 'Start with the scheme',
+      body: 'The scheme type decides how far back a budget may be dated, and the scheme group decides who it can be forwarded to. The period and approver below follow from them.',
+    },
+    {
+      target: '[data-tour="cb-period"]',
+      title: 'This month, unless you plan ahead',
+      body: 'The period starts on the current month. Open the calendar to budget for a later month; earlier months are disabled.',
+    },
+    {
+      target: '[data-tour="cb-product"]',
+      title: 'Your options come from your brand mapping',
+      body: 'Pick Business, Category, Brand or Master SKU. Only what you are mapped to is offered, and your last choice of criteria is remembered.',
+    },
+    {
+      target: '[data-tour="cb-regions"]',
+      title: 'Several regions, one save',
+      body: 'Tick every region the budget is for and give each its own amount. Each region is saved as its own budget shell with the region added to its description, and you can reword any line.',
+    },
+    {
+      target: '[data-tour="cb-forward"]',
+      title: 'Who approves first',
+      body: 'Only approvers who share a region with you are offered. Whoever you forwarded this scheme group to last time is picked for you.',
+    },
+    {
+      target: '[data-tour="cb-summary"]',
+      title: 'Check it, save it, keep going',
+      body: 'The summary states exactly what will be created. After saving, the receipt lists every shell code, and the form keeps the scheme, period, regions and approver for your next budget.',
+    },
+    {
+      target: '[data-tour="cb-my-budgets"]',
+      title: 'Where your budgets stand',
+      body: 'Pending budgets say which level they wait on, whose desk they are on and for how long. Narrow either list by year, scheme type or region — closed regions included. Open a row for the full approval chain, or Reuse it to raise the same budget again.',
+    },
+  ],
+};
+
+export const APPROVE_BUDGETS_TOUR: TourDefinition = {
+  id: 'approve-budgets',
+  label: 'How to approve budgets',
+  steps: [
+    {
+      target: '[data-tour="ab-queue"]',
+      title: 'Everything waiting on you',
+      body: 'Every budget waiting for your signature, at every level you approve, longest waiting first. A week or more on your desk shows in amber. Open a row to see who raised it and who has signed so far.',
+    },
+    {
+      target: '[data-tour="ab-types"]',
+      title: 'Narrow it by budget type',
+      body: 'Each budget type shows how many wait. Pick one to see only those; pick it again for everything. If you approve at more than one level, level chips appear beside it.',
+    },
+    {
+      target: '[data-tour="ab-decision"]',
+      title: 'Tick, then decide',
+      body: 'Tick budgets — or the header box for every one shown — and this panel says exactly what will happen: who each budget moves up to, which are finally approved, and whose desk a rejection lands on. Space ticks the focused row.',
+    },
+    {
+      target: '[data-tour="ab-export"]',
+      title: 'Send to Excel',
+      body: 'Downloads the budgets shown, with the same filters and search, plus who raised each one and how long it has waited.',
+    },
+  ],
+};
+
+export const APPROVE_TRADE_OFFERS_TOUR: TourDefinition = {
+  id: 'approve-trade-offers',
+  label: 'How to approve trade offers',
+  steps: [
+    {
+      target: '[data-tour="ato-queue"]',
+      title: 'Everything waiting on you',
+      body: 'Every trade offer waiting for your signature, at every level you approve, longest waiting first. ROI and uplift are green above zero and red at or below it. Click a row, or View, to open the scheme in full.',
+    },
+    {
+      target: '[data-tour="ato-decision"]',
+      title: 'Tick, then decide',
+      body: 'Tick schemes and this panel says where each one goes: level 1 to its budget owner, level 2 to the FBP you choose, level 3 approved — posted to Salesflo first when it runs there. A scheme that would be refused is flagged before you send. Space ticks the focused row.',
+    },
+    {
+      target: '[data-tour="ato-export"]',
+      title: 'Send to Excel',
+      body: 'Downloads the schemes shown, with the same level and search, in the legacy column order, plus the level, the initiator and how long each has waited.',
+    },
+  ],
+};
+
 // ─── Route → tour ─────────────────────────────────────────────────────────────
 
 interface RouteTour {
@@ -649,6 +782,11 @@ const ROUTE_TOURS: RouteTour[] = [
   { match: startsWith('/admin2/activity-logs'), tour: ACTIVITY_LOGS_TOUR },
   { match: (p, q) => p === '/admin2/user-mapping' && q.get('tab') === 'regions', tour: REGION_ROLES_TOUR },
   { match: exact('/admin2/user-mapping'), tour: USER_MAPPING_TOUR },
+
+  { match: exact('/initiate/trade-offer'), tour: TRADE_OFFER_TOUR },
+  { match: exact('/master-data/create-budget'), tour: CREATE_BUDGET_TOUR },
+  { match: exact('/approve/budgets'), tour: APPROVE_BUDGETS_TOUR },
+  { match: exact('/approve/trade-offers'), tour: APPROVE_TRADE_OFFERS_TOUR },
 
   { match: startsWith('/account'), tour: ACCOUNT_TOUR },
 ];

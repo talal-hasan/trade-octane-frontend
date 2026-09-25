@@ -1,0 +1,182 @@
+<section
+  id="to-trade-offer-approval"
+  class="to-adm__card to-adm__card--pad to-adm__form-section to-tro-appr"
+  [class.to-adm__card--flash]="store.highlighted() === 'approval'"
+  data-step="approval"
+  data-tour="tro-approval"
+>
+  <div class="to-adm__section-head">
+    <h2 class="to-adm__subtitle">
+      <span class="to-adm__step-no" [class.to-adm__step-no--done]="!editable()">5</span>
+      Approval route
+    </h2>
+    @if (locked()) {
+      <span class="to-adm__flag">Waiting for the setup</span>
+    } @else if (!editable()) {
+      <span class="to-adm__flag to-adm__flag--ok">{{ store.scheme()?.status === 'Expired' ? 'Expired' : 'Sent' }}</span>
+    } @else if (check()?.canSubmit) {
+      <span class="to-adm__flag to-adm__flag--ok">Ready to send</span>
+    } @else if (check()) {
+      <span class="to-adm__flag to-adm__flag--warn">{{ issues().length }} to fix</span>
+    }
+  </div>
+
+  @if (locked()) {
+    <p class="to-adm__locked">
+      <tabler-icon [icon]="icons['lock']" [size]="14" />
+      Create the scheme first. Once its slab, criteria and mechanics are saved it can be sent for approval.
+    </p>
+  } @else if (!editable()) {
+    <!-- ─── Sent: the receipt and where it stands ─────────────────────────────── -->
+    @if (store.submitted(); as receipt) {
+      <div class="to-tro-appr__sent" role="status" aria-live="polite">
+        <tabler-icon [icon]="icons['circle-check']" [size]="18" />
+        <div>
+          <strong>
+            Sent to {{ receipt.forwardedTo.fullName || receipt.forwardedTo.userId }}
+            {{ formatDateTime(receipt.scheme.submittedOn) }}.
+          </strong>
+          {{ receiptNote() }}
+        </div>
+      </div>
+    }
+    @if (chain(); as approval) {
+      <to-approval-chain [steps]="approval.steps" [currentStepIndex]="approval.current" />
+    }
+    <div class="to-adm__form-actions">
+      <button type="button" pButton class="p-button-sm p-button-outlined" (click)="startNew(true)">
+        <tabler-icon [icon]="icons['copy']" [size]="15" />
+        Copy into a new scheme
+      </button>
+      <button type="button" pButton class="p-button-sm" (click)="startNew(false)">
+        <tabler-icon [icon]="icons['plus']" [size]="15" />
+        Start a new scheme
+      </button>
+    </div>
+  } @else {
+    <!-- ─── Not sent: what stands in the way, then who it goes to ─────────────── -->
+    @if (check(); as result) {
+      @if (result.canSubmit) {
+        <p class="to-tro-appr__ready">
+          <tabler-icon [icon]="icons['circle-check']" [size]="16" />
+          Every check passed. Choose who approves it first.
+        </p>
+      } @else {
+        <ul class="to-tro-appr__issues" aria-label="What stops this scheme being sent">
+          @for (issue of issues(); track issue.code) {
+            <li>
+              <tabler-icon [icon]="icons['alert-circle']" [size]="14" />
+              <span class="to-tro-appr__issue-text">{{ issue.message }}</span>
+              @if (issue.step) {
+                <button type="button" class="to-adm__link" (click)="goTo(issue.step)">Go to {{ stepLabels[issue.step] }}</button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    } @else {
+      <ul class="to-tro-appr__readiness" aria-label="What sending for approval needs">
+        @for (item of readiness(); track item.label) {
+          <li [class.to-tro-appr__readiness--ok]="item.ok">
+            <tabler-icon [icon]="item.ok ? icons['circle-check'] : icons['circle-dot']" [size]="14" />
+            <span>{{ item.label }}</span>
+            @if (!item.ok) {
+              <button type="button" class="to-adm__link" (click)="goTo(item.step)">Go to {{ stepLabels[item.step] }}</button>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (store.checkError(); as error) {
+      @if (!error.toasted) {
+        <div class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>{{ error.message }}</span>
+        </div>
+      }
+    }
+
+    @if (check()?.canSubmit) {
+      <div class="to-adm__form-field to-tro-appr__forward">
+        <label class="to-adm__form-label" for="troForwardTo">
+          Forward to
+          <span class="to-adm__form-hint">Levels 2 and 3 are named as each level approves</span>
+        </label>
+        <p-select
+          inputId="troForwardTo"
+          [formControl]="forwardTo"
+          [options]="approvers()"
+          optionLabel="fullName"
+          optionValue="userId"
+          [filter]="approvers().length > 8"
+          filterBy="fullName,userId"
+          placeholder="Select approver"
+          [fluid]="true"
+          appendTo="body"
+        >
+          <ng-template #item let-approver>
+            <span class="to-tro-appr__approver">
+              <span>{{ approver.fullName || approver.userId }}</span>
+              <span class="to-tro-appr__approver-id">{{ approver.userId }}</span>
+            </span>
+          </ng-template>
+        </p-select>
+        @if (forwardToReason() === 'remembered') {
+          <span class="to-adm__hint">Who you sent your last scheme to.</span>
+        } @else if (forwardToReason() === 'only') {
+          <span class="to-adm__hint">The only approver for this scheme's budget shell.</span>
+        }
+      </div>
+    }
+
+    @if (refusal(); as refused) {
+      @if (!refused.toasted) {
+        <div class="to-adm__alert to-adm__alert--warn" role="alert">
+          <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+          <span>{{ refused.message }}</span>
+        </div>
+      }
+    }
+
+    <div class="to-adm__form-actions">
+      <button
+        type="button"
+        pButton
+        class="p-button-text p-button-sm"
+        [disabled]="store.checkLoading()"
+        (click)="store.runCheck()"
+      >
+        <tabler-icon [icon]="icons['refresh']" [size]="14" />
+        {{ store.checkLoading() ? 'Checking…' : check() ? 'Check again' : 'Check for approval' }}
+      </button>
+      <button
+        type="button"
+        pButton
+        class="p-button-sm"
+        data-tour="tro-send"
+        [disabled]="!check()?.canSubmit || !forwardToValue() || sending() || store.checkLoading() || store.hasUnsavedChanges()"
+        [title]="store.hasUnsavedChanges() ? 'Save or discard the unsaved changes first' : ''"
+        (click)="askSend()"
+      >
+        <tabler-icon [icon]="icons['mail']" [size]="15" />
+        {{ sending() ? 'Sending…' : 'Send for approval' }}
+      </button>
+    </div>
+    @if (store.hasUnsavedChanges() && check()?.canSubmit) {
+      <p class="to-adm__hint to-tro-appr__unsaved">Save or discard the unsaved changes above first: the scheme is sent as it is saved.</p>
+    }
+  }
+</section>
+
+<to-confirm-dialog
+  [visible]="confirming()"
+  (visibleChange)="confirming.set($event)"
+  title="Send this scheme for approval?"
+  message="The approver is emailed and the scheme is then read-only here."
+  [details]="confirmDetails()"
+  note="An approver who returns it sends it back to you to change and send again."
+  confirmLabel="Send for approval"
+  (confirmed)="send()"
+  (cancelled)="confirming.set(false)"
+/>

@@ -1,0 +1,398 @@
+@use '../../../../styles/tokens' as t;
+@use '../../../../styles/utilities' as u;
+
+// Layout, fields, chips, alerts and the summary aside are shared builder-form chrome from
+// _admin.scss (`.to-adm__form-*`, `.to-adm__chip*`, `.to-adm__summary*`). Only what is
+// particular to this form is declared here.
+
+.to-cb {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-4;
+  // Reuse scrolls the form's top into view; keep it clear of the fixed top bar.
+  scroll-margin-top: t.$to-space-12;
+}
+
+.to-cb__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: t.$to-space-1;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-accent-subtle);
+  color: var(--to-accent-text);
+  font-size: t.$to-font-size-2xs;
+  letter-spacing: 0;
+}
+
+.to-cb__select {
+  width: 100%;
+}
+
+.to-cb__mono {
+  font-family: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  font-size: t.$to-font-size-xs;
+}
+
+// ─── Picker options ───────────────────────────────────────────────────────────
+// One line each: the Select picker is virtual-scrolled at a fixed item height.
+
+.to-cb__option {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  width: 100%;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.to-cb__option-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-cb__option-meta {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+// ─── Period ───────────────────────────────────────────────────────────────────
+
+.to-cb__period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: t.$to-space-2 t.$to-space-4;
+
+  .to-adm__form-field {
+    flex: 0 1 280px;
+  }
+}
+
+// Level with the input beside it, not with its label.
+.to-cb__period-note {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2 t.$to-space-3;
+  min-height: var(--to-field-height);
+}
+
+.to-cb__relation {
+  padding: 2px t.$to-space-2;
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-2);
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-secondary);
+
+  &--now {
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+  }
+}
+
+.to-cb__criteria {
+  align-self: flex-start;
+}
+
+// ─── Regions ──────────────────────────────────────────────────────────────────
+
+.to-cb__regions-head {
+  display: flex;
+  align-items: baseline;
+  gap: t.$to-space-2 t.$to-space-3;
+}
+
+.to-cb__regions-count {
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+}
+
+.to-cb__regions-actions {
+  display: inline-flex;
+  align-items: baseline;
+  gap: t.$to-space-2;
+  margin-left: auto;
+}
+
+.to-cb__divider {
+  color: var(--to-border-strong);
+}
+
+.to-cb__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--to-accent-text);
+  font-family: inherit;
+  font-size: t.$to-font-size-xs;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: var(--to-text-muted);
+    cursor: default;
+  }
+}
+
+.to-cb__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+}
+
+// Ticks, not a segmented control: a segmented control reads as "one of".
+.to-cb__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px t.$to-space-3 3px t.$to-space-2;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-pill;
+  background: var(--to-bg-1);
+  color: var(--to-text-secondary);
+  font-size: t.$to-font-size-xs;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  @include u.motion(background-color, border-color, color);
+
+  &:hover {
+    border-color: var(--to-border-strong);
+    color: var(--to-text-primary);
+  }
+
+  &:has(.to-cb__checkbox:focus-visible) {
+    box-shadow: 0 0 0 2px var(--to-accent-subtle), 0 0 0 3px var(--to-accent);
+  }
+
+  &--on {
+    border-color: color-mix(in srgb, var(--to-accent) 45%, transparent);
+    background: var(--to-accent-subtle);
+    color: var(--to-accent-text);
+  }
+}
+
+.to-cb__checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--to-accent-strong);
+  cursor: pointer;
+}
+
+.to-cb__toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$to-space-2;
+  font-size: t.$to-font-size-xs;
+  color: var(--to-text-secondary);
+  cursor: pointer;
+}
+
+// ─── Region lines ─────────────────────────────────────────────────────────────
+
+.to-cb__lines {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--to-border);
+  border-radius: t.$to-radius-card;
+}
+
+.to-cb__line {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(200px, 1fr);
+  gap: t.$to-space-2 t.$to-space-3;
+  align-items: center;
+  padding: t.$to-space-2 t.$to-space-3;
+  border-top: 1px solid var(--to-border);
+  @include u.motion(background-color);
+
+  &:first-child {
+    border-top: none;
+  }
+
+  .to-cb__lines--multi & {
+    grid-template-columns: minmax(120px, 0.7fr) minmax(0, 2fr) minmax(180px, 1fr);
+  }
+
+  &--head {
+    @include u.table-head;
+    padding-block: t.$to-space-2;
+    border-radius: t.$to-radius-card t.$to-radius-card 0 0;
+    font-size: t.$to-font-size-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--to-text-muted);
+  }
+
+  &--total {
+    background: var(--to-bg-2);
+    font-size: t.$to-font-size-xs;
+    color: var(--to-text-secondary);
+  }
+
+  &--saving {
+    background: color-mix(in srgb, var(--to-accent) 5%, var(--to-bg-1));
+  }
+
+  &--refused {
+    box-shadow: inset 3px 0 0 var(--to-warning-solid);
+  }
+}
+
+.to-cb__right {
+  text-align: right;
+}
+
+.to-cb__line-region {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  min-width: 0;
+  font-size: t.$to-font-size-sm;
+  color: var(--to-text-primary);
+}
+
+.to-cb__line-name {
+  @include u.truncate;
+  min-width: 0;
+}
+
+.to-cb__remove,
+.to-cb__reset {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: none;
+  border-radius: t.$to-radius-control;
+  background: none;
+  color: var(--to-text-muted);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--to-bg-2);
+    color: var(--to-text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--to-accent);
+  }
+}
+
+.to-cb__line-desc {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  min-width: 0;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.to-cb__line-amount {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-2;
+  min-width: 0;
+
+  p-inputnumber {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// "3.4M" beside the box: a misplaced zero is obvious at a glance.
+.to-cb__compact {
+  flex-shrink: 0;
+  min-width: 36px;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+  text-align: right;
+}
+
+.to-cb__line-note {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$to-space-1;
+  grid-column: 1 / -1;
+  font-size: t.$to-font-size-2xs;
+  line-height: 1.5;
+  color: var(--to-warning);
+
+  &.to-adm__form-error {
+    color: var(--to-danger);
+  }
+}
+
+// ─── Aside ────────────────────────────────────────────────────────────────────
+
+.to-cb__total {
+  font-weight: var(--to-font-weight-medium);
+}
+
+.to-cb__receipt-title {
+  display: flex;
+  align-items: center;
+  gap: t.$to-space-1;
+  color: var(--to-success);
+
+  &--partial {
+    color: var(--to-warning);
+  }
+}
+
+.to-cb__receipt-lines {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-1;
+  margin: 0 0 t.$to-space-2;
+  padding: 0;
+  list-style: none;
+  font-size: t.$to-font-size-xs;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px t.$to-space-2;
+  }
+}
+
+.to-cb__receipt-region {
+  flex: 1;
+  min-width: 0;
+  color: var(--to-text-secondary);
+}
+
+.to-cb__shortcut {
+  margin: 0;
+  text-align: right;
+  font-size: t.$to-font-size-2xs;
+  color: var(--to-text-muted);
+
+  kbd {
+    padding: 0 4px;
+    border: 1px solid var(--to-border);
+    border-radius: 4px;
+    background: var(--to-bg-2);
+    font-family: inherit;
+  }
+}
+
+.to-cb__grid-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: t.$to-space-3;
+  padding: t.$to-space-4;
+}

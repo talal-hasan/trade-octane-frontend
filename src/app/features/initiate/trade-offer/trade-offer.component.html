@@ -1,0 +1,119 @@
+<div class="to-tro">
+  <to-page-header
+    title="Trade Offer - in Litres"
+    subtitle="Define a trade offer in litres — its setup, slab, criteria and discount mechanics — and send it for approval."
+    [breadcrumbs]="[{ label: 'Initiate' }, { label: 'Trade Offer - in Litres' }]"
+  />
+
+  @if (store.catalogueFailed()) {
+    <to-empty-state
+      icon="alert-triangle"
+      heading="The form did not load"
+      description="The discount, scheme and claim types and the criteria come from one request, and it failed. This is usually temporary."
+    >
+      <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="store.loadCatalogue()">
+        <tabler-icon [icon]="icons['refresh']" [size]="15" />
+        Try again
+      </button>
+    </to-empty-state>
+  } @else if (!store.catalogue()) {
+    <div class="to-adm__form-layout" aria-busy="true" aria-label="Loading the form">
+      <div class="to-adm__form-main">
+        <to-skeleton width="100%" height="64px" />
+        <to-skeleton width="100%" height="240px" />
+        <to-skeleton width="100%" height="120px" />
+        <to-skeleton width="100%" height="280px" />
+      </div>
+      <to-skeleton width="100%" height="360px" />
+    </div>
+  } @else {
+    <to-trade-offer-scheme-bar />
+
+    @if (store.openFailed(); as failure) {
+      <to-empty-state
+        icon="alert-triangle"
+        [heading]="failure.status === 404 ? 'That scheme is not one of yours' : 'The scheme did not open'"
+        [description]="failure.message"
+      >
+        <button actions type="button" pButton class="p-button-sm p-button-outlined" (click)="startNew()">
+          <tabler-icon [icon]="icons['plus']" [size]="15" />
+          Start a new scheme
+        </button>
+      </to-empty-state>
+    } @else if (store.opening()) {
+      <div class="to-adm__form-layout" aria-busy="true" [attr.aria-label]="'Opening scheme ' + store.opening()">
+        <div class="to-adm__form-main">
+          <to-skeleton width="100%" height="240px" />
+          <to-skeleton width="100%" height="120px" />
+          <to-skeleton width="100%" height="280px" />
+        </div>
+        <to-skeleton width="100%" height="360px" />
+      </div>
+    } @else {
+      @switch (status()) {
+        @case ('ReturnedByApprover') {
+          <p class="to-adm__readonly to-tro__banner to-tro__banner--returned" role="status">
+            <tabler-icon [icon]="icons['arrow-left']" [size]="16" />
+            <span>
+              <strong>An approver sent this scheme back to you.</strong>
+              Change what was asked, then send it again from Approval route.
+            </span>
+          </p>
+        }
+        @case ('SentForApproval') {
+          <p class="to-adm__readonly to-tro__banner" role="status">
+            <tabler-icon [icon]="icons['lock']" [size]="16" />
+            <span>
+              <strong>Sent for approval {{ formatDateTime(store.scheme()?.submittedOn) }}.</strong>
+              It can no longer be changed here; an approver who returns it sends it back to you.
+            </span>
+          </p>
+        }
+        @case ('Expired') {
+          <p class="to-adm__readonly to-tro__banner" role="status">
+            <tabler-icon [icon]="icons['lock']" [size]="16" />
+            <span><strong>This scheme has expired,</strong> so it can no longer be changed.</span>
+          </p>
+        }
+      }
+
+      <div class="to-adm__form-layout">
+        <div class="to-adm__form-main">
+          <to-trade-offer-setup-card />
+          <to-trade-offer-slab-card />
+
+          @defer (on viewport; prefetch on idle) {
+            <to-trade-offer-criteria-card />
+          } @placeholder {
+            <section id="to-trade-offer-criteria" class="to-adm__card to-tro__placeholder" data-tour="tro-criteria">
+              <to-skeleton width="120px" height="14px" />
+              <to-skeleton width="100%" height="220px" />
+            </section>
+          }
+
+          @defer (on viewport; prefetch on idle) {
+            <to-trade-offer-mechanics-card />
+          } @placeholder {
+            <section id="to-trade-offer-mechanics" class="to-adm__card to-tro__placeholder" data-tour="tro-mechanics">
+              <to-skeleton width="160px" height="14px" />
+              <to-skeleton width="100%" height="180px" />
+            </section>
+          }
+
+          @defer (on viewport; prefetch on idle) {
+            <to-trade-offer-approval-card />
+          } @placeholder {
+            <section id="to-trade-offer-approval" class="to-adm__card to-tro__placeholder" data-tour="tro-approval">
+              <to-skeleton width="140px" height="14px" />
+              <to-skeleton width="100%" height="96px" />
+            </section>
+          }
+        </div>
+
+        <aside class="to-adm__form-aside">
+          <to-trade-offer-summary />
+        </aside>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,362 @@
+<section
+  id="to-trade-offer-criteria"
+  class="to-adm__card to-adm__card--pad to-adm__form-section to-tro-crit"
+  [class.to-adm__card--flash]="store.highlighted() === 'criteria'"
+  data-step="criteria"
+  data-tour="tro-criteria"
+>
+  <div class="to-adm__section-head">
+    <h2 class="to-adm__subtitle">
+      <span
+        class="to-adm__step-no"
+        [class.to-adm__step-no--done]="requirements().regionOk && requirements().masterSkuOk && requirements().brandOk && dirtyKeys().length === 0"
+        >3</span
+      >
+      Criteria
+    </h2>
+    @if (locked()) {
+      <span class="to-adm__flag">Waiting for the setup</span>
+    } @else if (dirtyKeys().length > 0) {
+      <span class="to-adm__flag to-adm__flag--warn">{{ dirtyKeys().length }} unsaved</span>
+    } @else if (savedSummary().length > 0) {
+      <span class="to-adm__flag to-adm__flag--ok">{{ savedSummary().length }} saved</span>
+    } @else {
+      <span class="to-adm__flag to-adm__flag--warn">None yet</span>
+    }
+  </div>
+
+  @if (locked()) {
+    <p class="to-adm__locked">
+      <tabler-icon [icon]="icons['lock']" [size]="14" />
+      Create the scheme first — then say where it applies (region, distributors, outlets) and to what (master SKUs).
+    </p>
+  } @else {
+    <!-- What Check for Approval will ask of the criteria, from what is saved. -->
+    <ul class="to-tro-crit__rules" aria-label="What sending for approval needs">
+      <li [class.to-tro-crit__rule--ok]="requirements().regionOk">
+        <tabler-icon [icon]="requirements().regionOk ? icons['circle-check'] : icons['alert-circle']" [size]="14" />
+        Exactly one region
+        @if (requirements().regionCount > 1) {
+          <span class="to-numeric">({{ requirements().regionCount }} saved)</span>
+        }
+      </li>
+      <li [class.to-tro-crit__rule--ok]="requirements().masterSkuOk">
+        <tabler-icon [icon]="requirements().masterSkuOk ? icons['circle-check'] : icons['alert-circle']" [size]="14" />
+        At least one master SKU
+      </li>
+      <li [class.to-tro-crit__rule--ok]="requirements().brandOk">
+        <tabler-icon [icon]="requirements().brandOk ? icons['circle-check'] : icons['alert-circle']" [size]="14" />
+        No brand
+      </li>
+    </ul>
+
+    @if (editable() && !store.hasPerfectStore()) {
+      <div class="to-adm__alert" role="status">
+        <tabler-icon [icon]="icons['info-circle']" [size]="16" />
+        <span>
+          This scheme has no Perfect Store criterion. Legacy's Select Criteria gave every scheme one — No and Non PS
+          Merchandizing Universe.
+        </span>
+        <button type="button" pButton class="p-button-sm p-button-text" [disabled]="seeding()" (click)="seedDefaults()">
+          {{ seeding() ? 'Adding…' : 'Add the default' }}
+        </button>
+      </div>
+    }
+
+    <div class="to-tro-crit__body">
+      <!-- ─── Criteria list ──────────────────────────────────────────────────── -->
+      <nav class="to-tro-crit__nav" aria-label="Criteria">
+        <span class="to-tro-crit__group">Where it applies</span>
+        @for (item of nav().outlets; track item.key) {
+          <ng-container [ngTemplateOutlet]="navItem" [ngTemplateOutletContext]="{ $implicit: item }" />
+        }
+        <span class="to-tro-crit__group">What it applies to</span>
+        @for (item of nav().products; track item.key) {
+          <ng-container [ngTemplateOutlet]="navItem" [ngTemplateOutletContext]="{ $implicit: item }" />
+        }
+      </nav>
+
+      <!-- ─── The active criterion ───────────────────────────────────────────── -->
+      <div class="to-tro-crit__editor">
+        <div class="to-tro-crit__editor-head">
+          <h3 class="to-tro-crit__title">{{ dimensionOf(active()) }}</h3>
+          @if (editable() && !activeReadOnly()) {
+            <div class="to-adm__segmented" role="radiogroup" aria-label="Include or exclude these values">
+              <button
+                type="button"
+                role="radio"
+                class="to-adm__segment"
+                [class.to-adm__segment--on]="draft().operator === 'Include'"
+                [attr.aria-checked]="draft().operator === 'Include'"
+                (click)="setOperator('Include')"
+              >
+                Include
+              </button>
+              <button
+                type="button"
+                role="radio"
+                class="to-adm__segment"
+                [class.to-adm__segment--on]="draft().operator === 'Exclude'"
+                [attr.aria-checked]="draft().operator === 'Exclude'"
+                (click)="setOperator('Exclude')"
+              >
+                Exclude
+              </button>
+            </div>
+          } @else if (draft().codes.length > 0) {
+            <span class="to-adm__flag">{{ draft().operator === 'Exclude' ? 'Excluded' : 'Included' }}</span>
+          }
+        </div>
+
+        @if (activeReadOnly()) {
+          <p class="to-adm__hint">
+            This criterion was saved by another screen. It is shown as it is, but cannot be changed here.
+          </p>
+        }
+
+        @if (isPop() && editable()) {
+          <div class="to-tro-crit__pop">
+            <div class="to-adm__form-field">
+              <label class="to-adm__form-label" for="troPopDistributor">Distributor</label>
+              <p-select
+                inputId="troPopDistributor"
+                [options]="distributors()"
+                [formControl]="distributorControl"
+                optionLabel="name"
+                optionValue="code"
+                [filter]="true"
+                filterBy="name,code"
+                filterPlaceholder="Search distributors"
+                [placeholder]="distributorsLoading() ? 'Loading…' : 'Pick a distributor'"
+                [loading]="distributorsLoading()"
+                [virtualScroll]="distributors().length > 60"
+                [virtualScrollItemSize]="36"
+                scrollHeight="320px"
+                [fluid]="true"
+                appendTo="body"
+              />
+            </div>
+            <form class="to-adm__form-field" (submit)="$event.preventDefault(); searchPrevPop()">
+              <label class="to-adm__form-label" for="troPrevPop">Search POP by previous POP code</label>
+              <span class="to-tro-crit__prev">
+                <input
+                  pInputText
+                  id="troPrevPop"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="Previous POP code"
+                  [formControl]="prevPopControl"
+                />
+                <button type="submit" pButton class="p-button-sm p-button-outlined" [disabled]="!distributor()">
+                  <tabler-icon [icon]="icons['search']" [size]="14" />
+                  Search
+                </button>
+                @if (prevPop()) {
+                  <button type="button" class="to-adm__link" (click)="clearPrevPop()">Show all</button>
+                }
+              </span>
+            </form>
+          </div>
+        }
+
+        <div class="to-tro-crit__panes" [class.to-tro-crit__panes--single]="!editable() || activeReadOnly()">
+          @if (editable() && !activeReadOnly()) {
+            <!-- Available -->
+            <div class="to-tro-crit__pane">
+              <div class="to-tro-crit__pane-head">
+                <span class="to-tro-crit__pane-title">
+                  Available
+                  @if (optionCount() > 0) {
+                    <span class="to-numeric">{{ visibleOptions().length === optionCount() ? optionCount() : visibleOptions().length + ' of ' + optionCount() }}</span>
+                  }
+                </span>
+                <button
+                  type="button"
+                  class="to-adm__link"
+                  [disabled]="visibleOptions().length === 0"
+                  title="Add every value shown (legacy >>)"
+                  (click)="addShown()"
+                >
+                  Add all shown
+                </button>
+              </div>
+              <span class="to-tro-crit__search">
+                <tabler-icon [icon]="icons['search']" [size]="14" />
+                <input
+                  pInputText
+                  type="search"
+                  autocomplete="off"
+                  [attr.aria-label]="'Search ' + dimensionOf(active())"
+                  [placeholder]="'Search ' + dimensionOf(active()).toLowerCase()"
+                  [formControl]="searchControl"
+                />
+              </span>
+
+              @if (isPop() && !distributor()) {
+                <p class="to-tro-crit__empty">Pick a distributor to list its outlets.</p>
+              } @else if (optionsFailed(); as message) {
+                <div class="to-tro-crit__empty">
+                  <span>{{ message }}</span>
+                  <button type="button" class="to-adm__link" (click)="retryOptions()">Try again</button>
+                </div>
+              } @else if (optionsLoading()) {
+                <p class="to-tro-crit__empty">Loading…</p>
+              } @else if (optionCount() === 0) {
+                <p class="to-tro-crit__empty">
+                  {{ prevPop() ? 'No outlet has that previous POP code.' : 'Nothing to pick for you here.' }}
+                </p>
+              } @else if (visibleOptions().length === 0) {
+                <p class="to-tro-crit__empty">Nothing matches “{{ search() }}”.</p>
+              } @else {
+                <cdk-virtual-scroll-viewport class="to-tro-crit__list" [itemSize]="optionRow" role="listbox" aria-multiselectable="true">
+                  <button
+                    *cdkVirtualFor="let option of visibleOptions(); trackBy: trackOption"
+                    type="button"
+                    role="option"
+                    class="to-tro-crit__option"
+                    [class.to-tro-crit__option--on]="selectedCodes().has(option.code)"
+                    [attr.aria-selected]="selectedCodes().has(option.code)"
+                    [title]="option.code"
+                    (click)="toggle(option.code)"
+                  >
+                    <span class="to-tro-crit__tick" aria-hidden="true">
+                      @if (selectedCodes().has(option.code)) {
+                        <tabler-icon [icon]="icons['check']" [size]="12" />
+                      }
+                    </span>
+                    <span class="to-tro-crit__option-name">{{ option.name || option.code }}</span>
+                  </button>
+                </cdk-virtual-scroll-viewport>
+              }
+            </div>
+          }
+
+          <!-- Selected -->
+          <div class="to-tro-crit__pane">
+            <div class="to-tro-crit__pane-head">
+              <span class="to-tro-crit__pane-title">
+                {{ draft().operator === 'Exclude' ? 'Excluded' : 'Selected' }}
+                <span class="to-numeric">{{ draft().codes.length }}</span>
+              </span>
+              @if (editable() && !activeReadOnly()) {
+                <button type="button" class="to-adm__link" [disabled]="draft().codes.length === 0" (click)="removeAll()">
+                  Remove all
+                </button>
+              }
+            </div>
+            @if (selectedList().length === 0) {
+              <p class="to-tro-crit__empty">
+                {{ editable() ? 'Nothing selected: the scheme is not narrowed by ' + dimensionOf(active()).toLowerCase() + '.' : 'None.' }}
+              </p>
+            } @else {
+              <ul class="to-tro-crit__selected">
+                @for (value of selectedList(); track value.code) {
+                  <li [title]="value.code">
+                    <span class="to-tro-crit__option-name">{{ value.name }}</span>
+                    @if (editable() && !activeReadOnly()) {
+                      <button
+                        type="button"
+                        class="to-adm__pill-remove"
+                        [attr.aria-label]="'Remove ' + value.name"
+                        (click)="remove(value.code)"
+                      >
+                        <tabler-icon [icon]="icons['x']" [size]="12" />
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+            @if (length() > valueLimit / 2) {
+              <span class="to-tro-crit__meter to-numeric" [class.to-tro-crit__meter--over]="length() > valueLimit">
+                {{ length().toLocaleString('en') }} / {{ valueLimit.toLocaleString('en') }} characters
+              </span>
+            }
+          </div>
+        </div>
+
+        @if (refusal(); as refused) {
+          @if (!refused.toasted) {
+            <div class="to-adm__alert to-adm__alert--warn" role="alert">
+              <tabler-icon [icon]="icons['alert-triangle']" [size]="16" />
+              <span><strong>{{ dimensionOf(refused.criterion) }}:</strong> {{ refused.message }}</span>
+            </div>
+          }
+        }
+
+        @if (editable() && !activeReadOnly()) {
+          <div class="to-adm__form-actions">
+            @if (activeDirty()) {
+              <button type="button" pButton class="p-button-text p-button-sm" [disabled]="!!saving()" (click)="discard()">
+                Discard
+              </button>
+            }
+            @if (dirtyKeys().length > 1) {
+              <button type="button" pButton class="p-button-sm p-button-outlined" [disabled]="!!saving()" (click)="saveAll()">
+                Save all {{ dirtyKeys().length }}
+              </button>
+            }
+            <button
+              type="button"
+              pButton
+              class="p-button-sm"
+              [disabled]="!!saving() || !activeDirty() || length() > valueLimit"
+              (click)="saveActive()"
+            >
+              @if (saving(); as savingCriterion) {
+                Saving {{ dimensionOf(savingCriterion) }}…
+              } @else if (draft().codes.length === 0 && activeSaved()) {
+                Remove {{ dimensionOf(active()) }}
+              } @else {
+                Save {{ dimensionOf(active()) }}
+              }
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Legacy's text box beside the lists: everything saved, by name. -->
+    @if (savedSummary().length > 0) {
+      <div class="to-tro-crit__summary">
+        <span class="to-tro-crit__group">Saved on the scheme</span>
+        <ul>
+          @for (line of savedSummary(); track line.key) {
+            <li>
+              <span class="to-tro-crit__summary-dim">{{ line.dimension }}</span>
+              <span class="to-tro-crit__summary-op">{{ line.exclude ? '≠' : '=' }}</span>
+              <span class="to-tro-crit__summary-values" [title]="line.names.join(', ')">{{ line.names.join(', ') }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  }
+</section>
+
+<ng-template #navItem let-item>
+  <button
+    type="button"
+    class="to-tro-crit__nav-item"
+    [class.to-tro-crit__nav-item--on]="item.key === active().toLowerCase()"
+    [attr.aria-current]="item.key === active().toLowerCase() || null"
+    (pointerenter)="prefetch(item)"
+    (focus)="prefetch(item)"
+    (click)="choose(item)"
+  >
+    <span class="to-tro-crit__nav-name">
+      {{ item.dimension }}
+      @if (item.dirty) {
+        <span class="to-tro-crit__dot" title="Unsaved"></span>
+      }
+    </span>
+    @if (item.tag === 'required' && item.count === 0) {
+      <span class="to-tro-crit__tag">Required</span>
+    } @else if (item.tag === 'blocks' && item.count > 0) {
+      <span class="to-tro-crit__tag to-tro-crit__tag--bad">Blocks sending</span>
+    }
+    @if (item.count > 0) {
+      <span class="to-tro-crit__count to-numeric">{{ item.operator === 'Exclude' ? '≠ ' : '' }}{{ item.count }}</span>
+    }
+  </button>
+</ng-template>
