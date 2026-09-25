@@ -271,7 +271,7 @@ export function mechanicsOutdated(scheme: TradeOfferScheme): boolean {
 // ─── Posted to ────────────────────────────────────────────────────────────────
 
 /** The system schemes will be posted to once Salesflo is replaced. */
-export const IBY = 'IBY';
+export const IVY = 'IVY';
 
 export interface DatabaseChoice {
   code: string;
@@ -283,7 +283,7 @@ export interface DatabaseChoice {
 
 /**
  * The Posted To dropdown. `listed` is false while the server names only its default: the choice
- * is then that default, with IBY shown but not pickable, and nothing is sent on save.
+ * is then that default, with IVY shown but not pickable, and nothing is sent on save.
  *
  * A code the scheme was saved with that is no longer offered (legacy's ORANGE, `0`, on 41,603
  * older schemes) is kept in the list, disabled, so the dropdown never shows blank for it.
@@ -304,7 +304,7 @@ export function databaseChoices(
       }))
     : [
         { code: fallback.code, name: fallback.name || fallback.code, disabled: false, note: '' },
-        { code: IBY, name: IBY, disabled: true, note: 'Not in use yet' },
+        { code: IVY, name: IVY, disabled: true, note: 'Not in use yet' },
       ];
   if (saved?.code && !choices.some((choice) => choice.code === saved.code)) {
     choices.push({ code: saved.code, name: saved.name || saved.code, disabled: true, note: 'No longer offered' });
