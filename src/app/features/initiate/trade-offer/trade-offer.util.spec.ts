@@ -191,13 +191,13 @@ describe('posted to', () => {
     databases,
   });
 
-  it('offers the server default and shows IBY as not in use until the server lists the systems', () => {
+  it('offers the server default and shows IVY as not in use until the server lists the systems', () => {
     const { choices, listed, defaultCode } = databaseChoices(catalogue([]), null);
     expect(listed).toBe(false);
     expect(defaultCode).toBe('1');
     expect(choices.map((choice) => [choice.name, choice.disabled])).toEqual([
       ['Salesflo', false],
-      ['IBY', true],
+      ['IVY', true],
     ]);
   });
 
@@ -205,7 +205,7 @@ describe('posted to', () => {
     const { choices, listed } = databaseChoices(
       catalogue([
         { code: '1', name: 'Salesflo', isAvailable: true },
-        { code: '3', name: 'IBY', isAvailable: true },
+        { code: '3', name: 'IVY', isAvailable: true },
       ]),
       { code: '0', name: 'ORANGE' },
     );

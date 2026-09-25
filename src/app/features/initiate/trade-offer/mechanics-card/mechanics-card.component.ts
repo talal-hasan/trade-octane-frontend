@@ -84,7 +84,7 @@ export class MechanicsCardComponent implements OnDestroy {
   protected readonly locked = this.store.isNew;
   protected readonly editable = this.store.editable;
   // ─── Posted to ───────────────────────────────────────────────────────────────
-  // Legacy's Database dropdown: Salesflo today, IBY once schemes move there.
+  // Legacy's Database dropdown: Salesflo today, IVY once schemes move there.
 
   protected readonly databases = computed(() => databaseChoices(this.store.catalogue(), this.store.scheme()?.mechanics?.database));
   protected readonly databaseControl = new FormControl('', { nonNullable: true });

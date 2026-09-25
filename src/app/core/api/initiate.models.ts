@@ -45,7 +45,7 @@ export interface TradeOfferCriterion {
 }
 
 /**
- * A system an approved scheme can be posted to — `SCHEME_MECHANISM.DB`. Salesflo today; IBY is
+ * A system an approved scheme can be posted to — `SCHEME_MECHANISM.DB`. Salesflo today; IVY is
  * listed ahead of the move, and becomes pickable when the server says it is available.
  */
 export interface TradeOfferDatabaseOption {
@@ -70,8 +70,8 @@ export interface TradeOfferCatalogueResponse {
   /** Where an approved scheme is posted by default — legacy's Database dropdown. */
   database: TradeOfferOption;
   /**
-   * Every system the Posted To dropdown lists. Absent from servers older than the IBY change;
-   * the screen then offers `database` alone, with IBY shown as not in use yet.
+   * Every system the Posted To dropdown lists. Absent from servers older than the IVY change;
+   * the screen then offers `database` alone, with IVY shown as not in use yet.
    */
   databases?: TradeOfferDatabaseOption[];
 }
